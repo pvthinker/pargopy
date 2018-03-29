@@ -235,15 +235,15 @@ if __name__ == '__main__':
 #     __tile__.interpolate_all_profiles()
 #     __tile__.closing_file()
 #==============================================================================
-    __tile__ = Tile(213)
-    __tile__.tile_creation()
-    __tile__.interpolate_all_profiles()
-    __tile__.closing_file()
+    # __tile__ = Tile(213)
+    # __tile__.tile_creation()
+    # __tile__.interpolate_all_profiles()
+    # __tile__.closing_file()
 #==============================================================================
-#     __tile__ = Tile(172)
-#     __tile__.tile_creation()
-#     __tile__.interpolate_all_profiles()
-#     __tile__.closing_file()
+     __tile__ = Tile(172)
+     __tile__.tile_creation()
+     __tile__.interpolate_all_profiles()
+     __tile__.closing_file()
 #==============================================================================
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
