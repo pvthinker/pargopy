@@ -15,10 +15,7 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
     #  print(len(temp_qc))
     CT, SA, z = [], [], []
     klist, ierr = remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc)
-    if temp[klist].any == 0:
-        Ti, Si, Ri = [], [], []
-    elif ierr == 0:
-        # print(temp[klist])
+    if ierr == 0:
         Tis = temp[klist]
         SP = sal[klist]
         p = pres[klist]
@@ -211,7 +208,8 @@ def lincoef(z0, zs):
 def paraboliccoef(z0, zs):
     """Weights for cubic interpolation at z0 given the four depths in zs"""
     coef = np.zeros((3,), dtype=float)
-    ncoef = len(set(zs))
+    #  print(zs)
+    ncoef = len(zs)
     if ncoef < 3:
         print('**** pb with parabolic interp, only %i different zs' % ncoef)
         ierr = 1

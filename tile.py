@@ -200,14 +200,13 @@ class Tile:
             temp, sal, pres, temp_qc, sal_qc, pres_qc, lat, lon = self.reading_ARGO(dacid, wmoid[j])
             for i, idx in enumerate(prof1):
                 Ti, Si, Ri, ierr = interpolation.raw_to_interpolate(temp[idx], sal[idx], pres[idx], temp_qc[idx], sal_qc[idx], pres_qc[idx], lon[idx], lat[idx], self.zref)
-#==============================================================================
-#                 if temp1[k,i] == 0:
-#                     print(i)
-#                     exit(0)
-#==============================================================================
-                temp1[k, :len(Ti)] = Ti
-                sal1[k, :len(Si)] = Si
-                rho1[k, :len(Ri)] = Ri
+                print(Ti)
+                if Ti[0:len(Ti)-1].all == np.NaN:
+                    pass
+                else:
+                    temp1[k, :len(Ti)] = Ti
+                    sal1[k, :len(Si)] = Si
+                    rho1[k, :len(Ri)] = Ri
                 k += 1
         print(len(temp1))
         self.writing_variables(temp1, sal1, rho1, self.tile_idx)
@@ -230,20 +229,22 @@ if __name__ == '__main__':
 #     __tile__.tile_creation()
 #     __tile__.interpolate_all_profiles()
 #     __tile__.closing_file()
+#==============================================================================
+#==============================================================================
 #     __tile__ = Tile(140)
 #     __tile__.tile_creation()
 #     __tile__.interpolate_all_profiles()
 #     __tile__.closing_file()
 #==============================================================================
-    # __tile__ = Tile(213)
-    # __tile__.tile_creation()
-    # __tile__.interpolate_all_profiles()
-    # __tile__.closing_file()
 #==============================================================================
-     __tile__ = Tile(172)
-     __tile__.tile_creation()
-     __tile__.interpolate_all_profiles()
-     __tile__.closing_file()
+#     __tile__ = Tile(213)
+#     __tile__.tile_creation()
+#     __tile__.interpolate_all_profiles()
+#     __tile__.closing_file()
 #==============================================================================
+    __tile__ = Tile(172)
+    __tile__.tile_creation()
+    __tile__.interpolate_all_profiles()
+    __tile__.closing_file()
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
