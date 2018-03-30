@@ -13,11 +13,12 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
     ierr > 0: pb
     """
     #  print(len(temp_qc))
+    CT, SA, z = [], [], []
     klist, ierr = remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc)
     if temp[klist].any == 0:
         Ti, Si, Ri = [], [], []
     elif ierr == 0:
-        print(temp[klist])
+        # print(temp[klist])
         Tis = temp[klist]
         SP = sal[klist]
         p = pres[klist]
@@ -28,7 +29,7 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
         Ri = gsw.rho(Si, Ti, p)
     else:
         Ti, Si, Ri = [], [], []
-    return Ti, Si, Ri, ierr
+    return Ti, Si, Ri, CT, SA, z, ierr
 
 
 def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
@@ -106,6 +107,31 @@ def interp_at_zref(CT, SA, z, zref):
             else:
                 CTi[k] = np.NaN
                 SAi[k] = np.NaN
+        elif (nbpi[k-2]+nbpi[k-1] >= 2) and (nbpi[k]+nbpi[k+1] == 1):
+            k0 = (ks[k-2]+ks[k-1])[-2:]
+            k1 = (ks[k]+ks[k+1])[0]
+            coef, ierr = paraboliccoef(zref[k], list(z[k0])+[z[k1]])
+            a, b, c = coef
+            if ierr==0:
+                CTi[k] = a*CT[k0[0]] + b*CT[k0[1]] + c*CT[k1]
+                SAi[k] = a*SA[k0[0]] + b*SA[k0[1]] + c*SA[k1]
+            else:
+                CTi[k] = np.NaN
+                SAi[k] = np.NaN
+            
+        elif (nbpi[k-2]+nbpi[k-1] == 1) and (nbpi[k]+nbpi[k+1] >=2):
+            k0 = (ks[k-2]+ks[k-1])[-2:]
+            k1 = (ks[k]+ks[k+1])[0:2]
+            coef, ierr = paraboliccoef(zref[k], [z[k0]]+list(z[k1]))
+            a, b, c = coef
+            if ierr==0:
+                CTi[k] = a*CT[k0] + b*CT[k1[0]] + c*CT[k1[1]]
+                SAi[k] = a*SA[k0] + b*SA[k1[0]] + c*SA[k1[1]]
+            else:
+                CTi[k] = np.NaN
+                SAi[k] = np.NaN
+
+            
         elif (nbpi[k-2]+nbpi[k-1] >= 1) and (nbpi[k]+nbpi[k+1] >= 1):
             k0 = (ks[k-2]+ks[k-1])[-1]
             k1 = (ks[k]+ks[k+1])[0]
@@ -180,6 +206,23 @@ def lincoef(z0, zs):
         a = (zs[1]-z0)/dz
         b = (z0-zs[0])/dz
     return a, b
+
+
+def paraboliccoef(z0, zs):
+    """Weights for cubic interpolation at z0 given the four depths in zs"""
+    coef = np.zeros((3,), dtype=float)
+    ncoef = len(set(zs))
+    if ncoef < 3:
+        print('**** pb with parabolic interp, only %i different zs' % ncoef)
+        ierr = 1
+    else:
+        ierr = 0
+    for i in range(ncoef):
+        coef[i] = 1.
+        for j in range(ncoef):
+            if i != j:
+                coef[i] *= (z0-zs[j])/(zs[i]-zs[j])
+    return coef, ierr
 
 
 def cubiccoef(z0, zs):
