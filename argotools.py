@@ -44,22 +44,6 @@ zref = np.array([0., 10., 20., 30., 40., 50., 60., 70., 80., 90.,
                  2000.])
 
 
-def get_all_wmos():
-    """Return a dictionnary of all wmo (list of int) with dac (string) as
-       keys HAVING a *_prof.nc file
-
-       A few wmo have no *_prof.nc (352 exactly) because ... they have
-       actually no profile reported
-
-    """
-
-    wmodic = {}
-    for dac in daclist:
-        prfiles = glob.glob('{}/{}/*/*_prof.nc'.format(path_argo, dac))
-        wmodic[dac] = [int(f.split('/')[-2]) for f in prfiles]
-    return wmodic
-
-
 def dac_from_wmo(wmodic, wmo):
     """Retrieve the dac of a wmo"""
 
@@ -97,27 +81,6 @@ def get_profile_file_path(dac, wmo):
         dac = daclist[dac]
     filename = '%s/%s/%i/%i_prof.nc' % (path_argo, dac, wmo, wmo)
     return filename
-
-
-def get_header_of_all_wmos(wmodic):
-    """Get the header of all wmo"""
-
-    n_wmo = count_wmos(wmodic)
-    keys = ['DACID', 'WMO', 'N_PROF', 'N_LEVELS', 'DATE_UPDATE']
-    wmostats = {'N_WMO': n_wmo}
-    for k in keys:
-        wmostats[k] = np.zeros((n_wmo, ), dtype=int)
-
-    iwmo = 0
-    for dac in daclist:
-        for w in wmodic[dac]:
-            output = read_profile(dac, w, header=True, verbose=False)
-            for k in keys:
-                wmostats[k][iwmo] = output[k]
-            iwmo += 1
-            print('{:5,}/{:,} : {} - {}'.format(iwmo, n_wmo, dac, w))
-
-    return wmostats
 
 
 def read_profile(dac, wmo, iprof=None,
@@ -194,43 +157,6 @@ def read_profile(dac, wmo, iprof=None,
                         (output['N_PROF'], output['N_LEVELS']), dtype=str)
 
     return output
-
-
-def get_header_of_all_profiles(wmostats):
-    """Build argodb from the infos in wmostats
-
-    Once it is created it is more efficient to read it from the disk
-    using 'read_argodb()'
-
-    """
-    n_profiles = count_profiles_in_database(wmostats)
-    n_wmo = wmostats['N_WMO']
-    key_int = ['TAG']
-    key_float = ['LONGITUDE', 'LATITUDE', 'JULD']
-
-    argodb = {}
-    for k in key_int:
-        argodb[k] = np.zeros((n_profiles,), dtype=int)
-    for k in key_float:
-        argodb[k] = np.zeros((n_profiles,))
-
-    iprof = 0
-    for k in range(n_wmo):
-        kdac, wmo = wmostats['DACID'][k], wmostats['WMO'][k]
-        dac = daclist[kdac]
-        output = read_profile(dac, wmo, header=True, verbose=False)
-        n_prof = output['N_PROF']
-        for key in key_float:
-            argodb[key][iprof:iprof+n_prof] = output[key]
-
-        for kprof in range(n_prof):
-            tag = get_tag(kdac, wmo, kprof)
-            argodb['TAG'][iprof+kprof] = tag
-
-        print(' {:8,}/{:,} : {} - {}'.format(iprof, n_profiles, dac, wmo))
-        iprof += n_prof
-
-    return argodb
 
 
 def get_idx_from_list_wmo(argodb, wmos):
@@ -347,46 +273,6 @@ def retrieve_infos_from_tag(argodb, tag):
     idac = tag
     output = {'IDAC': idac, 'WMO': wmo, 'IPROF': iprof}
     return output
-
-
-def write_wmodic(wmodic):
-    with open('%s/wmodic.pkl' % path_localdata, 'w') as f:
-        pickle.dump(wmodic, f)
-
-
-def read_wmodic():
-    print('read wmodic.pkl')
-    with open('%s/wmodic.pkl' % path_localdata, 'r') as f:
-        wmodic = pickle.load(f)
-    return wmodic
-
-
-def write_wmstats(wmstats):
-    """Read the full wmstats database"""
-
-    with open('%s/wmstats.pkl' % path_localdata, 'w') as f:
-        pickle.dump(wmstats, f)
-
-
-def read_wmstats():
-    print('read wmostats.pkl')
-    with open('%s/wmstats.pkl' % path_localdata, 'r') as f:
-        wmstats = pickle.load(f)
-    return wmstats
-
-
-def write_argodb(argodb):
-    with open('%s/argodb.pkl' % path_localdata, 'w') as f:
-        pickle.dump(argodb, f)
-
-
-def read_argodb():
-    """Read the full argodb database"""
-
-    print('read argodb.pkl')
-    with open('%s/argodb.pkl'  % path_localdata, 'r') as f:
-        argodb = pickle.load(f)
-    return argodb
 
 
 def plot_location_profiles(argodb):
