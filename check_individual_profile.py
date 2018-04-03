@@ -17,7 +17,7 @@ dirlog = '/net/libra/local/tmp/1/herry/data'
 # nc.close()
 
 
-itile = 51
+itile = 172
 
 nc = Dataset('%s/tile%03i.nc' % (dirtile, itile))
 nb_prof = len(nc.dimensions['nb_prof'])

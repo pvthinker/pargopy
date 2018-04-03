@@ -160,15 +160,17 @@ class Tile:
         return CT, SA, prof, lat, lon, dac, wmo
 
 #  ----------------------------------------------------------------------------
-    def writing_variables(self, Ti, Si, Ri, i):
+    def writing_variables(self, Ti, Si, Ri, lats1, lons1, i):
         """Giving values to the variables"""
         #  Generation of the values into the tiles
         prof, dac, wmo, lats, lons, juld, line_number, latmin, latmax, lonmin, lonmax = self.reading_variables(i)
+        print(lats1)
+        print(lats)
         self.CT[:, :] = Ti
         self.SA[:, :] = Si
         self.Rho[:, :] = Ri
-        self.latitudes[:] = lats
-        self.longitudes[:] = lons
+        self.latitudes[:] = lats1
+        self.longitudes[:] = lons1
         self.dac[:] = dac
         self.wmo[:] = wmo
         self.prof[:] = prof
@@ -188,10 +190,13 @@ class Tile:
         #  prof correponds to the index of the profile
         prof, dac, wmo, lats, lons, juld, line_number, latmin, latmax, lonmin, lonmax = self.reading_variables(self.tile_idx)
         len_argotile = len(prof)  # line_number
-        prof1 = np.zeros((len_argotile,))
+        lats1 = np.zeros((len_argotile,)) + np.NaN
+        lons1 = np.zeros((len_argotile,)) + np.NaN
+        juld1 = np.zeros((len_argotile,)) + np.NaN
+        prof1 = np.zeros((len_argotile,)) + np.NaN
         temp1 = np.zeros((len_argotile, self.len_values)) + np.NaN
-        sal1 = np.zeros((len_argotile, self.len_values))
-        rho1 = np.zeros((len_argotile, self.len_values))
+        sal1 = np.zeros((len_argotile, self.len_values)) + np.NaN
+        rho1 = np.zeros((len_argotile, self.len_values)) + np.NaN
         wmoid = list(set(wmo))
         k = 0
         for j, xwmoid in enumerate(wmoid):
@@ -199,17 +204,19 @@ class Tile:
             prof1 = research.retrieve_prof_from_wmoid(prof, wmo, wmoid[j])
             temp, sal, pres, temp_qc, sal_qc, pres_qc, lat, lon = self.reading_ARGO(dacid, wmoid[j])
             for i, idx in enumerate(prof1):
-                Ti, Si, Ri, ierr = interpolation.raw_to_interpolate(temp[idx], sal[idx], pres[idx], temp_qc[idx], sal_qc[idx], pres_qc[idx], lon[idx], lat[idx], self.zref)
-                print(Ti)
-                if Ti[0:len(Ti)-1].all == np.NaN:
-                    pass
+                Ti, Si, Ri, CT, SA, z, ierr = interpolation.raw_to_interpolate(temp[idx], sal[idx], pres[idx], temp_qc[idx], sal_qc[idx], pres_qc[idx], lon[idx], lat[idx], self.zref)
+                if ierr != 0:
+                    print('ierr != 0')
                 else:
+                    #  lats1[k] = lat[i]
+                    #  lons1[k] = lon
+                    #  juld1[k] = juld
                     temp1[k, :len(Ti)] = Ti
                     sal1[k, :len(Si)] = Si
                     rho1[k, :len(Ri)] = Ri
-                k += 1
-        print(len(temp1))
-        self.writing_variables(temp1, sal1, rho1, self.tile_idx)
+                    k += 1
+        #  print(len(temp1))
+        self.writing_variables(temp1, sal1, rho1, lats1, lons1, self.tile_idx)
 
 #  ----------------------------------------------------------------------------
     def closing_file(self):

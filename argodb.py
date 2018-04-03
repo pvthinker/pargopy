@@ -11,7 +11,7 @@ import os
 import math
 import time
 import numpy as np
-from argotools import *
+import argotools as argotools
 import param as param
 tmps1 = time.time()
 
