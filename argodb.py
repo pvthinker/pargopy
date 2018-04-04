@@ -156,23 +156,21 @@ def update_wmodic():
 if __name__ == '__main__':
 
     #  Calling the constructor of the class
-#==============================================================================
-#     if not os.path.isfile('argodb.pkl'):
-#         if not os.path.isfile('wmstats.pkl'):
-#             if not os.path.isfile('wmodic.pkl'):
-#                 wmodic = get_all_wmos()
-#                 write_wmodic(wmodic)
-#             else:
-#                 pass
-#             wmostats = get_header_of_all_wmos(wmodic)
-#             write_wmstats(wmostats)
-#         else:
-#             pass
-#         argodb = get_header_of_all_profiles(wmostats)
-#         write_argodb(argodb)
-#     else:
-#         pass
-#     tmps2 = time.time() - tmps1
-#     print("Temps d'execution = %f" % tmps2)
-#==============================================================================
-    update_wmodic()
+    if not os.path.isfile('argodb.pkl'):
+        if not os.path.isfile('wmstats.pkl'):
+            if not os.path.isfile('wmodic.pkl'):
+                wmodic = get_all_wmos()
+                write_wmodic(wmodic)
+            else:
+                update_wmodic()
+            wmostats = get_header_of_all_wmos(wmodic)
+            write_wmstats(wmostats)
+        else:
+            pass
+        argodb = get_header_of_all_profiles(wmostats)
+        write_argodb(argodb)
+    else:
+        pass
+    tmps2 = time.time() - tmps1
+    print("Temps d'execution = %f" % tmps2)
+    

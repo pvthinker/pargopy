@@ -158,44 +158,6 @@ def read_profile(dac, wmo, iprof=None,
 
     return output
 
-
-def get_idx_from_list_wmo(argodb, wmos):
-    """Get the list of profile indices present in argodb that correspond
-       to the list of wmos
-
-    """
-    infos = retrieve_infos_from_tag(argodb, argodb['TAG'])
-    idx = []
-    for w in wmos:
-        idx += list(np.where(infos['WMO'] == w)[0])
-    return idx
-
-
-def extract_idx_from_argodb(argodb, idx):
-    """Return a argodb type dictionnary that is a subset of argodb and
-       containing only entries given in idx (list)
-
-    """
-    argodb_extract = {}
-    for k in argodb.keys():
-        argodb_extract[k] = argodb[k][idx]
-    return argodb_extract
-
-
-def extract_idx_from_wmostats(wmostats, idx):
-    wmostats_extract = {}
-    keys = wmostats.keys()
-    keys.remove('N_WMO')
-    for k in keys:
-        wmostats_extract[k] = wmostats[k][idx]
-    if type(idx) in [int, np.int64]:
-        n_wmo = 1
-    else:
-        n_wmo = len(idx)
-    wmostats_extract['N_WMO'] = n_wmo
-    return wmostats_extract
-
-
 def flag_argodb(argodb, wmodic):
     """Add the flag to argodb"""
 
