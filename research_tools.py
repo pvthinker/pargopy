@@ -63,20 +63,38 @@ def creating_tiles():
             lonmin = lon[j] - 2
             lonmax = lon[j + 1] + 2
             if lonmin < -180:
+                #  print(k)
                 lonmin += 360
             elif lonmax > 180:
+                #  print(k)
                 lonmax -= 360
             else:
                 pass
             idx = np.where((argodb['LATITUDE'] > latmin) & (argodb['LATITUDE'] < latmax) & (argodb['LONGITUDE'] > lonmin) & (argodb['LONGITUDE'] < lonmax))
+            #  print(idx)
             argo_extract = extract_idx_from_argodb(argodb, idx)
             argo_extract['MINLAT'] = lat[i]
             argo_extract['MAXLAT'] = lat[i + 1]
-            argo_extract['MINLON'] = lon[i]
-            argo_extract['MAXLON'] = lon[i + 1]
-            argo_extract['MARGIN'] = margin[i]
+            argo_extract['MINLON'] = lon[j]
+            argo_extract['MAXLON'] = lon[j + 1]
+            argo_extract['LAT_MARGIN'] = margin[i]
+            argo_extract['LON_MARGIN'] = 2
+            test_tiles(argo_extract, k)
             write_argo_filter(argo_extract, k)
             k += 1
+
+
+#  ----------------------------------------------------------------------------
+def test_tiles(argo_extract, i):
+    """ Test to know if the tiles are correctly done with the lat and lon 
+    limits"""
+    idx1 = np.where(argo_extract['LATITUDE'] > argo_extract['MAXLAT'] + argo_extract['LAT_MARGIN'])
+    idx2 = np.where(argo_extract['LATITUDE'] < argo_extract['MINLAT'] - argo_extract['LAT_MARGIN'])
+    idx3 = np.where(argo_extract['LONGITUDE'] > argo_extract['MAXLON'] + argo_extract['LON_MARGIN'])
+    idx4 = np.where(argo_extract['LONGITUDE'] < argo_extract['MINLON'] - argo_extract['LON_MARGIN'])
+    if (idx1[0] != []) | (idx2[0] != []) | (idx3[0] != []) | (idx4[0] != []):
+        print('There is an error with the dimensions of the tile number %i' % i)
+        exit(0)
 
 
 #  ----------------------------------------------------------------------------
