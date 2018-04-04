@@ -8,6 +8,8 @@ import os
 import numpy as np
 import time
 import pickle
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
 import param as param
 import argotools as argotools
 import argodb as argodatabase
@@ -20,7 +22,7 @@ def tile_definition():
 
     minlon = -180.
     maxlon = 180.
-    minlat = -80.
+    latmin = -80.
     maxlat = 80.
 
     nlon = 20
@@ -29,10 +31,10 @@ def tile_definition():
     minmargin = 1.
 
     deltalon = maxlon-minlon
-    deltalat = maxlat-minlat
+    deltalat = maxlat-latmin
 
     lon = minlon + np.arange(nlon+1) * deltalon/nlon
-    lat = minlat + np.arange(nlat+1) * deltalat/nlat
+    lat = latmin + np.arange(nlat+1) * deltalat/nlat
 
     # distribute the latitudes so that their differences
     # vary in cos(lat)
@@ -43,7 +45,7 @@ def tile_definition():
         dlat = dlat*0 + np.mean(dlat)
         dlat = dlat / np.cos(latm*np.pi/180)
         dlat = dlat/sum(dlat)*deltalat
-        lat[1:] = minlat + np.cumsum(dlat)
+        lat[1:] = latmin + np.cumsum(dlat)
 
     margin = minmargin / np.cos(latm*np.pi/180)
 
@@ -63,22 +65,24 @@ def creating_tiles():
             lonmin = lon[j] - 2
             lonmax = lon[j + 1] + 2
             if lonmin < -180:
-                #  print(k)
+                print(k)
                 lonmin += 360
             elif lonmax > 180:
-                #  print(k)
+                print(k)
                 lonmax -= 360
             else:
                 pass
-            idx = np.where((argodb['LATITUDE'] > latmin) & (argodb['LATITUDE'] < latmax) & (argodb['LONGITUDE'] > lonmin) & (argodb['LONGITUDE'] < lonmax))
-            #  print(idx)
-            argo_extract = extract_idx_from_argodb(argodb, idx)
-            argo_extract['MINLAT'] = lat[i]
-            argo_extract['MAXLAT'] = lat[i + 1]
-            argo_extract['MINLON'] = lon[j]
-            argo_extract['MAXLON'] = lon[j + 1]
-            argo_extract['LAT_MARGIN'] = margin[i]
-            argo_extract['LON_MARGIN'] = 2
+            res = {'latmin': latmin,
+                   'latmax': latmax,
+                   'lonmin': lonmin,
+                   'lonmax': lonmax,
+                   'lat[i]': lat[i],
+                   'lat[i+1]': lat[i+1],
+                   'lon[j]': lon[j],
+                   'lon[j+1]': lon[j+1],
+                   'margin[i]': margin[i]}
+
+            argo_extract = get_idx_from_tiles_lim(res)
             test_tiles(argo_extract, k)
             write_argo_filter(argo_extract, k)
             k += 1
@@ -101,6 +105,27 @@ def test_tiles(argo_extract, i):
 def write_argo_filter(argo_extract, i):
     with open('%s/argodic%003i.pkl' % (path_localdata, i), 'w') as f:
         pickle.dump(argo_extract, f)
+
+
+#  ----------------------------------------------------------------------------
+def get_idx_from_tiles_lim(res):
+    """Get the list of profile indices present in argodb that correspond
+       to the list of wmos"""
+    #  max and min are the limits with the margins
+    if res['lonmin'] > res['lonmax']:
+        idx = np.where((argodb['LATITUDE'] > res['latmin']) & (argodb['LATITUDE'] < res['latmax']) & ((argodb['LONGITUDE'] > res['lonmin']) | (argodb['LONGITUDE'] < res['lonmax'])))
+    else:
+        idx = np.where((argodb['LATITUDE'] > res['latmin']) & (argodb['LATITUDE'] < res['latmax']) & (argodb['LONGITUDE'] > res['lonmin']) & (argodb['LONGITUDE'] < res['lonmax']))
+    argo_extract = extract_idx_from_argodb(argodb, idx)
+    #  low and high are the limits without margins
+    argo_extract['MINLAT'] = res['lat[i]']
+    argo_extract['MAXLAT'] = res['lat[i+1]']
+    argo_extract['MINLON'] = res['lon[j]']
+    argo_extract['MAXLON'] = res['lon[j+1]']
+    argo_extract['LAT_MARGIN'] = res['margin[i]']
+    argo_extract['LON_MARGIN'] = 2
+
+    return argo_extract
 
 
 #  ----------------------------------------------------------------------------
