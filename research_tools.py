@@ -14,7 +14,7 @@ import param as param
 import argotools as argotools
 import argodb as argodatabase
 
-path_localdata = './data/filter'
+path_localdata = '/local/tmp/1/herry/pargopy/filter/'
 argodb = argodatabase.read_argodb()
 #  ----------------------------------------------------------------------------
 def tile_definition():
@@ -107,6 +107,14 @@ def test_tiles(argo_extract, i):
 def write_argo_filter(argo_extract, i):
     with open('%s/argodic%003i.pkl' % (path_localdata, i), 'w') as f:
         pickle.dump(argo_extract, f)
+
+
+#  ----------------------------------------------------------------------------
+def read_argo_filter(i):
+    print('read argodic%003i.pkl' % i)
+    with open('%s/argodic%003i.pkl' % (path_localdata, i), 'r') as f:
+        argodic = pickle.load(f)
+    return argodic
 
 
 #  ----------------------------------------------------------------------------

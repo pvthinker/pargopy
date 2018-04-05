@@ -6,6 +6,74 @@ Created on Wed Mar 14 14:37:02 2018
 """
 import gsw as gsw
 import numpy as np
+import argotools as argo
+
+
+def interpolate_profiles(subargodb, wmodic):
+    """Interpolate the profiles in subargodb"""
+
+    infos = argo.retrieve_infos_from_tag(subargodb, subargodb['TAG'])
+
+    zref = argo.zref
+    n_zref = len(zref)
+    n_profiles = len(np.where(subargodb['FLAG'][:] == 0)[0])
+    print('nb of valid (flag==0) profiles: %i' % n_profiles)
+    CT = np.zeros((n_profiles, n_zref))
+    SA = np.zeros((n_profiles, n_zref))
+    RHO = np.zeros((n_profiles, n_zref))
+    LON = np.zeros((n_profiles,))
+    LAT = np.zeros((n_profiles,))
+    JULD = np.zeros((n_profiles,))
+    TAG = np.zeros((n_profiles,), dtype=int)
+
+    kprof = 0
+
+    wmos = set(infos['WMO'])
+
+    for w in wmos:
+        print('interpolate profiles from wmo %i' % w)
+        idx = np.where(infos['WMO'] == w)[0]
+        print(w, idx)
+        iprof = infos['IPROF'][idx]
+        dac = argo.dac_from_wmo(wmodic, w)
+        data = argo.read_profile(dac, w, header=True, data=True, dataqc=True)
+        for l, k in enumerate(iprof):
+            if subargodb['FLAG'][idx[l]] == 0:
+                temp = data['TEMP'][k, :]
+                psal = data['PSAL'][k, :]
+                pres = data['PRES'][k, :]
+                temp_qc = data['TEMP_QC'][k, :]
+                psal_qc = data['PSAL_QC'][k, :]
+                pres_qc = data['PRES_QC'][k, :]
+                lon = data['LONGITUDE'][k]
+                lat = data['LATITUDE'][k]
+                Ti, Si, Ri, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
+                                         temp_qc, psal_qc, pres_qc,
+                                         lon, lat, zref)
+                ierr = 0
+                if ierr == 0:
+                    CT[kprof, :] = Ti
+                    SA[kprof, :] = Si
+                    RHO[kprof, :] = Ri
+                    TAG[kprof] = subargodb['TAG'][idx[l]]
+                    LON[kprof] = subargodb['LONGITUDE'][idx[l]]
+                    LAT[kprof] = subargodb['LATITUDE'][idx[l]]
+                    JULD[kprof] = subargodb['JULD'][idx[l]]
+                    kprof += 1
+                else:
+                    subargodb['FLAG'][idx[l]] = 202
+            else:
+                pass
+
+    res = {'CT': CT[:kprof, :],
+           'SA': SA[:kprof, :],
+           'RHO': RHO[:kprof, :],
+           'TAG': TAG[:kprof],
+           'LONGITUDE': LON[:kprof],
+           'LATITUDE': LAT[:kprof],
+           'JULD': JULD[:kprof]}
+
+    return res
 
 def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref):
     """Interpolate in situ data on zref depths

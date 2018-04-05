@@ -21,7 +21,7 @@ daclist = ['aoml', 'bodc', 'coriolis', 'csio',
 path_argo = '/net/alpha/exports/sciences/data/ARGO/ARGO/201602-ArgoData'
 
 # path where pickle objects are written
-path_localdata = '.'
+path_localdata = '/local/tmp/1/herry/pargopy/data/'
 
 key_header = ['LATITUDE', 'LONGITUDE', 'JULD']
 key_headerqc = ['POSITION_QC', 'JULD_QC']
