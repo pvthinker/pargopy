@@ -47,40 +47,40 @@ def tile_definition():
         dlat = dlat/sum(dlat)*deltalat
         lat[1:] = latmin + np.cumsum(dlat)
 
-    margin = minmargin / np.cos(latm*np.pi/180)
+    marginlat = minmargin / np.cos(latm*np.pi/180)
+    marginlon = 2
 
-    return lat, lon, nlat, nlon, margin
+    return lat, lon, nlat, nlon, marginlat, marginlon
 
 
 #  ----------------------------------------------------------------------------
 def creating_tiles():
     """Giving values to the variables"""
     #  Generation of the dimension of import matplotlib.pyplot as plt
-    lat, lon, nlat, nlon, margin = tile_definition()
+    lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
     k = 0
     for i in range(nlat):
         for j in range(nlon):
-            latmin = lat[i] - margin[i]
-            latmax = lat[i + 1] + margin[i]
-            lonmin = lon[j] - 2
-            lonmax = lon[j + 1] + 2
+            latmin = lat[i] - marginlat[i]
+            latmax = lat[i + 1] + marginlat[i]
+            lonmin = lon[j] - marginlon
+            lonmax = lon[j + 1] + marginlon
             if lonmin < -180:
-                print(k)
                 lonmin += 360
             elif lonmax > 180:
-                print(k)
                 lonmax -= 360
             else:
                 pass
-            res = {'latmin': latmin,
-                   'latmax': latmax,
-                   'lonmin': lonmin,
-                   'lonmax': lonmax,
-                   'lat[i]': lat[i],
-                   'lat[i+1]': lat[i+1],
-                   'lon[j]': lon[j],
-                   'lon[j+1]': lon[j+1],
-                   'margin[i]': margin[i]}
+            res = {'LATMIN_WITH_M': latmin,
+                   'LATMAX_WITH_M': latmax,
+                   'LONMIN_WITH_M': lonmin,
+                   'LONMAX_WITH_M': lonmax,
+                   'LATMIN_NO_M': lat[i],
+                   'LATMAX_NO_M': lat[i+1],
+                   'LONMIN_NO_M': lon[j],
+                   'LONMAX_NO_M': lon[j+1],
+                   'MARGINLAT': marginlat[i],
+                   'MARGINLON': marginlon}
 
             argo_extract = get_idx_from_tiles_lim(res)
             test_tiles(argo_extract, k)
@@ -92,10 +92,10 @@ def creating_tiles():
 def test_tiles(argo_extract, i):
     """ Test to know if the tiles are correctly done with the lat and lon 
     limits"""
-    idx1 = np.where(argo_extract['LATITUDE'] > argo_extract['MAXLAT'] + argo_extract['LAT_MARGIN'])
-    idx2 = np.where(argo_extract['LATITUDE'] < argo_extract['MINLAT'] - argo_extract['LAT_MARGIN'])
-    idx3 = np.where(argo_extract['LONGITUDE'] > argo_extract['MAXLON'] + argo_extract['LON_MARGIN'])
-    idx4 = np.where(argo_extract['LONGITUDE'] < argo_extract['MINLON'] - argo_extract['LON_MARGIN'])
+    idx1 = np.where(argo_extract['LATITUDE'] > argo_extract['LATMAX_NO_M'] + argo_extract['MARGINLAT'])
+    idx2 = np.where(argo_extract['LATITUDE'] < argo_extract['LATMIN_NO_M'] - argo_extract['MARGINLAT'])
+    idx3 = np.where(argo_extract['LONGITUDE'] > argo_extract['LONMAX_NO_M'] + argo_extract['MARGINLON'])
+    idx4 = np.where(argo_extract['LONGITUDE'] < argo_extract['LONMIN_NO_M'] - argo_extract['MARGINLON'])
     if (idx1[0] != []) | (idx2[0] != []) | (idx3[0] != []) | (idx4[0] != []):
         print('There is an error with the dimensions of the tile number %i' % i)
         exit(0)
@@ -112,18 +112,18 @@ def get_idx_from_tiles_lim(res):
     """Get the list of profile indices present in argodb that correspond
        to the list of wmos"""
     #  max and min are the limits with the margins
-    if res['lonmin'] > res['lonmax']:
-        idx = np.where((argodb['LATITUDE'] > res['latmin']) & (argodb['LATITUDE'] < res['latmax']) & ((argodb['LONGITUDE'] > res['lonmin']) | (argodb['LONGITUDE'] < res['lonmax'])))
+    if res['LONMIN_WITH_M'] > res['LONMAX_WITH_M']:
+        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & ((argodb['LONGITUDE'] > res['LONMIN_WITH_M']) | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
     else:
-        idx = np.where((argodb['LATITUDE'] > res['latmin']) & (argodb['LATITUDE'] < res['latmax']) & (argodb['LONGITUDE'] > res['lonmin']) & (argodb['LONGITUDE'] < res['lonmax']))
+        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & (argodb['LONGITUDE'] > res['LONMIN_WITH_M']) & (argodb['LONGITUDE'] < res['LONMAX_WITH_M']))
     argo_extract = extract_idx_from_argodb(argodb, idx)
     #  low and high are the limits without margins
-    argo_extract['MINLAT'] = res['lat[i]']
-    argo_extract['MAXLAT'] = res['lat[i+1]']
-    argo_extract['MINLON'] = res['lon[j]']
-    argo_extract['MAXLON'] = res['lon[j+1]']
-    argo_extract['LAT_MARGIN'] = res['margin[i]']
-    argo_extract['LON_MARGIN'] = 2
+    argo_extract['LATMIN_NO_M'] = res['LATMIN_NO_M']
+    argo_extract['LATMAX_NO_M'] = res['LATMAX_NO_M']
+    argo_extract['LONMIN_NO_M'] = res['LONMIN_NO_M']
+    argo_extract['LONMAX_NO_M'] = res['LONMAX_NO_M']
+    argo_extract['MARGINLAT'] = res['MARGINLAT']
+    argo_extract['MARGINLON'] = res['MARGINLON']
 
     return argo_extract
 
