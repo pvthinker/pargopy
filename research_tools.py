@@ -71,6 +71,8 @@ def creating_tiles():
                 lonmax -= 360
             else:
                 pass
+            #  WITH_M : with margin
+            #  NO_M : without margin
             res = {'LATMIN_WITH_M': latmin,
                    'LATMAX_WITH_M': latmax,
                    'LONMIN_WITH_M': lonmin,
@@ -111,13 +113,12 @@ def write_argo_filter(argo_extract, i):
 def get_idx_from_tiles_lim(res):
     """Get the list of profile indices present in argodb that correspond
        to the list of wmos"""
-    #  max and min are the limits with the margins
+
     if res['LONMIN_WITH_M'] > res['LONMAX_WITH_M']:
         idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & ((argodb['LONGITUDE'] > res['LONMIN_WITH_M']) | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
     else:
         idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & (argodb['LONGITUDE'] > res['LONMIN_WITH_M']) & (argodb['LONGITUDE'] < res['LONMAX_WITH_M']))
     argo_extract = extract_idx_from_argodb(argodb, idx)
-    #  low and high are the limits without margins
     argo_extract['LATMIN_NO_M'] = res['LATMIN_NO_M']
     argo_extract['LATMAX_NO_M'] = res['LATMAX_NO_M']
     argo_extract['LONMIN_NO_M'] = res['LONMIN_NO_M']

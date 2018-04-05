@@ -66,7 +66,7 @@ def get_header_of_all_profiles(wmostats):
     """
     n_profiles = argotools.count_profiles_in_database(wmostats)
     n_wmo = wmostats['N_WMO']
-    key_int = ['TAG']
+    key_int = ['TAG', 'FLAG']
     key_float = ['LONGITUDE', 'LATITUDE', 'JULD']
 
     argodb = {}
@@ -90,7 +90,6 @@ def get_header_of_all_profiles(wmostats):
 
         print(' {:8,}/{:,} : {} - {}'.format(iprof, n_profiles, dac, wmo))
         iprof += n_prof
-
     return argodb
 
 
@@ -139,6 +138,7 @@ def read_argodb():
         argodb = pickle.load(f)
     return argodb
 
+
 #  ----------------------------------------------------------------------------
 def update_wmodic():
     """Read the full argodb database and update argodb.pkl"""
@@ -156,21 +156,30 @@ def update_wmodic():
 if __name__ == '__main__':
 
     #  Calling the constructor of the class
-    if not os.path.isfile('argodb.pkl'):
-        if not os.path.isfile('wmstats.pkl'):
-            if not os.path.isfile('wmodic.pkl'):
-                wmodic = get_all_wmos()
-                write_wmodic(wmodic)
-            else:
-                update_wmodic()
-            wmostats = get_header_of_all_wmos(wmodic)
-            write_wmstats(wmostats)
-        else:
-            pass
-        argodb = get_header_of_all_profiles(wmostats)
-        write_argodb(argodb)
-    else:
-        pass
+#==============================================================================
+#     if not os.path.isfile('argodb.pkl'):
+#         if not os.path.isfile('wmstats.pkl'):
+#             if not os.path.isfile('wmodic.pkl'):
+#                 wmodic = get_all_wmos()
+#                 write_wmodic(wmodic)
+#             else:
+#                 update_wmodic()
+#             wmostats = get_header_of_all_wmos(wmodic)
+#             write_wmstats(wmostats)
+#         else:
+#             pass
+#         argodb = get_header_of_all_profiles(wmostats)
+#         argofinal = argotools.flag_argodb(argodb, wmostats)
+#         write_argodb(argofinal)
+#     else:
+#         pass
+#==============================================================================
+    wmodic = get_all_wmos()
+    write_wmodic(wmodic)
+    wmostats = get_header_of_all_wmos(wmodic)
+    write_wmstats(wmostats)
+    argodb = get_header_of_all_profiles(wmostats)
+    argodb = argotools.flag_argodb(argodb, wmodic)
+    write_argodb(argodb)
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
-    
