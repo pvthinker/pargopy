@@ -5,6 +5,7 @@ Created on Tue Mar 20 15:24:20 2018
 @author: herry
 """
 import os
+import time
 import numpy as np
 import time
 import pickle

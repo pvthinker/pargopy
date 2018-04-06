@@ -50,8 +50,12 @@ def interpolate_profiles(subargodb, wmodic):
                 Ti, Si, Ri, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
                                          temp_qc, psal_qc, pres_qc,
                                          lon, lat, zref)
+                print('len(Ti)', len(Ti))
                 ierr = 0
+                if len(Ti) == 0:
+                    ierr = 1
                 if ierr == 0:
+                    print('Je suis rentre')
                     CT[kprof, :] = Ti
                     SA[kprof, :] = Si
                     RHO[kprof, :] = Ri
@@ -64,7 +68,6 @@ def interpolate_profiles(subargodb, wmodic):
                     subargodb['FLAG'][idx[l]] = 202
             else:
                 pass
-
     res = {'CT': CT[:kprof, :],
            'SA': SA[:kprof, :],
            'RHO': RHO[:kprof, :],
