@@ -54,6 +54,17 @@ def interpolate_profiles(subargodb, wmodic):
                 ierr = 0
                 if len(Ti) == 0:
                     ierr = 1
+                # Checking if Ti, Si, Ri are full of NaN
+                checker = []
+                for i, T in enumerate(Ti):
+                    checker.append(np.isnan(T))
+                if False in checker:
+                    ierr = 0
+                else:
+                    ierr = 2
+                    print(Ti)
+                    print(checker)
+                print(ierr)
                 if ierr == 0:
                     print('Je suis rentre')
                     CT[kprof, :] = Ti
