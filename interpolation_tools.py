@@ -6,15 +6,16 @@ Created on Wed Mar 14 14:37:02 2018
 """
 import gsw as gsw
 import numpy as np
-import argotools as argo
+import argotools as argotools
+import argodb as argo
 
 
 def interpolate_profiles(subargodb, wmodic):
     """Interpolate the profiles in subargodb"""
 
-    infos = argo.retrieve_infos_from_tag(subargodb, subargodb['TAG'])
+    infos = argotools.retrieve_infos_from_tag(subargodb, subargodb['TAG'])
 
-    zref = argo.zref
+    zref = argotools.zref
     n_zref = len(zref)
     n_profiles = len(np.where(subargodb['FLAG'][:] == 0)[0])
     print('nb of valid (flag==0) profiles: %i' % n_profiles)
@@ -35,8 +36,8 @@ def interpolate_profiles(subargodb, wmodic):
         idx = np.where(infos['WMO'] == w)[0]
         print(w, idx)
         iprof = infos['IPROF'][idx]
-        dac = argo.dac_from_wmo(wmodic, w)
-        data = argo.read_profile(dac, w, header=True, data=True, dataqc=True)
+        dac = argotools.dac_from_wmo(wmodic, w)
+        data = argotools.read_profile(dac, w, header=True, data=True, dataqc=True)
         for l, k in enumerate(iprof):
             if subargodb['FLAG'][idx[l]] == 0:
                 temp = data['TEMP'][k, :]
@@ -50,7 +51,6 @@ def interpolate_profiles(subargodb, wmodic):
                 Ti, Si, Ri, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
                                          temp_qc, psal_qc, pres_qc,
                                          lon, lat, zref)
-                print('len(Ti)', len(Ti))
                 ierr = 0
                 if len(Ti) == 0:
                     ierr = 1
@@ -62,11 +62,8 @@ def interpolate_profiles(subargodb, wmodic):
                     ierr = 0
                 else:
                     ierr = 2
-                    print(Ti)
-                    print(checker)
                 print(ierr)
                 if ierr == 0:
-                    print('Je suis rentre')
                     CT[kprof, :] = Ti
                     SA[kprof, :] = Si
                     RHO[kprof, :] = Ri
@@ -79,6 +76,9 @@ def interpolate_profiles(subargodb, wmodic):
                     subargodb['FLAG'][idx[l]] = 202
             else:
                 pass
+    argodb = argo.read_argodb()
+    argotools.propagate_flag_backward(argodb, subargodb, verbose=True)
+    argo.write_argodb(argodb)
     res = {'CT': CT[:kprof, :],
            'SA': SA[:kprof, :],
            'RHO': RHO[:kprof, :],
