@@ -1,191 +1,68 @@
-"""Compute statistics on one tile"""
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr  9 09:34:40 2018
+
+@author: herry
+"""
 from netCDF4 import Dataset
+from scipy import interpolate as ip
 import os
 import numpy as np
 import gsw as gsw
 import time
+import pickle as pickle
 import general_tools as tools
-from scipy import interpolate as ip
+import research_tools as research
+import argodb as argo
+import argotools as argotools
+import interpolation_tools as interpolation
+import tile as tiler
 
 
-def create_stat_file(itile, typestat, reso, timeflag):
-    """Create statistics netcdf file"""
+zref = argotools.zref
+path_localdata = '/local/tmp/1/herry/pargopy/stats/'
 
-    rootgrp = Dataset('/local/tmp/1/herry/stat/%s_%s_%s_%s.nc' % (typestat, reso, timeflag, itile), "w", format="NETCDF4")
-    nbprof, CT, SA, RI, lat, lon, juld, zref, minlon, maxlon, minlat, maxlat = reading_tile(itile)
-    lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso)
-    nlat, nlon = np.shape(lon_deg)
-    rootgrp.createDimension('depth', len(zref))
-    rootgrp.createDimension('lat', nlat)
-    rootgrp.createDimension('lon', nlon)
 
+#  ----------------------------------------------------------------------------
+def creating_stats(itile, typestat, reso_deg, timeflag):
+    """Giving values to the variables"""
+    #  Generation of the dimension of import matplotlib.pyplot as plt
     if typestat == 'zmean':
-        lon_deg = rootgrp.createVariable('lon_deg', 'f4', ('lat', 'lon'))
-        lon_deg.long_name = 'Density'
-        lon_deg.units = 'None'
-
-        lat_deg = rootgrp.createVariable('lat_deg', 'f4', ('lat', 'lon'))
-        lat_deg.long_name = 'Density'
-        lat_deg.units = 'None'
-
-        NBbar = rootgrp.createVariable('NBbar', 'f4', ('depth', 'lat', 'lon'))
-        NBbar.long_name = 'Temperature'
-        NBbar.units = 'Celsius'
-
-        CTbar = rootgrp.createVariable('CTbar', 'f4', ('depth', 'lat', 'lon'))
-        CTbar.long_name = 'Temperature'
-        CTbar.units = 'Celsius'
-
-        SAbar = rootgrp.createVariable('SAbar', 'f4', ('depth', 'lat', 'lon'))
-        SAbar.long_name = 'Salinity'
-        SAbar.units = '???'
-
-        Ribar = rootgrp.createVariable('Ribar', 'f4', ('depth', 'lat', 'lon'))
-        Ribar.long_name = 'Density'
-        Ribar.units = 'None'
-
-        zreference = rootgrp.createVariable('zref', 'f4', ('depth', ))
-        zreference.long_name = 'Depth reference'
-        zreference.units = 'Meter'
-
-        rootgrp.close()
-
-    elif typestat == 'zstd':
-        lon_deg = rootgrp.createVariable('lon_deg', 'f4', ('lat', 'lon'))
-        lon_deg.long_name = 'Density'
-        lon_deg.units = 'None'
-
-        lat_deg = rootgrp.createVariable('lat_deg', 'f4', ('lat', 'lon'))
-        lat_deg.long_name = 'Density'
-        lat_deg.units = 'None'
-
-        CTstd = rootgrp.createVariable('CTstd', 'f4', ('depth', 'lat', 'lon'))
-        CTstd.long_name = 'Density'
-        CTstd.units = 'None'
-
-        SAstd = rootgrp.createVariable('SAstd', 'f4', ('depth', 'lat', 'lon'))
-        SAstd.long_name = 'Density'
-        SAstd.units = 'None'
-
-        Ristd = rootgrp.createVariable('Ristd', 'f4', ('depth', 'lat', 'lon'))
-        Ristd.long_name = 'Density'
-        Ristd.units = 'None'
-
-        rootgrp.close()
-
-    # nom de fichier:
-    # typestat_reso_timeflag_tileidx.nc
-    #
-    # where
-    # typestat = 'zmean', 'zstd' etc
-    # reso = 0.5, 1.0, 0.25 etc
-    # timeflag = 'annual', 'DJF', 'MAM', 'JJA', 'SON'
-    # tileidx = 0 ... 299
-
-    # en fonction du type de stat on ne sauve pas les memes variables...
-
-    # pour ecrire un attribut global_clim
-    # nc.setncattr('lonmin', -32.)if typestat == 'zmean':
+            res = compute_mean_at_zref(itile, reso_deg)
+            write_stats(res, itile, typestat, reso_deg, timeflag)
+    if typestat == 'zstd':
+            res = compute_std_at_zref(itile, reso_deg)
+            write_stats(res, itile, typestat, reso_deg, timeflag)
 
 
-def write_stat_file(itile, typestat, reso_deg, timeflag):
+#  ----------------------------------------------------------------------------
+def write_stats(stats, itile, typestat, reso_deg, timeflag):
     """Write statistics into a netcdf file"""
     # idem, depend du type de stat
-    filename = '/local/tmp/1/herry/stat/%s_%s_%s_%s.nc' % (typestat, reso_deg, timeflag, itile)
-    if (os.path.isfile(filename)):
-        print('filename existe')
-        f = Dataset(filename, "r+", format="NETCDF4")
-        # idem, depend du type de stat
-        if typestat == 'zmean':
-            lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar = compute_mean_at_zref(itile, reso_deg)
-            f.variables['CTbar'][:, :, :] = CTbar
-            f.variables['SAbar'][:, :, :] = SAbar
-            f.variables['Ribar'][:, :, :] = Ribar
-            f.variables['NBbar'][:, :, :] = NBbar
-            f.variables['lat_deg'][:, :] = lat_deg
-            f.variables['lon_deg'][:, :] = lon_deg
-            f.close()
-        elif typestat == 'zstd':
-            lon_deg, lat_deg, CTstd, SAstd, Ristd = compute_std_at_zref(itile, reso_deg, timeflag)
-            f.variables['CTstd'][:, :, :] = CTstd
-            f.variables['SAstd'][:, :, :] = SAstd
-            f.variables['Ristd'][:, :, :] = Ristd
-            f.variables['lat_deg'][:, :] = lat_deg
-            f.variables['lon_deg'][:, :] = lon_deg
-            f.close()
+    filename = '/local/tmp/1/herry/pargopy/stats/%s_%s_%s_%s.pkl' % (typestat, reso_deg, timeflag, itile)
+    with open(filename, 'w') as f:
+        pickle.dump(stats, f)
 
 
-def read_stat_file(typestat, itile, reso, timeflag):
-    """Read statistics into a netcdf file"""
-    filename = '/local/tmp/1/herry/stat/%s_%s_%s_%s.nc' % (typestat, reso, timeflag, itile)
-    if (os.path.isfile(filename)):
-        f = Dataset(filename, "r", format="NETCDF4")
-        # idem, depend du type de stat
-        if typestat == 'zmean':
-            CTbar = f.variables['CTbar'][:, :, :]
-            SAbar = f.variables['SAbar'][:, :, :]
-            Ribar = f.variables['Ribar'][:, :, :]
-            NBbar = f.variables['NBbar'][:, :, :]
-            lat_deg = f.variables['lat_deg'][:, :]
-            lon_deg = f.variables['lon_deg'][:, :]
-            f.close()
-            return lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar
-        elif typestat == 'zstd':
-            CTstd = f.variables['CTstd'][:, :, :]
-            SAstd = f.variables['SAstd'][:, :, :]
-            Ristd = f.variables['Ristd'][:, :, :]
-            lat_deg = f.variables['lat_deg'][:, :]
-            lon_deg = f.variables['lon_deg'][:, :]
-            f.close()
-            return lon_deg, lat_deg, CTstd, SAstd, Ristd
+#  ----------------------------------------------------------------------------
+def read_stats(itile, typestat, reso_deg, timeflag):
+    filename = '/local/tmp/1/herry/pargopy/stats/%s_%s_%s_%s.pkl' % (typestat, reso_deg, timeflag, itile)
+    print(filename)
+    with open(filename, 'r') as f:
+        stats = pickle.load(f)
+    return stats
 
 
-def reading_tile(tile_idx):
-        """Reading the netCDF file describing the tiles"""
-        filename = '/local/tmp/1/herry/tiles/tile%003i.nc' % tile_idx
-        if (os.path.isfile(filename)):
-            f = Dataset(filename, "r", format="NETCDF4")
-            CT = f.variables['CT'][:, :]
-            SA = f.variables['SA'][:, :]
-            Ri = f.variables['Rho'][:, :]
-            lat = f.variables['lat'][:]
-            lon = f.variables['lon'][:]
-            nbprof = f.variables['prof'][:]
-            zref = f.variables['zref'][:]
-            juld = f.variables['juld'][:]
-            zref = f.variables['zref'][:]
-            lonmin = f.lonmin
-            lonmax = f.lonmax
-            latmin = f.latmin
-            latmax = f.latmax
-            f.close()
-
-            return nbprof, CT, SA, Ri, lat, lon, juld, zref, lonmin, lonmax, latmin, latmax
-
-
-def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
-    """ setup the grid coordinates (in degrees)
-    coordinates are round multiples of reso_deg
-    reso_deg sets the grid resolution, typically 0.5deg""" 
-
-    minlon = np.ceil(minlon/reso_deg)*reso_deg
-    maxlon = np.floor(maxlon/reso_deg)*reso_deg
-
-    minlat = np.ceil(minlat/reso_deg)*reso_deg
-    maxlat = np.floor(maxlat/reso_deg)*reso_deg
-
-    lon1D = np.arange(minlon, maxlon+reso_deg, reso_deg)
-    lat1D = np.arange(minlat, maxlat+reso_deg, reso_deg)
-
-    lon, lat = np.meshgrid(lon1D, lat1D)
-
-    return lon, lat
-
-
+#  ----------------------------------------------------------------------------
 def compute_mean_at_zref(itile, reso_deg):
     """Compute the mean at depths zref"""
-    
-    nbprof, CT, SA, RI, lat, lon, juld, zref, minlon, maxlon, minlat, maxlat = reading_tile(itile)
+    tile = tiler.read_tile(itile)
+    argodic = research.read_argo_filter(itile)
+    argodb = argo.read_argodb()
+    output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
+    CT, SA, RI, lat, lon, juld, zref = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE'], tile['JULD'], tile['ZREF']
+    nbprof = output['IPROF']
+    minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso_deg)
 
     lon_rad = np.deg2rad(lon_deg)
@@ -233,15 +110,28 @@ def compute_mean_at_zref(itile, reso_deg):
     SAbar *= coef
     RIbar *= coef
 
-    return lon_deg, lat_deg, NBbar, CTbar, SAbar, RIbar
+    res = {'lon_deg': lon_deg,
+           'lat_deg': lat_deg,
+           'NBbar': NBbar,
+           'CTbar': CTbar,
+           'SAbar': SAbar,
+           'RIbar': RIbar}
+
+    return res
 
 
 def compute_std_at_zref(itile, reso_deg, timeflag):
     """Compute the standard deviations at depths zref"""
 
     # gridded arrays of CT, SA variances
-    lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stat_file('zmean', itile, reso_deg, timeflag) # read it from the file
-    nbprof, CT, SA, RI, lat, lon, juld, zref, minlon, maxlon, minlat, maxlat = reading_tile(itile)
+    lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stats('zmean', itile, reso_deg, timeflag) # read it from the file
+    tile = tiler.read_tile(itile)
+    argodic = research.read_argo_filter(itile)
+    argodb = argo.read_argodb()
+    output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
+    CT, SA, RI, lat, lon, juld, zref = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE'], tile['JULD'], tile['ZREF']
+    nbprof = output['IPROF']
+    minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_rad = np.deg2rad(lon_deg)
     lat_rad = np.deg2rad(lat_deg)
     reso_rad = np.deg2rad(reso_deg)
@@ -322,13 +212,39 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
     DRHOstd = np.sqrt( coef*DRHOstd)
     EAPE = 0.5*coef*EAPE
     
-    return lon_deg, lat_deg, CTstd, SAstd, DZstd, DRHOstd, EAPE
+    res = {'lon_deg': lon_deg,
+           'lat_deg': lat_deg,
+           'CTstd': CTstd,
+           'SAstd': SAstd,
+           'DZstd': DZstd,
+           'DRHOstd': DRHOstd,
+           'EAPE': EAPE}
+
+    return res
+
+
+def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
+    """ setup the grid coordinates (in degrees)
+    coordinates are round multiples of reso_deg
+    reso_deg sets the grid resolution, typically 0.5deg""" 
+
+    minlon = np.ceil(minlon/reso_deg)*reso_deg
+    maxlon = np.floor(maxlon/reso_deg)*reso_deg
+
+    minlat = np.ceil(minlat/reso_deg)*reso_deg
+    maxlat = np.floor(maxlat/reso_deg)*reso_deg
+
+    lon1D = np.arange(minlon, maxlon+reso_deg, reso_deg)
+    lat1D = np.arange(minlat, maxlat+reso_deg, reso_deg)
+
+    lon, lat = np.meshgrid(lon1D, lat1D)
+
+    return lon, lat
 
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    create_stat_file(51, 'zstd', 0.5, 'annual')
-    write_stat_file(51, 'zstd', 0.5, 'annual')
+    creating_stats(0, 'zmean', 0.5, 'annual')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
