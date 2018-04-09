@@ -307,7 +307,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
                 # add correction
                 dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
                 eape = 0.5*dz*drho
-                
+
                 for k in range(nz):
                     if np.isnan(dz[k]) or np.isnan(drho[k]):
                         pass
@@ -325,19 +325,19 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
     coef = 1./(NBstd-1)
     coef[NBbar < 2] = 0.
 
-    CTstd = np.sqrt( coef*(CTstd-NBstd*CAbar)) 
-    SAstd = np.sqrt( coef*(SAstd-NBstd*SAbar)) 
-    DZstd = np.sqrt( coef*DZstd)
-    DRHOstd = np.sqrt( coef*DRHOstd)
+    CTstd = np.sqrt(coef*(CTstd-NBstd*CAbar))
+    SAstd = np.sqrt(coef*(SAstd-NBstd*SAbar))
+    DZstd = np.sqrt(coef*DZstd)
+    DRHOstd = np.sqrt(coef*DRHOstd)
     EAPE = 0.5*coef*EAPE
-    
+
     return lon_deg, lat_deg, CTstd, SAstd, DZstd, DRHOstd, EAPE, NBstd
 
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    create_stat_file(51, 'zstd', 0.5, 'annual')
-    write_stat_file(51, 'zstd', 0.5, 'annual')
+    create_stat_file(0, 'zstd', 0.5, 'annual')
+    write_stat_file(0, 'zstd', 0.5, 'annual')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

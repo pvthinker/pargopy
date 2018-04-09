@@ -79,6 +79,7 @@ def interpolate_profiles(subargodb, wmodic):
     argodb = argo.read_argodb()
     argotools.propagate_flag_backward(argodb, subargodb, verbose=True)
     argo.write_argodb(argodb)
+
     res = {'CT': CT[:kprof, :],
            'SA': SA[:kprof, :],
            'RHO': RHO[:kprof, :],

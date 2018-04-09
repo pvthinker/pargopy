@@ -23,7 +23,7 @@ def creating_tiles(i):
     #  Generation of the dimension of import matplotlib.pyplot as plt
     wmodic = argo.read_wmodic()
     argodic = research.read_argo_filter(i)
-    tile, values = interpolation.interpolate_profiles(argodic, wmodic)
+    tile = interpolation.interpolate_profiles(argodic, wmodic)
     tile['ZREF'] = zref
 
     write_tile(tile, i)
