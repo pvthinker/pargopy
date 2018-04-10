@@ -5,14 +5,21 @@ import numpy as np
 import gsw as gsw
 import time
 import general_tools as tools
+import argodb as argo
+import argotools as argotools
+import tile as tiler
+import research_tools as research
 from scipy import interpolate as ip
 
+
+zref = argotools.zref
 
 def create_stat_file(itile, typestat, reso, timeflag):
     """Create statistics netcdf file"""
 
     rootgrp = Dataset('/local/tmp/1/herry/pargopy/stats/%s_%s_%s_%s.nc' % (typestat, reso, timeflag, itile), "w", format="NETCDF4")
-    nbprof, CT, SA, RI, lat, lon, juld, zref, minlon, maxlon, minlat, maxlat = reading_tile(itile)
+    argodic = research.read_argo_filter(itile)
+    minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso)
     nlat, nlon = np.shape(lon_deg)
     rootgrp.createDimension('depth', len(zref))
@@ -147,29 +154,6 @@ def read_stat_file(typestat, itile, reso, timeflag):
             return lon_deg, lat_deg, CTstd, SAstd, Ristd, NBstd
 
 
-def reading_tile(tile_idx):
-        """Reading the netCDF file describing the tiles"""
-        filename = '/local/tmp/1/herry/pargopy/tiles/tile%003i.nc' % tile_idx
-        if (os.path.isfile(filename)):
-            f = Dataset(filename, "r", format="NETCDF4")
-            CT = f.variables['CT'][:, :]
-            SA = f.variables['SA'][:, :]
-            Ri = f.variables['Rho'][:, :]
-            lat = f.variables['lat'][:]
-            lon = f.variables['lon'][:]
-            nbprof = f.variables['prof'][:]
-            zref = f.variables['zref'][:]
-            juld = f.variables['juld'][:]
-            zref = f.variables['zref'][:]
-            lonmin = f.lonmin
-            lonmax = f.lonmax
-            latmin = f.latmin
-            latmax = f.latmax
-            f.close()
-
-            return nbprof, CT, SA, Ri, lat, lon, juld, zref, lonmin, lonmax, latmin, latmax
-
-
 def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
     """ setup the grid coordinates (in degrees)
     coordinates are round multiples of reso_deg
@@ -191,8 +175,14 @@ def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
 
 def compute_mean_at_zref(itile, reso_deg):
     """Compute the mean at depths zref"""
-    
-    nbprof, CT, SA, RI, lat, lon, juld, zref, minlon, maxlon, minlat, maxlat = reading_tile(itile)
+    argodb = argo.read_argodb()
+    tile = tiler.read_tile(itile)
+    output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
+    tagger = argotools.read_profile(output['IDAC'], output['WMO'], header=True, verbose=False)
+    nbprof = tagger['N_PROF']
+    CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
+    argodic = research.read_argo_filter(itile)
+    minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso_deg)
 
     lon_rad = np.deg2rad(lon_deg)
@@ -248,7 +238,13 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
 
     # gridded arrays of CT, SA variances
     lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stat_file('zmean', itile, reso_deg, timeflag) # read it from the file
-    nbprof, CT, SA, RI, lat, lon, juld, zref, minlon, maxlon, minlat, maxlat = reading_tile(itile)
+    argodb = argo.read_argodb()
+    tile = tiler.read_tile(itile)
+    output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
+    tagger = argotools.read_profile(output['IDAC'], output['WMO'], header=True, verbose=False)
+    nbprof = tagger['N_PROF']
+    CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
+
     lon_rad = np.deg2rad(lon_deg)
     lat_rad = np.deg2rad(lat_deg)
     reso_rad = np.deg2rad(reso_deg)
