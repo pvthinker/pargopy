@@ -4,20 +4,24 @@ import os
 import numpy as np
 import gsw as gsw
 import time
+from scipy import interpolate as ip
 import general_tools as tools
 import argodb as argo
 import argotools as argotools
 import tile as tiler
+import param as param
 import research_tools as research
-from scipy import interpolate as ip
 
+
+path_to_stats = param.path_to_stats
 
 zref = argotools.zref
+daclist = argotools.daclist
 
 def create_stat_file(itile, typestat, reso, timeflag):
     """Create statistics netcdf file"""
 
-    rootgrp = Dataset('/local/tmp/1/herry/pargopy/stats/%s_%s_%s_%s.nc' % (typestat, reso, timeflag, itile), "w", format="NETCDF4")
+    rootgrp = Dataset('%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, timeflag, itile), "w", format="NETCDF4")
     argodic = research.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso)
@@ -103,7 +107,7 @@ def create_stat_file(itile, typestat, reso, timeflag):
 def write_stat_file(itile, typestat, reso_deg, timeflag):
     """Write statistics into a netcdf file"""
     # idem, depend du type de stat
-    filename = '/local/tmp/1/herry/pargopy/stats/%s_%s_%s_%s.nc' % (typestat, reso_deg, timeflag, itile)
+    filename = '%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso_deg, timeflag, itile)
     if (os.path.isfile(filename)):
         print('filename existe')
         f = Dataset(filename, "r+", format="NETCDF4")
@@ -130,7 +134,7 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
 
 def read_stat_file(typestat, itile, reso, timeflag):
     """Read statistics into a netcdf file"""
-    filename = '/local/tmp/1/herry/pargopy/stats/%s_%s_%s_%s.nc' % (typestat, reso, timeflag, itile)
+    filename = '%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, timeflag, itile)
     if (os.path.isfile(filename)):
         f = Dataset(filename, "r", format="NETCDF4")
         # idem, depend du type de stat
@@ -178,8 +182,7 @@ def compute_mean_at_zref(itile, reso_deg):
     argodb = argo.read_argodb()
     tile = tiler.read_tile(itile)
     output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
-    tagger = argotools.read_profile(output['IDAC'], output['WMO'], header=True, verbose=False)
-    nbprof = tagger['N_PROF']
+    nbprof = output['IPROF']
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
     argodic = research.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
@@ -241,8 +244,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
     argodb = argo.read_argodb()
     tile = tiler.read_tile(itile)
     output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
-    tagger = argotools.read_profile(output['IDAC'], output['WMO'], header=True, verbose=False)
-    nbprof = tagger['N_PROF']
+    nbprof = output['IPROF']
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
 
     lon_rad = np.deg2rad(lon_deg)
@@ -254,7 +256,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
     # RI is rho in situ
 
     nz = len(zref)
-    
+
     xlon_rad = np.deg2rad(lon)
     xlat_rad = np.deg2rad(lat)
 
@@ -279,10 +281,10 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
                                             reso_rad)
             weight *= time_weight
             print(np.shape(RHObar))
-            interpolator = ip.interp1d(RHObar, zref)
+            interpolator = ip.interp1d(RHObar[:,j,i], zref)
 
-            p = gsw.p_from_z(-zref, lat[j, i])
-            g = gsw.grav(lat[j, i], p)
+            p = gsw.p_from_z(-zref, lat[j])
+            g = gsw.grav(lat[j], p)
             cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
             # the copy is to make data contiguous in memory
             rho0 = RHObar[:, j, i].copy()
@@ -333,7 +335,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    create_stat_file(0, 'zstd', 0.5, 'annual')
-    write_stat_file(0, 'zstd', 0.5, 'annual')
+    create_stat_file(68, 'zmean', 0.5, 'annual')
+    write_stat_file(68, 'zmean', 0.5, 'annual')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

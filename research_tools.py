@@ -15,7 +15,7 @@ import param as param
 import argotools as argotools
 import argodb as argodatabase
 
-path_localdata = '/local/tmp/1/herry/pargopy/filter/'
+path_localdata = param.path_to_filter
 argodb = argodatabase.read_argodb()
 
 

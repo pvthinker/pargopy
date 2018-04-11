@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 import argotools as argotools
 tmps1 = time.time()
 
-path_argo = argotools.path_argo
+path_argo = param.path_to_argo
 daclist = argotools.daclist
-path_localdata = argotools.path_localdata
+path_localdata = param.path_to_data
 
 
 def get_all_wmos():

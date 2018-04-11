@@ -12,9 +12,10 @@ import research_tools as research
 import argodb as argo
 import argotools as argotools
 import interpolation_tools as interpolation
+import param as param
 
 zref = argotools.zref
-path_localdata = '/local/tmp/1/herry/pargopy/tiles/'
+path_localdata = param.path_to_tiles
 
 
 #  ----------------------------------------------------------------------------
@@ -74,6 +75,6 @@ def plot_tile(i):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    creating_tiles(0)
+    creating_tiles(68)
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

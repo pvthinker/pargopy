@@ -55,10 +55,12 @@ def interpolate_profiles(subargodb, wmodic):
                 if len(Ti) == 0:
                     ierr = 1
                 # Checking if Ti, Si, Ri are full of NaN
-                checker = []
+                checker = [] 
+                checker2 = []
                 for i, T in enumerate(Ti):
                     checker.append(np.isnan(T))
-                if False in checker:
+                    checker2.append(np.isnan(Si[i]))
+                if (False in checker) and (False in checker2):
                     ierr = 0
                 else:
                     ierr = 2

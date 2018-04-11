@@ -1,34 +1,37 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Mar 27 14:19:12 2018
+Created on Wed Apr 11 11:01:25 2018
 
 @author: herry
 """
+#  location is used to know where you are working
+#  if you're working on datarmor, location takes the value 'DATARMOR'
+#  if you're working on herry-s local, location takes the value 'HERRY'
+location = 'HERRY'
+#  location = 'DATARMOR'
 
+if location == 'DATARMOR':
+    path_to_argo = '/home/oo26/coriolis/co05/co0508/dac'
 
-#  ----------------------------------------------------------------------------
-def data_argodb():
-    path_to_argolog = '/local/tmp/1/herry/data/argo_log.nc'
-    return path_to_argolog
+    path_to_pargopy = 'home2/datahome/therry/pargopy/'
 
+    path_to_data = 'home2/datawork/therry/data'
 
-#  ----------------------------------------------------------------------------
-def data_research_tools():
-    path_to_argotiles = '/local/tmp/1/herry/filter/argo_tile'
-    path_to_argolog = data_argodb
-    return path_to_argotiles, path_to_argolog
+    path_to_filter = 'home2/datawork/therry/filter'
 
+    path_to_stats = 'home2/datawork/therry/stats'
 
-#  ----------------------------------------------------------------------------
-def data_tile():
+    path_to_tiles = 'home2/datawork/therry/tiles'
+
+elif location == 'HERRY':
     path_to_argo = '/net/alpha/exports/sciences/data/ARGO/ARGO/201602-ArgoData'
-    path_to_tiles = "/local/tmp/1/herry/tiles/tile%003i.nc"
-    path_to_argotiles = '/local/tmp/1/herry/filter/argo_tile%003i.nc'
-    return path_to_argo, path_to_tiles, path_to_argotiles
 
+    path_to_pargopy = '/home/herry/Documents/pargopy/'
 
-#  ----------------------------------------------------------------------------
-def data_argotools():
-    path_to_argolog = data_argodb
-    path_to_wmo = '/net/alpha/exports/sciences/data/ARGO/ARGO'
-    return path_to_wmo, path_to_argolog
+    path_to_data = '/local/tmp/1/herry/pargopy/data'
+
+    path_to_filter = '/local/tmp/1/herry/pargopy/filter'
+
+    path_to_stats = '/local/tmp/1/herry/pargopy/stats'
+
+    path_to_tiles = '/local/tmp/1/herry/pargopy/tiles'
