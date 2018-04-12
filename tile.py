@@ -71,10 +71,14 @@ def plot_tile(i):
     plt.show()
 
 
+def main(itile):
+    """Main function of tile.py"""
+    creating_tiles(itile)
+
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    creating_tiles(68)
+    main(63)
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

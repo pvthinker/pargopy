@@ -152,6 +152,17 @@ def update_wmodic():
     write_wmodic(new_wmodic)
 
 
+def main():
+    """Main function of argodb.py"""
+    wmodic = get_all_wmos()
+    write_wmodic(wmodic)
+    wmostats = get_header_of_all_wmos(wmodic)
+    write_wmstats(wmostats)
+    argodb = get_header_of_all_profiles(wmostats)
+    argodb = argotools.flag_argodb(argodb, wmodic)
+    write_argodb(argodb)
+
+
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
 
@@ -174,12 +185,6 @@ if __name__ == '__main__':
 #     else:
 #         pass
 #==============================================================================
-    wmodic = get_all_wmos()
-    write_wmodic(wmodic)
-    wmostats = get_header_of_all_wmos(wmodic)
-    write_wmstats(wmostats)
-    argodb = get_header_of_all_profiles(wmostats)
-    argodb = argotools.flag_argodb(argodb, wmodic)
-    write_argodb(argodb)
+    main()
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

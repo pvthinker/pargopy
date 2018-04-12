@@ -332,10 +332,17 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
     return lon_deg, lat_deg, CTstd, SAstd, DZstd, DRHOstd, EAPE, NBstd
 
 
+def main(itile, typestat, reso, timeflag):
+    """Main function of stats.py"""
+    create_stat_file(itile, typestat, reso, timeflag)
+    write_stat_file(itile, typestat, reso, timeflag)
+    #  create_stat_file(68, 'zmean', 0.5, 'annual')
+    #  write_stat_file(68, 'zmean', 0.5, 'annual')
+
+
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    create_stat_file(68, 'zmean', 0.5, 'annual')
-    write_stat_file(68, 'zmean', 0.5, 'annual')
+    main(68, 'zmean', 0.5, 'annual')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

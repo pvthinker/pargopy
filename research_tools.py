@@ -180,9 +180,14 @@ def extract_idx_from_wmostats(wmostats, idx):
     return wmostats_extract
 
 
+def main():
+    """Main function of stats.py"""
+    creating_tiles()
+
+
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    creating_tiles()
+    main()
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
