@@ -17,7 +17,10 @@ import argotools as argotools
 tmps1 = time.time()
 
 path_argo = param.path_to_argo
-daclist = argotools.daclist
+#  daclist = argotools.daclist
+daclist = ['aoml', 'bodc', 'coriolis', 'csio',
+           'csiro', 'incois', 'jma', 'kma',
+           'kordi', 'meds', 'nmdis']
 path_localdata = param.path_to_data
 
 
