@@ -87,6 +87,14 @@ def create_stat_file(itile, typestat, reso, timeflag):
         Ristd.long_name = 'Density'
         Ristd.units = 'None'
 
+        v = rootgrp.createVariable('DZstd', 'f4', ('depth', 'lat', 'lon'))
+        v.long_name = 'Isopycnal displacement'
+        v.units = 'm'
+
+        v = rootgrp.createVariable('EAPE', 'f4', ('depth', 'lat', 'lon'))
+        v.long_name = 'Eddy available potential energy'
+        v.units = 'J.m^-3'
+
         rootgrp.close()
 
     # nom de fichier:
@@ -122,11 +130,13 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
             f.variables['lon_deg'][:, :] = lon_deg
             f.close()
         elif typestat == 'zstd':
-            lon_deg, lat_deg, CTstd, SAstd, Ristd, NBstd = compute_std_at_zref(itile, reso_deg, timeflag)
+            lon_deg, lat_deg, CTstd, SAstd, DZstd, Ristd, EAPE, NBstd = compute_std_at_zref(itile, reso_deg, timeflag)
             f.variables['NBstd'][:, :, :] = NBstd
             f.variables['CTstd'][:, :, :] = CTstd
             f.variables['SAstd'][:, :, :] = SAstd
+            f.variables['DZstd'][:, :, :] = DZstd
             f.variables['Ristd'][:, :, :] = Ristd
+            f.variables['EAPE'][:, :, :] = EAPE
             f.variables['lat_deg'][:, :] = lat_deg
             f.variables['lon_deg'][:, :] = lon_deg
             f.close()
@@ -179,10 +189,10 @@ def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
 
 def compute_mean_at_zref(itile, reso_deg):
     """Compute the mean at depths zref"""
-    argodb = argo.read_argodb()
+    # argodb = research.read_argo_filter(itile)  # argo.read_argodb()
     tile = tiler.read_tile(itile)
-    output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
-    nbprof = output['IPROF']
+    # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
+    # nbprof = output['IPROF']
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
     argodic = research.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
@@ -197,6 +207,7 @@ def compute_mean_at_zref(itile, reso_deg):
     # RI is rho in situ
 
     nz = len(zref)
+    nbprof = len(CT)
 
     # gridded arrays of CT, SA et RI means
     NBbar = np.zeros((nz, nlat, nlon))
@@ -204,6 +215,7 @@ def compute_mean_at_zref(itile, reso_deg):
     SAbar = np.zeros((nz, nlat, nlon))
     RIbar = np.zeros((nz, nlat, nlon))
     for k in range(len(nbprof)):
+        print('%4i/%i' % (k, len(nbprof)))
         # todo: weigh in time using juld,
         # e.g. only winter statistics
         time_weight = 1.
@@ -236,17 +248,19 @@ def compute_mean_at_zref(itile, reso_deg):
     return lon_deg, lat_deg, NBbar, CTbar, SAbar, RIbar
 
 
-def compute_std_at_zref(itile, reso_deg, timeflag):
+def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
     """Compute the standard deviations at depths zref"""
 
     # gridded arrays of CT, SA variances
     lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stat_file('zmean', itile, reso_deg, timeflag) # read it from the file
-    argodb = argo.read_argodb()
+    argodb = research.read_argo_filter(itile)  # argo.read_argodb()
     tile = tiler.read_tile(itile)
-    output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
-    nbprof = output['IPROF']
+    # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
+    # iprof = output['IPROF']
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
 
+    nbprof = len(CT)
+    
     lon_rad = np.deg2rad(lon_deg)
     lat_rad = np.deg2rad(lat_deg)
     reso_rad = np.deg2rad(reso_deg)
@@ -264,15 +278,16 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
     CTstd = np.zeros((nz, nlat, nlon))
     SAstd = np.zeros((nz, nlat, nlon))
     DZstd = np.zeros((nz, nlat, nlon))
-    DRHOstd = np.zeros((nz, nlat, nlon))
+    Ristd = np.zeros((nz, nlat, nlon))
     EAPE = np.zeros((nz, nlat, nlon))
 
     wmin = 5e-3 # minimum weight below which a profile is drop
-    
+
     # double loop on each grid point (instead of a loop on each profile)
     for j in range(nlat):
         for i in range(nlon):
-            
+            if verbose:
+                print('%i/%i - %i/%i' % (i, nlon, j, nlat))
             time_weight = 1.
 
             # do all profiles
@@ -280,60 +295,60 @@ def compute_std_at_zref(itile, reso_deg, timeflag):
                                             xlon_rad, xlat_rad,
                                             reso_rad)
             weight *= time_weight
-            print(np.shape(RHObar))
-            interpolator = ip.interp1d(RHObar[:,j,i], zref)
+            # print(np.shape(RHObar))
+            interpolator = ip.interp1d(RHObar[:,j,i], zref, bounds_error=False)
 
             p = gsw.p_from_z(-zref, lat[j])
             g = gsw.grav(lat[j], p)
             cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
             # the copy is to make data contiguous in memory
             rho0 = RHObar[:, j, i].copy()
-        
-        for l in range(nbprof):
-            if weight[l] < wmin:
-                pass
-            else:
-                # the vertical isopycnal displacement dz
-                # is computed by first
-                # interpolating RI(z) on the reference profile
-                # z0(rho) [inverse mapping of rho0(z)]
-                # we get dzstar
-                # then by adding a correction due to
-                # compressibility
-                dzstar = interpolator(RI[l, :]) - zref
-                drho = RI[l, :] - rho0
-                # add correction
-                dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
-                eape = 0.5*dz*drho
 
-                for k in range(nz):
-                    if np.isnan(dz[k]) or np.isnan(drho[k]):
-                        pass
-                    else:
-                        NBstd[k, j, i] += weight
-                        CTstd[k, j, i] += weight*CT[l, k]**2
-                        SAstd[k, j, i] += weight*SA[l, k]**2
-                        DZstd[k, j, i] += weight*dz[k]**2
-                        DRHOstd[k, j, i] += weight*drho[k]**2
-                        EAPE[k, j, i] += weight*dz[k]*drho[k]
+            for l in range(nbprof):
+                if weight[l] < wmin:
+                    pass
+                else:
+                    # the vertical isopycnal displacement dz
+                    # is computed by first
+                    # interpolating RI(z) on the reference profile
+                    # z0(rho) [inverse mapping of rho0(z)]
+                    # we get dzstar
+                    # then by adding a correction due to
+                    # compressibility
+                    dzstar = interpolator(RI[l, :]) - zref
+                    drho = RI[l, :] - rho0
+                    # add correction
+                    dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
+                    eape = 0.5*dz*drho
+
+                    for k in range(nz):
+                        if np.isnan(dz[k]) or np.isnan(drho[k]):
+                            pass
+                        else:
+                            NBstd[k, j, i] += weight[l]
+                            CTstd[k, j, i] += weight[l]*CT[l, k]**2
+                            SAstd[k, j, i] += weight[l]*SA[l, k]**2
+                            DZstd[k, j, i] += weight[l]*dz[k]**2
+                            Ristd[k, j, i] += weight[l]*drho[k]**2
+                            EAPE[k, j, i] += weight[l]*dz[k]*drho[k]
     # normalize with the number of profiles (fractional
     # because NBbar is fractionnal)
     # std = sqrt( 1/(n-1) sum_i (x_i -xbar)^2)
     #     = sqrt( 1/(n-1) sum_i x_i^2 - n/(n-1)*xbar^2)
     coef = 1./(NBstd-1)
-    coef[NBbar < 2] = 0.
+    coef[NBstd < 2] = 0.
 
     CTstd = np.sqrt(coef*(CTstd-NBstd*CAbar))
     SAstd = np.sqrt(coef*(SAstd-NBstd*SAbar))
     DZstd = np.sqrt(coef*DZstd)
-    DRHOstd = np.sqrt(coef*DRHOstd)
+    Ristd = np.sqrt(coef*Ristd)
     EAPE = 0.5*coef*EAPE
 
-    return lon_deg, lat_deg, CTstd, SAstd, DZstd, DRHOstd, EAPE, NBstd
+    return lon_deg, lat_deg, CTstd, SAstd, DZstd, Ristd, EAPE, NBstd
 
 
 def main(itile, typestat, reso, timeflag):
-    """Main function of stats.py"""
+    """Main function of stats.py"""    
     create_stat_file(itile, typestat, reso, timeflag)
     write_stat_file(itile, typestat, reso, timeflag)
     #  create_stat_file(68, 'zmean', 0.5, 'annual')
@@ -343,6 +358,6 @@ def main(itile, typestat, reso, timeflag):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(68, 'zmean', 0.5, 'annual')
+    main(50, 'zstd', 0.5, 'annual')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
