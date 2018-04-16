@@ -16,7 +16,7 @@ import argotools as argotools
 import argodb as argodatabase
 
 path_localdata = param.path_to_filter
-argodb = argodatabase.read_argodb()
+# argodb = argodatabase.read_argodb()
 
 
 #  ----------------------------------------------------------------------------
