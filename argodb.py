@@ -17,7 +17,6 @@ import argotools as argotools
 tmps1 = time.time()
 
 path_argo = param.path_to_argo
-#  daclist = argotools.daclist
 daclist = ['aoml', 'bodc', 'coriolis', 'csio',
            'csiro', 'incois', 'jma', 'kma',
            'kordi', 'meds', 'nmdis']
@@ -103,14 +102,6 @@ def write_wmodic(wmodic):
 
 
 #  ----------------------------------------------------------------------------
-def read_wmodic():
-    print('read wmodic.pkl')
-    with open('%s/wmodic.pkl' % path_localdata, 'r') as f:
-        wmodic = pickle.load(f)
-    return wmodic
-
-
-#  ----------------------------------------------------------------------------
 def write_wmstats(wmstats):
     """Read the full wmstats database"""
 
@@ -119,27 +110,9 @@ def write_wmstats(wmstats):
 
 
 #  ----------------------------------------------------------------------------
-def read_wmstats():
-    print('read wmostats.pkl')
-    with open('%s/wmstats.pkl' % path_localdata, 'r') as f:
-        wmstats = pickle.load(f)
-    return wmstats
-
-
-#  ----------------------------------------------------------------------------
 def write_argodb(argodb):
-    with open('%s/argodb.pkl' % path_localdata, 'w') as f:
+    with open('%s/argodb.pkl' % path_localdata, 'wb') as f:
         pickle.dump(argodb, f)
-
-
-#  ----------------------------------------------------------------------------
-def read_argodb():
-    """Read the full argodb database"""
-
-    print('read argodb.pkl')
-    with open('%s/argodb.pkl' % path_localdata, 'r') as f:
-        argodb = pickle.load(f)
-    return argodb
 
 
 #  ----------------------------------------------------------------------------
@@ -147,7 +120,7 @@ def update_wmodic():
     """Read the full argodb database and update argodb.pkl"""
     wmodic = {}
     new_wmodic = get_all_wmos()
-    old_wmodic = read_wmodic()
+    old_wmodic = argotools.read_wmodic()
     for dac in daclist:
         new_wmodic[dac] = set(new_wmodic[dac])
         old_wmodic[dac] = set(old_wmodic[dac])
@@ -155,6 +128,26 @@ def update_wmodic():
     write_wmodic(new_wmodic)
 
 
+#  ----------------------------------------------------------------------------
+def propagate_flag_backward(argodb, subargodb, verbose=True):
+    """Update argodb FLAG using subargodb"""
+
+    for k, tag in enumerate(subargodb['TAG']):
+        idx = np.where(argodb['TAG'] == tag)[0][0]
+        prev = argodb['FLAG'][idx]
+        new = subargodb['FLAG'][k]
+        if prev == new:
+            pass
+        else:
+            if verbose:
+                print('tag %i flag changed from %i to %i' % (tag, prev, new))
+            argodb['FLAG'][idx] = subargodb['FLAG'][k]
+    print('Going to rewrite argodb')
+    write_argodb(argodb)
+    print('Argodb rewrited')
+
+
+#  ----------------------------------------------------------------------------
 def main():
     """Main function of argodb.py"""
     wmodic = get_all_wmos()

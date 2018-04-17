@@ -9,7 +9,6 @@ import pickle
 import time
 import matplotlib.pyplot as plt
 import research_tools as research
-import argodb as argo
 import argotools as argotools
 import interpolation_tools as interpolation
 import param as param
@@ -22,8 +21,9 @@ path_localdata = param.path_to_tiles
 def creating_tiles(i):
     """Giving values to the variables"""
     #  Generation of the dimension of import matplotlib.pyplot as plt
-    wmodic = argo.read_wmodic()
-    argodic = research.read_argo_filter(i)
+    wmodic = argotools.read_wmodic()
+    argodic = argotools.read_argo_filter(i)
+    print('argodic red')
     tile = interpolation.interpolate_profiles(argodic, wmodic)
     tile['ZREF'] = zref
 
@@ -50,7 +50,7 @@ def read_tile(i):
 def plot_tile(i):
     """Plots the tiles values (Ti, Si, Ri) with the values non interpolate"""
     depth = zref
-    argodic = research.read_argo_filter(i)
+    argodic = argotools.read_argo_filter(i)
     tile = read_tile(i)
     output = argotools.retrieve_infos_from_tag(argodic, argodic['TAG'])
     print(len(output['IDAC']))
@@ -73,12 +73,21 @@ def plot_tile(i):
 
 def main(itile):
     """Main function of tile.py"""
+    print('Main of tile')
     creating_tiles(itile)
 
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(63)
+#==============================================================================
+#     main(70)
+#     main(71)
+#==============================================================================
+#      main(51)
+#      main(50)
+#      main(51)
+    main(299)
+    #  73, 41, 118
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
