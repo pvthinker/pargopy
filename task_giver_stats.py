@@ -14,7 +14,7 @@ from mpi4py import MPI
 import numpy as np
 import time as time
 import stats as stats
-import research_tools as research
+import argotools as argotools
 
 typestat = 'zmean'
 reso = 0.5
@@ -39,7 +39,7 @@ def ordering_tasks(tasks):
     size_of_tiles = []
     sorted_tasks = []
     for i, task in enumerate(tasks):
-        subargodb = research.read_argo_filter(task)
+        subargodb = argotools.read_argo_filter(task)
         n_profiles = len(np.where(subargodb['FLAG'][:] == 0)[0])
         size_of_tiles.append(n_profiles)
     sorted_tiles = sorted(size_of_tiles, reverse=True)
@@ -131,7 +131,7 @@ def master_work_nonblocking(nslaves):
 
     """
 
-    tasks = [1, 41, 63, 190]
+    tasks = range(300)
     nbtasks = len(tasks)
     # sorting the tasks according to their size
     # improves the load balance among slaves (by a lot)
@@ -220,7 +220,6 @@ def slave_work_nonblocking(islave):
 
 if __name__ == '__main__':
 
-    tmps1 = time.time()
     example = 'non-blocking'  # 'non-blocking' or 'blocking'
 
     if myrank == 0:
@@ -237,5 +236,3 @@ if __name__ == '__main__':
             slave_work_nonblocking(myrank)
         else:
             slave_work_blocking(myrank)
-    tmps2 = time.time() - tmps1
-    print("Temps d'execution = %f" % tmps2)

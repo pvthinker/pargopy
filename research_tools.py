@@ -10,7 +10,7 @@ import numpy as np
 import time
 import pickle
 import matplotlib.pyplot as plt
-#  from mpl_toolkits.basemap import Basemap
+from mpl_toolkits.basemap import Basemap
 import param as param
 import argotools as argotools
 
@@ -55,9 +55,11 @@ def tile_definition():
 
 
 #  ----------------------------------------------------------------------------
-def creating_tiles(argodb):
+def creating_tiles():
     """Giving values to the variables"""
     #  Generation of the dimension of import matplotlib.pyplot as plt
+    
+    argodb = argotools.read_argodb()
     lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
     k = 0
     for i in range(nlat):
@@ -171,45 +173,47 @@ def extract_idx_from_wmostats(wmostats, idx):
 
 def main():
     """Main function of stats.py"""
-    argodb = argotools.read_argodb()
-    creating_tiles(argodb)
+    creating_tiles()
+    plot_map()
+
 
 # ----------------------------------------
 # Plot the tiles on map
 
-#==============================================================================
-# def mbox(x1, x2, y1, y2, d, col, itile):
-#     m.plot([x1-d, x1-d, x2+d, x2+d, x1-d],
-#            [y1-d, y2+d, y2+d, y1-d, y1-d],
-#            color=col, latlon=True)
-#     x, y = m(0.5*(x1+x2), 0.5*(y1+y2))
-#     plt.text(x, y, '%i' % itile,
-#              color=col, horizontalalignment='center')
-# 
-# 
-# def plot_map():
-#     lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
-#     plt.figure(figsize=(12, 6))
-#     m = Basemap(projection='cea', llcrnrlat=-90, urcrnrlat=90,
-#                 llcrnrlon=-180, urcrnrlon=180, resolution='c')
-#     m.drawcoastlines()
-#     m.fillcontinents(color='gray', lake_color='white')
-# 
-#     itile = 0
-#     cols = plt.get_cmap('tab10').colors
-#     ncols = len(cols)
-#     for j in range(nlat):
-#         for i in range(1, nlon-1):
-#             itile = i + j*nlon
-#             mbox(lon[i], lon[i+1], lat[j], lat[j+1], margin[j],
-#                  cols[itile % ncols], itile)
-# 
-#     plt.axis('tight')
-#     plt.xlabel('longitude')
-#     plt.ylabel('latitude')
-#     plt.savefig('tiles_summary.pdf')
-#     plt.show()
-#==============================================================================
+def mbox(x1, x2, y1, y2, dlat, dlon, col, itile, m):
+    m.plot([x1-dlon, x1-dlon, x2+dlon, x2+dlon, x1-dlon],
+           [y1-dlat, y2+dlat, y2+dlat, y1-dlat, y1-dlat],
+           color=col, latlon=True)
+    x, y = m(0.5*(x1+x2), 0.5*(y1+y2-3))
+    plt.text(x, y, '%i' % itile,
+             color=col, horizontalalignment='center')
+
+
+def plot_map():
+    lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
+    plt.figure(figsize=(12, 6))
+    m = Basemap(projection='cea', llcrnrlat=-90, urcrnrlat=90,
+            	llcrnrlon=-180, urcrnrlon=180, resolution='c')
+    m.drawcoastlines()
+    m.fillcontinents(color='coral', lake_color='white')
+
+    itile = 0
+    #  cols = plt.get_cmap('hot')
+    for j in range(nlat):
+        for i in range(nlon):
+            itile = i + j*nlon
+            if lon[i] - marginlon < -180:
+                lon[i] = -178
+            elif lon[i+1] + marginlon > 180:
+                lon[i+1] = 178
+            mbox(lon[i], lon[i+1], lat[j], lat[j+1], marginlat[j], marginlon,
+                 'black', itile, m)
+
+    plt.axis('tight')
+    plt.xlabel('longitude')
+    plt.ylabel('latitude')
+    plt.savefig('tiles_summary.pdf')
+    plt.show()
 
 
 #  ----------------------------------------------------------------------------

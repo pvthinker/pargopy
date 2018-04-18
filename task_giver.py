@@ -127,7 +127,7 @@ def master_work_nonblocking(nslaves):
 
     """
 
-    tasks = [0, 20, 299, 12, 111, 134, 240, 192, 67, 172]
+    tasks = range(300)
     nbtasks = len(tasks)
     # sorting the tasks according to their size
     # improves the load balance among slaves (by a lot)
