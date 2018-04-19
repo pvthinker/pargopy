@@ -22,7 +22,7 @@ def create_stat_file(itile, typestat, reso, timeflag):
     """Create statistics netcdf file"""
 
     rootgrp = Dataset('%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, timeflag, itile), "w", format="NETCDF4")
-    argodic = research.read_argo_filter(itile)
+    argodic = argotools.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso)
     nlat, nlon = np.shape(lon_deg)
@@ -32,16 +32,16 @@ def create_stat_file(itile, typestat, reso, timeflag):
 
     if typestat == 'zmean':
         lon_deg = rootgrp.createVariable('lon_deg', 'f4', ('lat', 'lon'))
-        lon_deg.long_name = 'Density'
-        lon_deg.units = 'None'
+        lon_deg.long_name = 'Longitude in degrees'
+        lon_deg.units = 'Degrees'
 
         lat_deg = rootgrp.createVariable('lat_deg', 'f4', ('lat', 'lon'))
-        lat_deg.long_name = 'Density'
-        lat_deg.units = 'None'
+        lat_deg.long_name = 'Latitude in degrees'
+        lat_deg.units = 'Degrees'
 
         NBbar = rootgrp.createVariable('NBbar', 'f4', ('depth', 'lat', 'lon'))
-        NBbar.long_name = 'Temperature'
-        NBbar.units = 'Celsius'
+        NBbar.long_name = 'Weight'
+        NBbar.units = 'None'
 
         CTbar = rootgrp.createVariable('CTbar', 'f4', ('depth', 'lat', 'lon'))
         CTbar.long_name = 'Temperature'
@@ -53,7 +53,7 @@ def create_stat_file(itile, typestat, reso, timeflag):
 
         Ribar = rootgrp.createVariable('Ribar', 'f4', ('depth', 'lat', 'lon'))
         Ribar.long_name = 'Density'
-        Ribar.units = 'None'
+        Ribar.units = '???'
 
         zreference = rootgrp.createVariable('zref', 'f4', ('depth', ))
         zreference.long_name = 'Depth reference'
@@ -68,28 +68,28 @@ def create_stat_file(itile, typestat, reso, timeflag):
         zreference.units = 'Meter'
 
         lon_deg = rootgrp.createVariable('lon_deg', 'f4', ('lat', 'lon'))
-        lon_deg.long_name = 'Density'
-        lon_deg.units = 'None'
+        lon_deg.long_name = 'Longitude in degrees'
+        lon_deg.units = 'Degrees'
 
         lat_deg = rootgrp.createVariable('lat_deg', 'f4', ('lat', 'lon'))
-        lat_deg.long_name = 'Density'
-        lat_deg.units = 'None'
+        lat_deg.long_name = 'Latitude in degrees'
+        lat_deg.units = 'Degrees'
 
         NBstd = rootgrp.createVariable('NBstd', 'f4', ('depth', 'lat', 'lon'))
-        NBstd.long_name = 'Temperature'
-        NBstd.units = 'Celsius'
+        NBstd.long_name = 'Weight'
+        NBstd.units = 'None'
 
         CTstd = rootgrp.createVariable('CTstd', 'f4', ('depth', 'lat', 'lon'))
-        CTstd.long_name = 'Density'
-        CTstd.units = 'None'
+        CTstd.long_name = 'Temperature'
+        CTstd.units = 'Degree Celsius'
 
         SAstd = rootgrp.createVariable('SAstd', 'f4', ('depth', 'lat', 'lon'))
-        SAstd.long_name = 'Density'
-        SAstd.units = 'None'
+        SAstd.long_name = 'Salinity'
+        SAstd.units = 'g.kg^-1'
 
         Ristd = rootgrp.createVariable('Ristd', 'f4', ('depth', 'lat', 'lon'))
         Ristd.long_name = 'Density'
-        Ristd.units = 'None'
+        Ristd.units = 'kg.m^-3'
 
         v = rootgrp.createVariable('DZstd', 'f4', ('depth', 'lat', 'lon'))
         v.long_name = 'Isopycnal displacement'
@@ -132,6 +132,7 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
             f.variables['NBbar'][:, :, :] = NBbar
             f.variables['lat_deg'][:, :] = lat_deg
             f.variables['lon_deg'][:, :] = lon_deg
+            f.variables['zref'][:] = zref
             f.close()
         elif typestat == 'zstd':
             lon_deg, lat_deg, CTstd, SAstd, DZstd, Ristd, EAPE, NBstd = compute_std_at_zref(itile, reso_deg, timeflag)
@@ -143,6 +144,7 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
             f.variables['EAPE'][:, :, :] = EAPE
             f.variables['lat_deg'][:, :] = lat_deg
             f.variables['lon_deg'][:, :] = lon_deg
+            f.variables['zref'][:] = zref
             f.close()
 
 
@@ -198,7 +200,7 @@ def compute_mean_at_zref(itile, reso_deg):
     # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
     # nbprof = output['IPROF']
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
-    argodic = research.read_argo_filter(itile)
+    argodic = argotools.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso_deg)
 
@@ -257,7 +259,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
 
     # gridded arrays of CT, SA variances
     lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stat_file('zmean', itile, reso_deg, timeflag) # read it from the file
-    argodb = research.read_argo_filter(itile)  # argo.read_argodb()
+    argodb = argotools.read_argodb()
     tile = tiler.read_tile(itile)
     # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
     # iprof = output['IPROF']
@@ -352,7 +354,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
 
 
 def main(itile, typestat, reso, timeflag):
-    """Main function of stats.py"""    
+    """Main function of stats.py"""
     create_stat_file(itile, typestat, reso, timeflag)
     write_stat_file(itile, typestat, reso, timeflag)
     #  create_stat_file(68, 'zmean', 0.5, 'annual')
@@ -362,6 +364,13 @@ def main(itile, typestat, reso, timeflag):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(50, 'zstd', 0.5, 'annual')
+    main(50, 'zmean', 0.5, 'annual')
+#==============================================================================
+#     main(51, 'zmean', 0.5, 'annual')
+#     main(50, 'zmean', 0.5, 'annual')
+#     main(70, 'zmean', 0.5, 'annual')
+#     main(71, 'zmean', 0.5, 'annual')
+#     main(72, 'zmean', 0.5, 'annual')
+#==============================================================================
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
