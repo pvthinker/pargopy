@@ -309,7 +309,9 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
             cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
             # the copy is to make data contiguous in memory
             rho0 = RHObar[:, j, i].copy()
-
+            CT0 = CAbar[:, j, i].copy()
+            SA0 = SAbar[:, j, i].copy()
+            
             for l in range(nbprof):
                 if weight[l] < wmin:
                     pass
@@ -326,14 +328,16 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
                     # add correction
                     dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
                     eape = 0.5*dz*drho
+                    dCT = CT[l, :]-CT0
+                    dSA = SA[l, :]-SA0
 
                     for k in range(nz):
                         if np.isnan(dz[k]) or np.isnan(drho[k]):
                             pass
                         else:
                             NBstd[k, j, i] += weight[l]
-                            CTstd[k, j, i] += weight[l]*CT[l, k]**2
-                            SAstd[k, j, i] += weight[l]*SA[l, k]**2
+                            CTstd[k, j, i] += weight[l]*dCT[k]**2
+                            SAstd[k, j, i] += weight[l]*dSA[k]**2
                             DZstd[k, j, i] += weight[l]*dz[k]**2
                             Ristd[k, j, i] += weight[l]*drho[k]**2
                             EAPE[k, j, i] += weight[l]*dz[k]*drho[k]
@@ -344,8 +348,8 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
     coef = 1./(NBstd-1)
     coef[NBstd < 2] = 0.
 
-    CTstd = np.sqrt(coef*(CTstd-NBstd*CAbar))
-    SAstd = np.sqrt(coef*(SAstd-NBstd*SAbar))
+    CTstd = np.sqrt(coef*CTstd)
+    SAstd = np.sqrt(coef*SAstd)
     DZstd = np.sqrt(coef*DZstd)
     Ristd = np.sqrt(coef*Ristd)
     EAPE = 0.5*coef*EAPE
