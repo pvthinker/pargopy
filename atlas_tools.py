@@ -7,7 +7,7 @@ import tile as tile
 import general_tools as gene
 
 diratlas = '/home1/datawork/groullet/Argo'
-diratlas = '/net/libra/local/tmp/1/roullet/pargopy/atlas'
+# diratlas = '/net/libra/local/tmp/1/roullet/pargopy/atlas'
 
 atlas_name = 'zmean_0.5_annual'
 listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
@@ -27,7 +27,7 @@ def lonlatstr(lon, lat):
         latchar = 'N'
     else:
         latchar = 'S'
-    pos = '%.2g%s - %.2g%s' % (abs(lon), lonchar, abs(lat), latchar)
+    pos = '%.2f%s - %.2f%s' % (abs(lon), lonchar, abs(lat), latchar)
     return pos
 
 def retrieve_tile_from_position(lon0, lat0):
@@ -55,15 +55,17 @@ def select_profiles_near_point(lon0, lat0):
     
     subargo = res.extract_idx_from_argodb(argodb, idx)
 
-    fig2 = plt.figure(2)
+    fig2 = plt.figure(2 ,figsize=(16,6))
     plt.clf()
-    for k in range(len(subargo['JULD'])):
-        print(subargo['CT'][k, :])
-        plt.plot(subargo['CT'][k, :], -zref)
-    plt.xlabel('CT [degC]')
-    plt.ylabel('z [m]')
-    plt.title('profiles near %s / tile = %i' %
-              (lonlatstr(lon0, lat0), itile))
+    var = ['CT', 'SA', 'RHO']
+    for j, v in enumerate(var):
+        plt.subplot(131+j)
+        for k in range(len(subargo['JULD'])):
+            plt.plot(subargo[v][k, :], -zref)
+            plt.xlabel(v)
+            plt.ylabel('z [m]')
+            plt.title('profiles near %s / tile = %i' %
+                      (lonlatstr(lon0, lat0), itile))
     fig2.canvas.draw()
 
 ncfile = '%s/%s.nc' % (diratlas, atlas_name)
@@ -71,7 +73,7 @@ ncfile = '%s/%s.nc' % (diratlas, atlas_name)
 with Dataset(ncfile, 'r', format='NETCDF4') as nc:
     lon = nc.variables['lon'][:]
     lat = nc.variables['lat'][:]
-    zref = nc.variables['zref'][:]
+    # zref = nc.variables['zref'][:]
     CT =  nc.variables['CTbar'][:, :, :]
 
 longrid, latgrid = np.meshgrid(np.deg2rad(lon), np.deg2rad(lat))
@@ -79,7 +81,7 @@ longrid, latgrid = np.meshgrid(np.deg2rad(lon), np.deg2rad(lat))
 
 # plt.ion()
 
-
+zref = at.zref
 #fig2 = plt.figure(2)
 
 
@@ -92,9 +94,9 @@ def onclick(event):
     print('x = %d, y = %d, lon = %d, lat = %d, tile = %i'
           % (ix, iy, lon, lat, itile))
 
-    if itile == 50:
-        subargo = select_profiles_near_point(lon, lat)
-        print(subargo)
+
+    subargo = select_profiles_near_point(lon, lat)
+
     # assign global variable to access outside of function
 
     coords.append((ix, iy))
@@ -109,10 +111,13 @@ def onclick(event):
 global coords
 coords = []
 fig = plt.figure(1)
-kz = 40
+kz = 20
 
 # plt.pcolor(lon, lat, CT[kz, :, :])
-plt.imshow(CT[kz, :,:], origin='lower', interpolation='nearest')
+plt.imshow(CT[kz, :,:], origin='lower', 
+           interpolation='nearest', 
+           cmap=plt.get_cmap('RdBu_r'))
+plt.title('CT @ z=%.0fm' % zref[kz])
 plt.colorbar()
 cid = fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show(1)

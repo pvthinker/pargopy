@@ -14,17 +14,28 @@ diratlas = '/home1/datawork/groullet/pargopy/atlas'
 
 listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
 
-reso = 0.25
+reso = 0.5
 nlon = 20
 nlat = 15
 
 dirstats = '%s/%g' % (dirstats, reso)
 atlas_name = 'zmean_%g_annual' % reso
 
+zref = argotools.zref
+
 def ij2tile(i, j):
     return i + j*nlon
 
+def gridindex2lonlat(ix, iy):
+    
+    lonmin_glo = -180.
+    lonmax_glo = +180.
+    latmin_glo = -80.
+    latmax_glo = +80
 
+    lon = lonmin_glo + ix*reso
+    lat = latmin_glo + iy*reso
+    return lon, lat
 
 def get_glo_grid():
     lonsize = np.zeros((nlon,), dtype=int)
@@ -69,7 +80,7 @@ def get_glo_grid():
                     zref = nc.variables['zref'][:]
             i0 = i1-1
         j0 = j1
-    return lonsize, latsize, lon, lat, zref
+    return lonsize, latsize, lon, lat
     
 
 def glue_tiles(iloc, jloc,lonsize, latsize, lon, lat, zref):
@@ -145,6 +156,6 @@ def glue_tiles(iloc, jloc,lonsize, latsize, lon, lat, zref):
     nc.close()
 
 # glue_tiles(np.arange(10,13),np.arange(2,4))
-lonsize, latsize, lon, lat, zref = get_glo_grid()
+lonsize, latsize, lon, lat = get_glo_grid()
 glue_tiles(np.arange(nlon),np.arange(nlat),lonsize, latsize, lon, lat, zref)
 # glue_tiles(np.arange(5),np.arange(5),lonsize, latsize, lon, lat, zref)
