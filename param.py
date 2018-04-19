@@ -9,10 +9,10 @@ Created on Wed Apr 11 11:01:25 2018
 #  if you're working on herry-s local, location takes the value 'HERRY'
 location = 'HERRY'
 #  location = 'DATARMOR'
-location = 'roullet_lops'
+#  location = 'roullet_lops'
 
 if location == 'DATARMOR':
-    path_to_argo = '/home/oo26/coriolis/co05/co0508/dac'
+    path_to_argo = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
 
     path_to_pargopy = 'home2/datahome/therry/pargopy/'
 

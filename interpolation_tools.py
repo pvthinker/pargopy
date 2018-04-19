@@ -7,7 +7,6 @@ Created on Wed Mar 14 14:37:02 2018
 import gsw as gsw
 import numpy as np
 import argotools as argotools
-import argodb as argo
 
 
 def interpolate_profiles(subargodb, wmodic):
@@ -34,7 +33,6 @@ def interpolate_profiles(subargodb, wmodic):
     for w in wmos:
         print('interpolate profiles from wmo %i' % w)
         idx = np.where(infos['WMO'] == w)[0]
-        print(w, idx)
         iprof = infos['IPROF'][idx]
         dac = argotools.dac_from_wmo(wmodic, w)
         data = argotools.read_profile(dac, w, header=True, data=True, dataqc=True)
@@ -64,7 +62,6 @@ def interpolate_profiles(subargodb, wmodic):
                     ierr = 0
                 else:
                     ierr = 2
-                print(ierr)
                 if ierr == 0:
                     CT[kprof, :] = Ti
                     SA[kprof, :] = Si
@@ -78,9 +75,9 @@ def interpolate_profiles(subargodb, wmodic):
                     subargodb['FLAG'][idx[l]] = 202
             else:
                 pass
-    argodb = argo.read_argodb()
-    argotools.propagate_flag_backward(argodb, subargodb, verbose=True)
-    argo.write_argodb(argodb)
+
+    #  argotools.propagate_flag_backward(subargodb, verbose=True)
+    #  print('Flag propagate')
 
     res = {'CT': CT[:kprof, :],
            'SA': SA[:kprof, :],
@@ -89,7 +86,7 @@ def interpolate_profiles(subargodb, wmodic):
            'LONGITUDE': LON[:kprof],
            'LATITUDE': LAT[:kprof],
            'JULD': JULD[:kprof]}
-
+    print('Interpolation ended')
     return res
 
 def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref):

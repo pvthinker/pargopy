@@ -10,13 +10,12 @@ import os
 import glob
 import pickle
 import numpy as np
-# import param as param
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import param as param
-import argodb as argo
 
 path_argo = param.path_to_argo
+path_localdata = param.path_to_data
 
 daclist = ['aoml', 'bodc', 'coriolis', 'csio',
            'csiro', 'incois', 'jma', 'kma',
@@ -106,54 +105,56 @@ def read_profile(dac, wmo, iprof=None,
 
     required_keys = set(['TEMP', 'PSAL', 'PRES'])
 
-    with Dataset(filename, "r", format="NETCDF4") as f:
-        output['DACID'] = daclist.index(dac)
-        output['WMO'] = wmo
-        output['N_PROF'] = len(f.dimensions['N_PROF'])
-        output['N_LEVELS'] = len(f.dimensions['N_LEVELS'])
-        # DATE_UPDATE is an array of 14 characters in the *_prof.nc
-        # we transform it into an int
-        # YYYYMMDDhhmmss
-        output['DATE_UPDATE'] = ''.join(f.variables['DATE_UPDATE'][:])
+    if (os.path.isfile(filename)):
+        with Dataset(filename, "r", format="NETCDF4") as f:
+            output['DACID'] = daclist.index(dac)
+            output['WMO'] = wmo
+            output['N_PROF'] = len(f.dimensions['N_PROF'])
+            output['N_LEVELS'] = len(f.dimensions['N_LEVELS'])
+            # DATE_UPDATE is an array of 14 characters in the *_prof.nc
+            # we transform it into an int
+            # YYYYMMDDhhmmss
+            output['DATE_UPDATE'] = ''.join(f.variables['DATE_UPDATE'][:])
 
-        keyvar = set(f.variables.keys())
+            keyvar = set(f.variables.keys())
 
-        if required_keys.issubset(keyvar):
-            output['TSP_QC'] = '1'
-        else:
-            output['TSP_QC'] = '2'
-
-        if header or headerqc or data or dataqc:
-            if iprof is None:
-                idx = range(output['N_PROF'])
-                output['IPROF'] = np.arange(output['N_PROF'])
+            if required_keys.issubset(keyvar):
+                output['TSP_QC'] = '1'
             else:
-                idx = iprof
-                output['IPROF'] = iprof
+                output['TSP_QC'] = '2'
 
-        if header:
-            for key in key_header:
-                output[key] = f.variables[key][idx]
-
-        if headerqc:
-            for key in key_headerqc:
-                output[key] = f.variables[key][idx]
-
-        if data:
-            for key in key_data:
-                if output['TSP_QC'] == '1':
-                    output[key] = f.variables[key][idx, :]
+            if header or headerqc or data or dataqc:
+                if iprof is None:
+                    idx = range(output['N_PROF'])
+                    output['IPROF'] = np.arange(output['N_PROF'])
                 else:
-                    output[key] = np.NaN+np.zeros(
-                        (output['N_PROF'], output['N_LEVELS']))
+                    idx = iprof
+                    output['IPROF'] = iprof
 
-        if dataqc:
-            for key in key_dataqc:
-                if output['TSP_QC'] == '1':
+            if header:
+                for key in key_header:
                     output[key] = f.variables[key][idx]
-                else:
-                    output[key] = np.zeros(
-                        (output['N_PROF'], output['N_LEVELS']), dtype=str)
+
+            if headerqc:
+                for key in key_headerqc:
+                    output[key] = f.variables[key][idx]
+
+            if data:
+                for key in key_data:
+                    if output['TSP_QC'] == '1':
+                        output[key] = f.variables[key][idx, :]
+                    else:
+                        output[key] = np.NaN+np.zeros(
+                                (output['N_PROF'], output['N_LEVELS']))
+
+            if dataqc:
+                for key in key_dataqc:
+                    if output['TSP_QC'] == '1':
+                        output[key] = f.variables[key][idx]
+                    else:
+                        output[key] = np.zeros(
+                                (output['N_PROF'], output['N_LEVELS']), dtype=str)
+    print('file red')
 
     return output
 
@@ -185,21 +186,6 @@ def flag_argodb(argodb, wmodic):
                 flag = 103
             argodb['FLAG'][idx[k]] = flag
     return argodb
-
-
-def propagate_flag_backward(argodb, subargodb, verbose=True):
-    """Update argodb FLAG using subargodb"""
-
-    for k, tag in enumerate(subargodb['TAG']):
-        idx = np.where(argodb['TAG'] == tag)[0][0]
-        prev = argodb['FLAG'][idx]
-        new = subargodb['FLAG'][k]
-        if prev == new:
-            pass
-        else:
-            if verbose:
-                print('tag %i flag changed from %i to %i' % (tag, prev, new))
-            argodb['FLAG'][idx] = subargodb['FLAG'][k]
 
 
 def fix_flag_latlonf(argodb):
@@ -278,6 +264,42 @@ def plot_wmos_stats(wmostats):
 
 
 #  ----------------------------------------------------------------------------
+def read_wmstats():
+    print('read wmostats.pkl')
+    with open('%s/wmstats.pkl' % path_localdata, 'r') as f:
+        wmstats = pickle.load(f)
+    return wmstats
+
+
+#  ----------------------------------------------------------------------------
+def read_argodb():
+    """Read the full argodb database"""
+
+    print('read argodb.pkl')
+    with open('%s/argodb.pkl' % path_localdata, 'rb') as f:
+        argodb = pickle.load(f)
+    return argodb
+
+
+#  ----------------------------------------------------------------------------
+def read_wmodic():
+    print('read wmodic.pkl')
+    with open('%s/wmodic.pkl' % path_localdata, 'r') as f:
+        wmodic = pickle.load(f)
+    return wmodic
+
+
+#  ----------------------------------------------------------------------------
+def read_argo_filter(i):
+    print('read argodic%003i.pkl' % i)
+    with open('%s/argodic%003i.pkl' % (path_localdata, i), 'rb') as f:
+        print('argodic opened')
+        argodic = pickle.load(f)
+        print('argodic%003i red' % i)
+    return argodic
+
+
+#  ----------------------------------------------------------------------------
 def conversion_juld_gregd(juld):
     """Method converting julian day into gregorian day"""
     #  lats, lons, juld = self.reading_variables()
@@ -296,6 +318,6 @@ def conversion_gregd_juld(day, month, year):
 
 
 if False:
-    wmodic = argo.read_wmodic()
-    wmodb = argo.read_wmstats()
-    argodb = argo.read_argodb()
+    wmodic = read_wmodic()
+    wmodb = read_wmstats()
+    argodb = read_argodb()

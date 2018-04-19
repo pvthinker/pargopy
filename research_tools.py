@@ -13,10 +13,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import param as param
 import argotools as argotools
-import argodb as argodatabase
 
 path_localdata = param.path_to_filter
-# argodb = argodatabase.read_argodb()
 
 
 #  ----------------------------------------------------------------------------
@@ -60,6 +58,8 @@ def tile_definition():
 def creating_tiles():
     """Giving values to the variables"""
     #  Generation of the dimension of import matplotlib.pyplot as plt
+    
+    argodb = argotools.read_argodb()
     lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
     k = 0
     for i in range(nlat):
@@ -87,7 +87,7 @@ def creating_tiles():
                    'MARGINLAT': marginlat[i],
                    'MARGINLON': marginlon}
 
-            argo_extract = get_idx_from_tiles_lim(res)
+            argo_extract = get_idx_from_tiles_lim(res, argodb)
             test_tiles(argo_extract, k)
             write_argo_filter(argo_extract, k)
             k += 1
@@ -108,23 +108,14 @@ def test_tiles(argo_extract, i):
 
 #  ----------------------------------------------------------------------------
 def write_argo_filter(argo_extract, i):
-    with open('%s/argodic%003i.pkl' % (path_localdata, i), 'w') as f:
+    with open('%s/argodic%003i.pkl' % (path_localdata, i), 'wb') as f:
         pickle.dump(argo_extract, f)
 
 
 #  ----------------------------------------------------------------------------
-def read_argo_filter(i):
-    print('read argodic%003i.pkl' % i)
-    with open('%s/argodic%003i.pkl' % (path_localdata, i), 'r') as f:
-        argodic = pickle.load(f)
-    return argodic
-
-
-#  ----------------------------------------------------------------------------
-def get_idx_from_tiles_lim(res):
+def get_idx_from_tiles_lim(res, argodb):
     """Get the list of profile indices present in argodb that correspond
        to the list of wmos"""
-
     if res['LONMIN_WITH_M'] > res['LONMAX_WITH_M']:
         idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & ((argodb['LONGITUDE'] > res['LONMIN_WITH_M']) | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
     else:
@@ -183,6 +174,46 @@ def extract_idx_from_wmostats(wmostats, idx):
 def main():
     """Main function of stats.py"""
     creating_tiles()
+    plot_map()
+
+
+# ----------------------------------------
+# Plot the tiles on map
+
+def mbox(x1, x2, y1, y2, dlat, dlon, col, itile, m):
+    m.plot([x1-dlon, x1-dlon, x2+dlon, x2+dlon, x1-dlon],
+           [y1-dlat, y2+dlat, y2+dlat, y1-dlat, y1-dlat],
+           color=col, latlon=True)
+    x, y = m(0.5*(x1+x2), 0.5*(y1+y2-3))
+    plt.text(x, y, '%i' % itile,
+             color=col, horizontalalignment='center')
+
+
+def plot_map():
+    lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
+    plt.figure(figsize=(12, 6))
+    m = Basemap(projection='cea', llcrnrlat=-90, urcrnrlat=90,
+            	llcrnrlon=-180, urcrnrlon=180, resolution='c')
+    m.drawcoastlines()
+    m.fillcontinents(color='coral', lake_color='white')
+
+    itile = 0
+    #  cols = plt.get_cmap('hot')
+    for j in range(nlat):
+        for i in range(nlon):
+            itile = i + j*nlon
+            if lon[i] - marginlon < -180:
+                lon[i] = -178
+            elif lon[i+1] + marginlon > 180:
+                lon[i+1] = 178
+            mbox(lon[i], lon[i+1], lat[j], lat[j+1], marginlat[j], marginlon,
+                 'black', itile, m)
+
+    plt.axis('tight')
+    plt.xlabel('longitude')
+    plt.ylabel('latitude')
+    plt.savefig('tiles_summary.pdf')
+    plt.show()
 
 
 #  ----------------------------------------------------------------------------
