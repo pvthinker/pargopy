@@ -20,42 +20,42 @@ daclist = argotools.daclist
 
 def create_stat_file(itile, typestat, reso, timeflag):
     """Create statistics netcdf file"""
-
-    rootgrp = Dataset('%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, timeflag, itile), "w", format="NETCDF4")
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, typestat, reso, timeflag, itile)
+    rootgrp = Dataset(filename, "w", format="NETCDF4")
     argodic = argotools.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso)
     nlat, nlon = np.shape(lon_deg)
-    rootgrp.createDimension('depth', len(zref))
+    rootgrp.createDimension('zref', len(zref))
     rootgrp.createDimension('lat', nlat)
     rootgrp.createDimension('lon', nlon)
 
     if typestat == 'zmean':
-        lon_deg = rootgrp.createVariable('lon_deg', 'f4', ('lat', 'lon'))
+        lon_deg = rootgrp.createVariable('lon', 'f4', ('lat', 'lon'))
         lon_deg.long_name = 'Longitude in degrees'
         lon_deg.units = 'Degrees'
 
-        lat_deg = rootgrp.createVariable('lat_deg', 'f4', ('lat', 'lon'))
+        lat_deg = rootgrp.createVariable('lat', 'f4', ('lat', 'lon'))
         lat_deg.long_name = 'Latitude in degrees'
         lat_deg.units = 'Degrees'
 
-        NBbar = rootgrp.createVariable('NBbar', 'f4', ('depth', 'lat', 'lon'))
+        NBbar = rootgrp.createVariable('NBbar', 'f4', ('zref', 'lat', 'lon'))
         NBbar.long_name = 'Weight'
         NBbar.units = 'None'
 
-        CTbar = rootgrp.createVariable('CTbar', 'f4', ('depth', 'lat', 'lon'))
+        CTbar = rootgrp.createVariable('CTbar', 'f4', ('zref', 'lat', 'lon'))
         CTbar.long_name = 'Temperature'
         CTbar.units = 'Celsius'
 
-        SAbar = rootgrp.createVariable('SAbar', 'f4', ('depth', 'lat', 'lon'))
+        SAbar = rootgrp.createVariable('SAbar', 'f4', ('zref', 'lat', 'lon'))
         SAbar.long_name = 'Salinity'
         SAbar.units = '???'
 
-        Ribar = rootgrp.createVariable('Ribar', 'f4', ('depth', 'lat', 'lon'))
+        Ribar = rootgrp.createVariable('Ribar', 'f4', ('zref', 'lat', 'lon'))
         Ribar.long_name = 'Density'
         Ribar.units = '???'
 
-        zreference = rootgrp.createVariable('zref', 'f4', ('depth', ))
+        zreference = rootgrp.createVariable('zref', 'f4', ('zref', ))
         zreference.long_name = 'Depth reference'
         zreference.units = 'Meter'
 
@@ -63,39 +63,39 @@ def create_stat_file(itile, typestat, reso, timeflag):
 
     elif typestat == 'zstd':
 
-        zreference = rootgrp.createVariable('zref', 'f4', ('depth', ))
+        zreference = rootgrp.createVariable('zref', 'f4', ('zref', ))
         zreference.long_name = 'Depth reference'
         zreference.units = 'Meter'
 
-        lon_deg = rootgrp.createVariable('lon_deg', 'f4', ('lat', 'lon'))
+        lon_deg = rootgrp.createVariable('lon', 'f4', ('lat', 'lon'))
         lon_deg.long_name = 'Longitude in degrees'
         lon_deg.units = 'Degrees'
 
-        lat_deg = rootgrp.createVariable('lat_deg', 'f4', ('lat', 'lon'))
+        lat_deg = rootgrp.createVariable('lat', 'f4', ('lat', 'lon'))
         lat_deg.long_name = 'Latitude in degrees'
         lat_deg.units = 'Degrees'
 
-        NBstd = rootgrp.createVariable('NBstd', 'f4', ('depth', 'lat', 'lon'))
+        NBstd = rootgrp.createVariable('NBstd', 'f4', ('zref', 'lat', 'lon'))
         NBstd.long_name = 'Weight'
         NBstd.units = 'None'
 
-        CTstd = rootgrp.createVariable('CTstd', 'f4', ('depth', 'lat', 'lon'))
+        CTstd = rootgrp.createVariable('CTstd', 'f4', ('zref', 'lat', 'lon'))
         CTstd.long_name = 'Temperature'
         CTstd.units = 'Degree Celsius'
 
-        SAstd = rootgrp.createVariable('SAstd', 'f4', ('depth', 'lat', 'lon'))
+        SAstd = rootgrp.createVariable('SAstd', 'f4', ('zref', 'lat', 'lon'))
         SAstd.long_name = 'Salinity'
         SAstd.units = 'g.kg^-1'
 
-        Ristd = rootgrp.createVariable('Ristd', 'f4', ('depth', 'lat', 'lon'))
+        Ristd = rootgrp.createVariable('Ristd', 'f4', ('zref', 'lat', 'lon'))
         Ristd.long_name = 'Density'
         Ristd.units = 'kg.m^-3'
 
-        v = rootgrp.createVariable('DZstd', 'f4', ('depth', 'lat', 'lon'))
+        v = rootgrp.createVariable('DZstd', 'f4', ('zref', 'lat', 'lon'))
         v.long_name = 'Isopycnal displacement'
         v.units = 'm'
 
-        v = rootgrp.createVariable('EAPE', 'f4', ('depth', 'lat', 'lon'))
+        v = rootgrp.createVariable('EAPE', 'f4', ('zref', 'lat', 'lon'))
         v.long_name = 'Eddy available potential energy'
         v.units = 'J.m^-3'
 
@@ -119,7 +119,7 @@ def create_stat_file(itile, typestat, reso, timeflag):
 def write_stat_file(itile, typestat, reso_deg, timeflag):
     """Write statistics into a netcdf file"""
     # idem, depend du type de stat
-    filename = '%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso_deg, timeflag, itile)
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso_deg, typestat, reso_deg, timeflag, itile)
     if (os.path.isfile(filename)):
         print('filename existe')
         f = Dataset(filename, "r+", format="NETCDF4")
@@ -130,8 +130,8 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
             f.variables['SAbar'][:, :, :] = SAbar
             f.variables['Ribar'][:, :, :] = Ribar
             f.variables['NBbar'][:, :, :] = NBbar
-            f.variables['lat_deg'][:, :] = lat_deg
-            f.variables['lon_deg'][:, :] = lon_deg
+            f.variables['lat'][:, :] = lat_deg
+            f.variables['lon'][:, :] = lon_deg
             f.variables['zref'][:] = zref
             f.close()
         elif typestat == 'zstd':
@@ -142,15 +142,15 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
             f.variables['DZstd'][:, :, :] = DZstd
             f.variables['Ristd'][:, :, :] = Ristd
             f.variables['EAPE'][:, :, :] = EAPE
-            f.variables['lat_deg'][:, :] = lat_deg
-            f.variables['lon_deg'][:, :] = lon_deg
+            f.variables['lat'][:, :] = lat_deg
+            f.variables['lon'][:, :] = lon_deg
             f.variables['zref'][:] = zref
             f.close()
 
 
 def read_stat_file(typestat, itile, reso, timeflag):
     """Read statistics into a netcdf file"""
-    filename = '%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, typestat, reso, timeflag, itile)
     if (os.path.isfile(filename)):
         f = Dataset(filename, "r", format="NETCDF4")
         # idem, depend du type de stat
@@ -159,8 +159,8 @@ def read_stat_file(typestat, itile, reso, timeflag):
             SAbar = f.variables['SAbar'][:, :, :]
             Ribar = f.variables['Ribar'][:, :, :]
             NBbar = f.variables['NBbar'][:, :, :]
-            lat_deg = f.variables['lat_deg'][:, :]
-            lon_deg = f.variables['lon_deg'][:, :]
+            lat_deg = f.variables['lat'][:, :]
+            lon_deg = f.variables['lon'][:, :]
             f.close()
             return lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar
         elif typestat == 'zstd':
@@ -168,8 +168,8 @@ def read_stat_file(typestat, itile, reso, timeflag):
             CTstd = f.variables['CTstd'][:, :, :]
             SAstd = f.variables['SAstd'][:, :, :]
             Ristd = f.variables['Ristd'][:, :, :]
-            lat_deg = f.variables['lat_deg'][:, :]
-            lon_deg = f.variables['lon_deg'][:, :]
+            lat_deg = f.variables['lat'][:, :]
+            lon_deg = f.variables['lon'][:, :]
             f.close()
             return lon_deg, lat_deg, CTstd, SAstd, Ristd, NBstd
 
@@ -220,8 +220,8 @@ def compute_mean_at_zref(itile, reso_deg):
     CTbar = np.zeros((nz, nlat, nlon))
     SAbar = np.zeros((nz, nlat, nlon))
     RIbar = np.zeros((nz, nlat, nlon))
-    for k in range(len(nbprof)):
-        print('%4i/%i' % (k, len(nbprof)))
+    for k in range(nbprof):
+        print('%4i/%i' % (k, nbprof))
         # todo: weigh in time using juld,
         # e.g. only winter statistics
         time_weight = 1.
@@ -309,6 +309,16 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
             cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
             # the copy is to make data contiguous in memory
             rho0 = RHObar[:, j, i].copy()
+
+            weight *= time_weight
+            # print(np.shape(RHObar))
+            interpolator = ip.interp1d(RHObar[:,j,i], zref, bounds_error=False)
+
+            p = gsw.p_from_z(-zref, lat[j])
+            g = gsw.grav(lat[j], p)
+            cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
+            # the copy is to make data contiguous in memory
+            rho0 = RHObar[:, j, i].copy()
             CT0 = CAbar[:, j, i].copy()
             SA0 = SAbar[:, j, i].copy()
             
@@ -368,7 +378,7 @@ def main(itile, typestat, reso, timeflag):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(50, 'zmean', 0.5, 'annual')
+    main(50, 'zstd', 0.5, 'annual')
 #==============================================================================
 #     main(51, 'zmean', 0.5, 'annual')
 #     main(50, 'zmean', 0.5, 'annual')
