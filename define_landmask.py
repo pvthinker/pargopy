@@ -8,6 +8,9 @@ import research_tools as research
 plt.ion()
 plt.close('all')
 
+dirtopo = '/datawork/fsi2/mars/DATA/BATHY/ETOPO2'
+topofile = 'etopo2.nc'
+
 dirtopo = '/net/alpha/exports/sciences/data/BATHYMETRIE/BATHYMETRIE'
 topofile = 'ETOPO2v2c_f4.nc'
 dirtile = '/net/libra/local/tmp/1/herry/tiles'
