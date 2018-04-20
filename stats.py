@@ -91,9 +91,17 @@ def create_stat_file(itile, typestat, reso, timeflag):
         Ristd.long_name = 'Density'
         Ristd.units = 'kg.m^-3'
 
-        v = rootgrp.createVariable('DZstd', 'f4', ('depth', 'lat', 'lon'))
-        v.long_name = 'Isopycnal displacement'
+        v = rootgrp.createVariable('DZmean', 'f4', ('depth', 'lat', 'lon'))
+        v.long_name = 'Mean isopycnal displacement'
         v.units = 'm'
+
+        v = rootgrp.createVariable('DZstd', 'f4', ('depth', 'lat', 'lon'))
+        v.long_name = 'Std isopycnal displacement'
+        v.units = 'm'
+
+        v = rootgrp.createVariable('DZskew', 'f4', ('depth', 'lat', 'lon'))
+        v.long_name = 'Skewness isopycnal displacement'
+        v.units = 'none'
 
         v = rootgrp.createVariable('EAPE', 'f4', ('depth', 'lat', 'lon'))
         v.long_name = 'Eddy available potential energy'
@@ -135,11 +143,13 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
             f.variables['zref'][:] = zref
             f.close()
         elif typestat == 'zstd':
-            lon_deg, lat_deg, CTstd, SAstd, DZstd, Ristd, EAPE, NBstd = compute_std_at_zref(itile, reso_deg, timeflag)
+            lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd = compute_std_at_zref(itile, reso_deg, timeflag)
             f.variables['NBstd'][:, :, :] = NBstd
             f.variables['CTstd'][:, :, :] = CTstd
             f.variables['SAstd'][:, :, :] = SAstd
+            f.variables['DZmean'][:, :, :] = DZmean
             f.variables['DZstd'][:, :, :] = DZstd
+            f.variables['DZskew'][:, :, :] = DZskew
             f.variables['Ristd'][:, :, :] = Ristd
             f.variables['EAPE'][:, :, :] = EAPE
             f.variables['lat_deg'][:, :] = lat_deg
@@ -150,7 +160,9 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
 
 def read_stat_file(typestat, itile, reso, timeflag):
     """Read statistics into a netcdf file"""
-    filename = '%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, timeflag, itile)
+    # filename = '%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, timeflag, itile)
+    filename = '{0}/{1}/{2}/{1}_{2}_{3}_{4:03}.nc'.format(path_to_stats, typestat, reso, timeflag, itile)
+    print('read stat file : %s' % filename)
     if (os.path.isfile(filename)):
         f = Dataset(filename, "r", format="NETCDF4")
         # idem, depend du type de stat
@@ -159,8 +171,8 @@ def read_stat_file(typestat, itile, reso, timeflag):
             SAbar = f.variables['SAbar'][:, :, :]
             Ribar = f.variables['Ribar'][:, :, :]
             NBbar = f.variables['NBbar'][:, :, :]
-            lat_deg = f.variables['lat_deg'][:, :]
-            lon_deg = f.variables['lon_deg'][:, :]
+            lat_deg = f.variables['lat'][:, :]
+            lon_deg = f.variables['lon'][:, :]
             f.close()
             return lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar
         elif typestat == 'zstd':
@@ -168,8 +180,8 @@ def read_stat_file(typestat, itile, reso, timeflag):
             CTstd = f.variables['CTstd'][:, :, :]
             SAstd = f.variables['SAstd'][:, :, :]
             Ristd = f.variables['Ristd'][:, :, :]
-            lat_deg = f.variables['lat_deg'][:, :]
-            lon_deg = f.variables['lon_deg'][:, :]
+            lat_deg = f.variables['lat'][:, :]
+            lon_deg = f.variables['lon'][:, :]
             f.close()
             return lon_deg, lat_deg, CTstd, SAstd, Ristd, NBstd
 
@@ -283,7 +295,9 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
     NBstd = np.zeros((nz, nlat, nlon))
     CTstd = np.zeros((nz, nlat, nlon))
     SAstd = np.zeros((nz, nlat, nlon))
+    DZmean = np.zeros((nz, nlat, nlon))
     DZstd = np.zeros((nz, nlat, nlon))
+    DZskew = np.zeros((nz, nlat, nlon))
     Ristd = np.zeros((nz, nlat, nlon))
     EAPE = np.zeros((nz, nlat, nlon))
 
@@ -307,40 +321,27 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
             p = gsw.p_from_z(-zref, lat[j])
             g = gsw.grav(lat[j], p)
             cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
-            # the copy is to make data contiguous in memory
-            rho0 = RHObar[:, j, i].copy()
-            CT0 = CAbar[:, j, i].copy()
-            SA0 = SAbar[:, j, i].copy()
             
-            for l in range(nbprof):
-                if weight[l] < wmin:
-                    pass
-                else:
-                    # the vertical isopycnal displacement dz
-                    # is computed by first
-                    # interpolating RI(z) on the reference profile
-                    # z0(rho) [inverse mapping of rho0(z)]
-                    # we get dzstar
-                    # then by adding a correction due to
-                    # compressibility
-                    dzstar = interpolator(RI[l, :]) - zref
-                    drho = RI[l, :] - rho0
-                    # add correction
-                    dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
-                    eape = 0.5*dz*drho
-                    dCT = CT[l, :]-CT0
-                    dSA = SA[l, :]-SA0
+            drho = RI - RHObar[:, j, i]
+            dCT = CT-CAbar[:, j, i]
+            dSA = SA-SAbar[:, j, i]
+            zrho = interpolator(RI)
+            dzstar = zrho-zref
+            dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
+            eape = 0.5*dz*drho
 
-                    for k in range(nz):
-                        if np.isnan(dz[k]) or np.isnan(drho[k]):
-                            pass
-                        else:
-                            NBstd[k, j, i] += weight[l]
-                            CTstd[k, j, i] += weight[l]*dCT[k]**2
-                            SAstd[k, j, i] += weight[l]*dSA[k]**2
-                            DZstd[k, j, i] += weight[l]*dz[k]**2
-                            Ristd[k, j, i] += weight[l]*drho[k]**2
-                            EAPE[k, j, i] += weight[l]*dz[k]*drho[k]
+            weight = weight[:, np.newaxis] + np.zeros_like(zref)
+            weight[np.where(np.isnan(dz) | np.isnan(drho))] = 0.
+
+            NBstd[:, j, i] = np.sum(weight)
+            CTstd[:, j, i] = np.sum(weight*dCT**2)
+            SAstd[:, j, i] = np.sum(weight*dSA**2)
+            DZmean[:, j, i] = np.sum(weight*dz)
+            DZstd[:, j, i] = np.sum(weight*dz**2)
+            DZskew[:, j, i] = np.sum(weight*dz**3)
+            Ristd[:, j, i] = np.sum(weight*drho**2)
+            EAPE[:, j, i] = np.sum(weight*dz*drho)
+
     # normalize with the number of profiles (fractional
     # because NBbar is fractionnal)
     # std = sqrt( 1/(n-1) sum_i (x_i -xbar)^2)
@@ -350,11 +351,14 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
 
     CTstd = np.sqrt(coef*CTstd)
     SAstd = np.sqrt(coef*SAstd)
+    DZmean *= coef
     DZstd = np.sqrt(coef*DZstd)
-    Ristd = np.sqrt(coef*Ristd)
-    EAPE = 0.5*coef*EAPE
+    # skew = E( ((X-mu)/sigma)**3 )
+    DZskew *= coef/DZstd**3
+    Ristd = np.sqrt(coef*Ristd)    
+    EAPE *= 0.5*coef
 
-    return lon_deg, lat_deg, CTstd, SAstd, DZstd, Ristd, EAPE, NBstd
+    return lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd
 
 
 def main(itile, typestat, reso, timeflag):
@@ -368,7 +372,11 @@ def main(itile, typestat, reso, timeflag):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(50, 'zmean', 0.5, 'annual')
+    itile = 88
+    timeflag = 'annual'
+    reso_deg = 0.5
+    compute_std_at_zref(itile, reso_deg, timeflag, verbose=True)
+    #main(50, 'std', 0.5, 'annual')
 #==============================================================================
 #     main(51, 'zmean', 0.5, 'annual')
 #     main(50, 'zmean', 0.5, 'annual')
