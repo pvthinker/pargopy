@@ -322,7 +322,8 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
             p = gsw.p_from_z(-zref, lat[j])
             g = gsw.grav(lat[j], p)
             cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
-            
+            rho0 = RHObar[:, j, i].copy()
+
             drho = RI - RHObar[:, j, i]
             dCT = CT-CAbar[:, j, i]
             dSA = SA-SAbar[:, j, i]
@@ -334,21 +335,32 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
             weight = weight[:, np.newaxis] + np.zeros_like(zref)
             weight[np.where(np.isnan(dz) | np.isnan(drho))] = 0.
 
-            NBstd[:, j, i] = np.sum(weight)
-            CTstd[:, j, i] = np.sum(weight*dCT**2)
-            SAstd[:, j, i] = np.sum(weight*dSA**2)
-            DZmean[:, j, i] = np.sum(weight*dz)
-            DZstd[:, j, i] = np.sum(weight*dz**2)
-            DZskew[:, j, i] = np.sum(weight*dz**3)
-            Ristd[:, j, i] = np.sum(weight*drho**2)
-            EAPE[:, j, i] = np.sum(weight*dz*drho)
+            def average(field):
+                return np.nansum(weight*field, axis=0)
+            
+            NBstd[:, j, i] = average(1.)
+            CTstd[:, j, i] = average(dCT**2)
+            SAstd[:, j, i] = average(dSA**2)
+            DZmean[:, j, i] = average(dz)
+            DZstd[:, j, i] = average(dz**2)
+            DZskew[:, j, i] = average(dz**3)
+            Ristd[:, j, i] = average(drho**2)
+            EAPE[:, j, i] = average(dz*drho)
+            # NBstd[:, j, i] = np.nansum(weight, axis=0)
+            # CTstd[:, j, i] = np.nansum(weight*dCT**2, axis=0)
+            # SAstd[:, j, i] = np.nansum(weight*dSA**2, axis=0)
+            # DZmean[:, j, i] = np.nansum(weight*dz, axis=0)
+            # DZstd[:, j, i] = np.nansum(weight*dz**2, axis=0)
+            # DZskew[:, j, i] = np.nansum(weight*dz**3, axis=0)
+            # Ristd[:, j, i] = np.nansum(weight*drho**2, axis=0)
+            # EAPE[:, j, i] = np.nansum(weight*dz*drho, axis=0)
 
     # normalize with the number of profiles (fractional
     # because NBbar is fractionnal)
     # std = sqrt( 1/(n-1) sum_i (x_i -xbar)^2)
     #     = sqrt( 1/(n-1) sum_i x_i^2 - n/(n-1)*xbar^2)
     coef = 1./(NBstd-1)
-    coef[NBstd < 2] = 0.
+    coef[NBstd < 2] = np.nan
 
     CTstd = np.sqrt(coef*CTstd)
     SAstd = np.sqrt(coef*SAstd)
@@ -373,7 +385,11 @@ def main(itile, typestat, reso, timeflag):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(50, 'zstd', 0.5, 'annual')
+    itile = 80
+    reso_deg = 0.5
+    timeflag = 'annual'
+    lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd = compute_std_at_zref(itile, reso_deg, timeflag, verbose=True)
+    #main(50, 'zstd', 0.5, 'annual')
 #==============================================================================
 #     main(51, 'zmean', 0.5, 'annual')
 #     main(50, 'zmean', 0.5, 'annual')
