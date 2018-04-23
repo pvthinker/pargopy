@@ -2,7 +2,10 @@
 """
 Created on Mon Mar 12 13:10:24 2018
 
-@author: herry
+.. automodule:: argodb.py
+
+File creating the summary of ARGO used to generate the atlas
+
 """
 # import jdcal
 from __future__ import with_statement
@@ -17,7 +20,9 @@ import argotools as argotools
 tmps1 = time.time()
 
 path_argo = param.path_to_argo
-daclist = argotools.daclist
+daclist = ['aoml', 'bodc', 'coriolis', 'csio',
+           'csiro', 'incois', 'jma', 'kma',
+           'kordi', 'meds', 'nmdis']
 path_localdata = param.path_to_data
 
 
@@ -68,12 +73,15 @@ def get_header_of_all_profiles(wmostats):
     n_wmo = wmostats['N_WMO']
     key_int = ['TAG', 'FLAG']
     key_float = ['LONGITUDE', 'LATITUDE', 'JULD']
+    key_char = ['DATA_MODE']
 
     argodb = {}
     for k in key_int:
         argodb[k] = np.zeros((n_profiles,), dtype=int)
     for k in key_float:
         argodb[k] = np.zeros((n_profiles,))
+    for k in key_char:
+        argodb[k] = np.zeros((n_profiles,), dtype='c')
 
     iprof = 0
     for k in range(n_wmo):
@@ -88,6 +96,9 @@ def get_header_of_all_profiles(wmostats):
             tag = argotools.get_tag(kdac, wmo, kprof)
             argodb['TAG'][iprof+kprof] = tag
 
+        for i, key in enumerate(key_char):
+            argodb[key][iprof:iprof+n_prof] = output[key]
+
         print(' {:8,}/{:,} : {} - {}'.format(iprof, n_profiles, dac, wmo))
         iprof += n_prof
     return argodb
@@ -95,13 +106,14 @@ def get_header_of_all_profiles(wmostats):
 
 #  ----------------------------------------------------------------------------
 def write_wmodic(wmodic):
+    """Write the .pkl file with the list of all the wmos"""
     with open('%s/wmodic.pkl' % path_localdata, 'w') as f:
         pickle.dump(wmodic, f)
 
 
 #  ----------------------------------------------------------------------------
 def write_wmstats(wmstats):
-    """Read the full wmstats database"""
+    """Write the full wmstats database"""
 
     with open('%s/wmstats.pkl' % path_localdata, 'w') as f:
         pickle.dump(wmstats, f)
@@ -109,6 +121,7 @@ def write_wmstats(wmstats):
 
 #  ----------------------------------------------------------------------------
 def write_argodb(argodb):
+    """Write the argo sumary with the informations of dac, wmo, flag, ..."""
     with open('%s/argodb.pkl' % path_localdata, 'wb') as f:
         pickle.dump(argodb, f)
 

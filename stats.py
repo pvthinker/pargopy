@@ -6,11 +6,9 @@ import gsw as gsw
 import time
 from scipy import interpolate as ip
 import general_tools as tools
-import argodb as argo
 import argotools as argotools
 import tile as tiler
 import param as param
-import research_tools as research
 
 
 path_to_stats = param.path_to_stats
@@ -18,9 +16,9 @@ path_to_stats = param.path_to_stats
 zref = argotools.zref
 daclist = argotools.daclist
 
-def create_stat_file(itile, typestat, reso, timeflag):
+def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     """Create statistics netcdf file"""
-    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date, mode, typestat, typestat, reso, timeflag, itile)
     rootgrp = Dataset(filename, "w", format="NETCDF4")
     argodic = argotools.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
@@ -91,21 +89,21 @@ def create_stat_file(itile, typestat, reso, timeflag):
         Ristd.long_name = 'Density'
         Ristd.units = 'kg.m^-3'
 
-        v = rootgrp.createVariable('DZmean', 'f4', ('depth', 'lat', 'lon'))
+        v = rootgrp.createVariable('DZmean', 'f4', ('zref', 'lat', 'lon'))
         v.long_name = 'Mean isopycnal displacement'
         v.units = 'm'
 
-        v = rootgrp.createVariable('DZstd', 'f4', ('depth', 'lat', 'lon'))
-        v.long_name = 'Std isopycnal displacement'
-        v.units = 'm'
+        w = rootgrp.createVariable('DZstd', 'f4', ('zref', 'lat', 'lon'))
+        w.long_name = 'Std isopycnal displacement'
+        w.units = 'm'
 
-        v = rootgrp.createVariable('DZskew', 'f4', ('depth', 'lat', 'lon'))
-        v.long_name = 'Skewness isopycnal displacement'
-        v.units = 'none'
+        x = rootgrp.createVariable('DZskew', 'f4', ('zref', 'lat', 'lon'))
+        x.long_name = 'Skewness isopycnal displacement'
+        x.units = 'none'
 
-        v = rootgrp.createVariable('EAPE', 'f4', ('depth', 'lat', 'lon'))
-        v.long_name = 'Eddy available potential energy'
-        v.units = 'J.m^-3'
+        y = rootgrp.createVariable('EAPE', 'f4', ('zref', 'lat', 'lon'))
+        y.long_name = 'Eddy available potential energy'
+        y.units = 'J.m^-3'
 
         rootgrp.close()
 
@@ -124,16 +122,16 @@ def create_stat_file(itile, typestat, reso, timeflag):
     # nc.setncattr('lonmin', -32.)if typestat == 'zmean':
 
 
-def write_stat_file(itile, typestat, reso_deg, timeflag):
+def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
     """Write statistics into a netcdf file"""
     # idem, depend du type de stat
-    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso_deg, typestat, reso_deg, timeflag, itile)
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso_deg, date, mode, typestat, typestat, reso_deg, timeflag, itile)
     if (os.path.isfile(filename)):
         print('filename existe')
         f = Dataset(filename, "r+", format="NETCDF4")
         # idem, depend du type de stat
         if typestat == 'zmean':
-            lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar = compute_mean_at_zref(itile, reso_deg)
+            lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar = compute_mean_at_zref(itile, reso_deg, mode, date)
             f.variables['CTbar'][:, :, :] = CTbar
             f.variables['SAbar'][:, :, :] = SAbar
             f.variables['Ribar'][:, :, :] = Ribar
@@ -143,7 +141,7 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
             f.variables['zref'][:] = zref
             f.close()
         elif typestat == 'zstd':
-            lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd = compute_std_at_zref(itile, reso_deg, timeflag)
+            lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd = compute_std_at_zref(itile, reso_deg, timeflag, mode, date)
             f.variables['NBstd'][:, :, :] = NBstd
             f.variables['CTstd'][:, :, :] = CTstd
             f.variables['SAstd'][:, :, :] = SAstd
@@ -158,9 +156,9 @@ def write_stat_file(itile, typestat, reso_deg, timeflag):
             f.close()
 
 
-def read_stat_file(typestat, itile, reso, timeflag):
+def read_stat_file(typestat, itile, reso, timeflag, date, mode):
     """Read statistics into a netcdf file"""
-    filename = '{0}/{1}/{2}/{1}_{2}_{3}_{4:03}.nc'.format(path_to_stats, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date, mode, typestat, typestat, reso, timeflag, itile)
     print('read stat file : %s' % filename)
     # filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, typestat, reso, timeflag, itile)
 
@@ -206,12 +204,9 @@ def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
     return lon, lat
 
 
-def compute_mean_at_zref(itile, reso_deg):
+def compute_mean_at_zref(itile, reso_deg, mode, date):
     """Compute the mean at depths zref"""
-    # argodb = research.read_argo_filter(itile)  # argo.read_argodb()
-    tile = tiler.read_tile(itile)
-    # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
-    # nbprof = output['IPROF']
+    tile = datas_choice(mode, date, itile)
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
     argodic = argotools.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
@@ -234,7 +229,7 @@ def compute_mean_at_zref(itile, reso_deg):
     SAbar = np.zeros((nz, nlat, nlon))
     RIbar = np.zeros((nz, nlat, nlon))
     for k in range(nbprof):
-        print('%4i/%i' % (k, nbprof))
+        #  print('%4i/%i' % (k, nbprof))
         # todo: weigh in time using juld,
         # e.g. only winter statistics
         time_weight = 1.
@@ -267,18 +262,15 @@ def compute_mean_at_zref(itile, reso_deg):
     return lon_deg, lat_deg, NBbar, CTbar, SAbar, RIbar
 
 
-def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
+def compute_std_at_zref(itile, reso_deg, timeflag, date, mode, verbose=False):
     """Compute the standard deviations at depths zref"""
 
     # gridded arrays of CT, SA variances
-    lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stat_file('zmean', itile, reso_deg, timeflag) # read it from the file
-    argodb = argotools.read_argodb()
-    tile = tiler.read_tile(itile)
+    lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stat_file('zmean', itile, reso_deg, timeflag, date, mode) # read it from the file
+    tile = datas_choice(mode, date, itile)
     # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
     # iprof = output['IPROF']
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
-
-    nbprof = len(CT)
     
     lon_rad = np.deg2rad(lon_deg)
     lat_rad = np.deg2rad(lat_deg)
@@ -374,10 +366,27 @@ def compute_std_at_zref(itile, reso_deg, timeflag, verbose=False):
     return lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd
 
 
-def main(itile, typestat, reso, timeflag):
+def datas_choice(mode, date, itile):
+    tile = tiler.read_tile(itile)
+    julday = argotools.conversion_gregd_juld(int(date))
+    idx_f = []
+    list(mode)
+    for m in list(mode):
+            idx = np.where(tile['DATA_MODE'] == m)
+    idx1 = np.where(tile['JULD'] <= julday)
+    for i in range(len(idx)):
+        for j in range(len(idx1)):
+            if idx[i] == idx1[j]:
+                idx_f.append(idx[i])
+        
+
+    return tile[idx_f]
+
+
+def main(itile, typestat, reso, timeflag, date, mode):
     """Main function of stats.py"""
-    create_stat_file(itile, typestat, reso, timeflag)
-    write_stat_file(itile, typestat, reso, timeflag)
+    create_stat_file(itile, typestat, reso, timeflag, date, mode)
+    write_stat_file(itile, typestat, reso, timeflag, date, mode)
     #  create_stat_file(68, 'zmean', 0.5, 'annual')
     #  write_stat_file(68, 'zmean', 0.5, 'annual')
 
@@ -385,11 +394,8 @@ def main(itile, typestat, reso, timeflag):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    itile = 80
-    reso_deg = 0.5
-    timeflag = 'annual'
-    lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd = compute_std_at_zref(itile, reso_deg, timeflag, verbose=True)
-    #main(50, 'zstd', 0.5, 'annual')
+    for i in range(300):
+        main(i, 'zmean', 0.5, 'annual', '2017', 'AD')
 #==============================================================================
 #     main(51, 'zmean', 0.5, 'annual')
 #     main(50, 'zmean', 0.5, 'annual')

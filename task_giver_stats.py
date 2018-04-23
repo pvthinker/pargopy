@@ -12,11 +12,19 @@
 
 from mpi4py import MPI
 import numpy as np
-import time as time
 import stats as stats
-import argotools as argotools
+import os.path as path
+import param as param
 
-typestat = 'zmean'
+path_to_tiles = param.path_to_tiles
+
+date = '2017'
+# mode defines the values selected :
+# R : Real time
+# A : Adjusted Real Time
+# D : Delayed time (Values verified)
+mode = 'AD'
+typestat = 'zstd'
 reso = 0.5
 timeflag = 'annual'
 #  nbtasks = 80  # master will defined nbtasks of random size
@@ -36,57 +44,15 @@ reqr = []
 
 
 def ordering_tasks(tasks):
-    size_of_tiles = []
-    sorted_tasks = []
-    for i, task in enumerate(tasks):
-        subargodb = argotools.read_argo_filter(task)
-        n_profiles = len(np.where(subargodb['FLAG'][:] == 0)[0])
-        size_of_tiles.append(n_profiles)
-    sorted_tiles = sorted(size_of_tiles, reverse=True)
-    for i, task in enumerate(tasks):
-        sorted_tasks.append(tasks[size_of_tiles.index(sorted_tiles[i])])
-    return sorted_tasks
+    """Sort the tasks according to their workload
+    workload is proportional to size of the tile file"""
+    def tilefilename(itile):
+        return '%s/tile%03i.pkl' % (path_to_tiles, itile)
 
-
-def master_work_blocking(nslaves):
-    """Master organizes the work using blocking communications with
-    slaves
-
-    """
-
-    for j in range(3):
-        for islave in range(1, nslaves+1):
-            nx = int(50*np.random.uniform())
-            print('slave %i needs to treat %i data' % (islave, nx))
-            comm.isend(nx, dest=islave, tag=islave)
-
-            # this is blocking the loop
-            answer = comm.recv(source=islave, tag=islave)
-            print('slave %i is beging for %s' % (islave, answer))
-
-    for islave in range(1, nslaves+1):
-        comm.isend('done', dest=islave, tag=islave)
-
-
-def slave_work_blocking(islave):
-    """Very simple function for slaves based on blocking communications
-    with master
-
-    """
-    ok = False
-    while not(ok):
-        msg = comm.recv(source=0, tag=islave)
-        if type(msg) is str:
-            if msg == 'done':
-                ok = True
-                print('ok slave %i stops' % islave)
-        if type(msg) == int:
-            nx = msg
-            print('slave %i treating %i data' % (islave, nx))
-            # do here some work, e.g. sleep for nx seconds
-            time.sleep(nx)
-            # tell master that you're done
-            comm.send('more', dest=0, tag=islave)
+    workload = [path.getsize(tilefilename(t)) for t in tasks]
+    idx = np.argsort(workload)
+    print(type(idx[0]))
+    return tasks[int(idx)]
 
 
 def getavailableslave(slavestate):
@@ -105,13 +71,12 @@ def getavailableslave(slavestate):
 
     if islave == nslaves:
         # all slaves are busy, let's wait for the first
-        print('waiting ...', len(reqr), answer)
+        # print('waiting ...', len(reqr), answer)
         MPI.Request.Waitany(reqr, status)
-        print('ok a slave is available', answer)
+        # print('ok a slave is available', answer)
         islave = 0
         while (islave < nslaves) and (answer[islave][0] == 0):
             islave += 1
-        print('islave = %i' % islave)
         slavestate[islave] = 1  # available again
         # note  slave send the message int(1)
         # master is getting the msh in the answer array
@@ -120,7 +85,8 @@ def getavailableslave(slavestate):
         # todo: remove the reqr that is done
 
     else:
-        print('=> %i is available' % (islave+1))
+        pass
+    # print('=> %i is available' % islave)
     return islave
 
 
@@ -132,13 +98,15 @@ def master_work_nonblocking(nslaves):
     """
 
     tasks = range(300)
+    #  tasks = [285, 283, 284, 292, 297, 295, 294, 296, 293]
     nbtasks = len(tasks)
+    print(nbtasks)
     # sorting the tasks according to their size
     # improves the load balance among slaves (by a lot)
     # for instance, it prevents cases where the last
     # task is a very long one, which would ruin their
     # global performance
-    tasks = ordering_tasks(tasks)
+    #  tasks = ordering_tasks(tasks)
 
     print('List of tasks to be done:', tasks)
 
@@ -150,9 +118,9 @@ def master_work_nonblocking(nslaves):
     while itask < nbtasks:
         islave = getavailableslave(slavestate)
         record[itask] = islave+1
-        print('send work to %i' % (islave+1))
+        print('send to %i' % (islave+1))
         comm.isend((itask, tasks[itask]), dest=islave+1, tag=islave+1)
-        print('answer[%i] = ' % islave, answer[islave])
+        # print('answer[%i] = ' % islave, answer[islave])
         reqr.append(comm.Irecv(answer[islave], source=islave+1, tag=islave+1))
         slavestate[islave] = 0
         itask += 1
@@ -162,11 +130,12 @@ def master_work_nonblocking(nslaves):
     for islave in range(1, nslaves+1):
         comm.isend('done', dest=islave, tag=islave)
 
+    comm.Barrier()
     print('-'*40)
     print('  Summary of who did what')
     for k in range(itask):
         print('    - task %2i / %3i data / done by %2i'
-              % (k, tasks[k], record[k]))    
+              % (k, tasks[k], record[k]))
     print('-'*40)
     print(' Load balance')
     for i in range(1, nslaves+1):
@@ -194,16 +163,15 @@ def slave_work_nonblocking(islave):
         if type(msg) is str:
             if msg == 'done':
                 ok = True
-                print('ok slave %i stops' % islave)
+                print('#%2i* stops' % islave)
 
         if type(msg) == tuple:
             itask, itile = msg
-            print('slave %2i treating task %2i / %3i data'
+            print('#%2i* treating task %03i / %03i data'
                   % (islave, itask, itile))
 
             # do the work, replace 'sleep' with a real work!
-            #  time.sleep(nx)
-            stats.main(itile, typestat, reso, timeflag)
+            stats.main(itile, typestat, reso, timeflag, date, mode)
 
             # tell the master that we are done and that he
             # can send another task
@@ -212,27 +180,23 @@ def slave_work_nonblocking(islave):
             # keep track of what have been done
             completed_tasks.append((itask, itile))
 
+    comm.Barrier()
     for task in completed_tasks:
-        print('slave %2i did taks %3i / %3i data'
+        print('#%2i- did task %03i / %3i data'
               % (islave, task[0], task[1]))
     print('-'*40)
 
 
 if __name__ == '__main__':
 
-    example = 'non-blocking'  # 'non-blocking' or 'blocking'
-
     if myrank == 0:
         print('Hello I\'m the master, I\'ve %i slaves under my control'
               % nslaves)
-        if example == 'non-blocking':
-            master_work_nonblocking(nslaves)
-        else:
-            master_work_blocking(nslaves)
+        comm.Barrier()
+        master_work_nonblocking(nslaves)
 
     else:
-        print('... I\'m slave %i' % myrank)
-        if example == 'non-blocking':
-            slave_work_nonblocking(myrank)
-        else:
-            slave_work_blocking(myrank)
+        print('#%2i* starts' % myrank)
+        comm.Barrier()
+
+        slave_work_nonblocking(myrank)
