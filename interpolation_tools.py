@@ -21,6 +21,7 @@ def interpolate_profiles(subargodb, wmodic):
     CT = np.zeros((n_profiles, n_zref))
     SA = np.zeros((n_profiles, n_zref))
     RHO = np.zeros((n_profiles, n_zref))
+    BVF2 = np.zeros((n_profiles, n_zref))
     LON = np.zeros((n_profiles,))
     LAT = np.zeros((n_profiles,))
     JULD = np.zeros((n_profiles,))
@@ -35,7 +36,8 @@ def interpolate_profiles(subargodb, wmodic):
         idx = np.where(infos['WMO'] == w)[0]
         iprof = infos['IPROF'][idx]
         dac = argotools.dac_from_wmo(wmodic, w)
-        data = argotools.read_profile(dac, w, header=True, data=True, dataqc=True)
+        data = argotools.read_profile(
+            dac, w, header=True, data=True, dataqc=True)
         for l, k in enumerate(iprof):
             if subargodb['FLAG'][idx[l]] == 0:
                 temp = data['TEMP'][k, :]
@@ -46,14 +48,14 @@ def interpolate_profiles(subargodb, wmodic):
                 pres_qc = data['PRES_QC'][k, :]
                 lon = data['LONGITUDE'][k]
                 lat = data['LATITUDE'][k]
-                Ti, Si, Ri, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
-                                         temp_qc, psal_qc, pres_qc,
-                                         lon, lat, zref)
+                Ti, Si, Ri, BVF2i, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
+                                                                    temp_qc, psal_qc, pres_qc,
+                                                                    lon, lat, zref)
                 ierr = 0
                 if len(Ti) == 0:
                     ierr = 1
                 # Checking if Ti, Si, Ri are full of NaN
-                checker = [] 
+                checker = []
                 checker2 = []
                 for i, T in enumerate(Ti):
                     checker.append(np.isnan(T))
@@ -66,6 +68,7 @@ def interpolate_profiles(subargodb, wmodic):
                     CT[kprof, :] = Ti
                     SA[kprof, :] = Si
                     RHO[kprof, :] = Ri
+                    BVF2[kprof, :] = BVF2i
                     TAG[kprof] = subargodb['TAG'][idx[l]]
                     LON[kprof] = subargodb['LONGITUDE'][idx[l]]
                     LAT[kprof] = subargodb['LATITUDE'][idx[l]]
@@ -82,12 +85,14 @@ def interpolate_profiles(subargodb, wmodic):
     res = {'CT': CT[:kprof, :],
            'SA': SA[:kprof, :],
            'RHO': RHO[:kprof, :],
+           'BVF2': BVF2[:kprof, :],
            'TAG': TAG[:kprof],
            'LONGITUDE': LON[:kprof],
            'LATITUDE': LAT[:kprof],
            'JULD': JULD[:kprof]}
     print('Interpolation ended')
     return res
+
 
 def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref):
     """Interpolate in situ data on zref depths
@@ -103,12 +108,16 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
         p = pres[klist]
 
         CT, SA, z = insitu_to_absolute(Tis, SP, p, lon, lat, zref)
-        Ti, Si = interp_at_zref(CT, SA, z, zref)
-        p = gsw.p_from_z(-zref, lat)
-        Ri = gsw.rho(Si, Ti, p)
+        Ti, Si, dTidz, dSidz = interp_at_zref(CT, SA, z, zref)
+        pi = gsw.p_from_z(-zref, lat)
+        Ri = gsw.rho(Si, Ti, pi)
+        Ri, alpha, beta = gsw.rho_alpha_beta(Si, Ti, pi)
+        g = gsw.grav(lat, pi)
+        BVF2i = g*(beta*dSidz-alpha*dTidz)
+        # Nf = np.sqrt(N2)/gsw.f(lat)
     else:
-        Ti, Si, Ri = [], [], []
-    return Ti, Si, Ri, CT, SA, z, ierr
+        Ti, Si, Ri, BVF2i = [], [], [], []
+    return Ti, Si, Ri, BVF2i, CT, SA, z, ierr
 
 
 def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
@@ -116,13 +125,14 @@ def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
     and the error flag ierr
     ierr = 0 : no pb
     ierr = 1 : too few data in the profile"""
-#==============================================================================
+# ==============================================================================
 #     klist = np.zeros((len(temp_qc))) + n
 #     for i, rank in enumerate(temp_qc):
 #         if temp_qc[i] == '1':
 #             klist[:] = i
-#==============================================================================
-    klist = [k for k in range(len(temp_qc)) if (temp_qc[k] == '1') and (sal_qc[k] == '1') and (pres_qc[k] == '1')]
+# ==============================================================================
+    klist = [k for k in range(len(temp_qc)) if (temp_qc[k] == '1') and (
+        sal_qc[k] == '1') and (pres_qc[k] == '1')]
     #  print(klist)
     nk = len(klist)
     ierr = 0
@@ -142,191 +152,171 @@ def insitu_to_absolute(Tis, SP, p, lon, lat, zref):
 
 
 def interp_at_zref(CT, SA, z, zref):
-    """Interpolate CT and SA from their native depths z to zref"""
-    nbpi, zs, ks = select_depth(zref, z)
+    """Interpolate CT, SA, dCT/dz and dSA/dz from their native depths z to
+    zref
+
+    Method: we use piecewise Lagrange polynomial interpolation
+
+    For each zref[k], we select a list of z[j] that are close to
+    zref[k], imposing to have z[j] that are above and below zref[k]
+    (except near the boundaries)
+
+    If only two z[j] are found then the result is a linear interpolation
+
+    If n z[j] are found then the result is a n-th order interpolation.
+
+    For interior points we may go up to 6-th order
+
+    For the surface level (zref==0), we do extrapolation
+
+    For the bottom level (zref=2000), we do either extrapolation or
+    interpolation if data deeper than 2000 are available.
+
+    """
+
     nref = len(zref)
     CTi = np.zeros((nref,), dtype=float)
     SAi = np.zeros((nref,), dtype=float)
-    # extrapolation at surface
-    k = 0
-    nupper = nbpi[0]+nbpi[1]    
-    if nupper==1:
-        CTi[k] = CT[0]
-        SAi[k] = SA[0]
-    elif nupper>=2:
-        a, b = lincoef(zref[k], (zs[0]+zs[1])[:2])
-        CTi[k] = a*CT[0] + b*CT[1]
-        SAi[k] = a*SA[0] + b*SA[1]
-    else:
-        CTi[k] = np.NaN
-        SAi[k] = np.NaN
-    # level 1
-    k = 1
-    if (nbpi[k-1] >= 1) and (nbpi[k]+nbpi[k+1] >= 1):
-        k0 = ks[k-1][-1]
-        k1 = (ks[k]+ks[k+1])[0]
-        a, b = lincoef(zref[k], [z[k0], z[k1]])
-        CTi[k] = a*CT[k0] + b*CT[k1]
-        SAi[k] = a*SA[k0] + b*SA[k1]
-    else:
-        CTi[k] = np.NaN
-        SAi[k] = np.NaN
-        
-    # interpolation for interior values
-    for k in range(2,nref-2):
-        if (nbpi[k-2]+nbpi[k-1] >= 2) and (nbpi[k]+nbpi[k+1] >= 2):
-            # bilinear interpolation
-            k0 = (ks[k-2]+ks[k-1])[-2:]
-            k1 = (ks[k]+ks[k+1])[0:2]
-            coef, ierr = cubiccoef(zref[k], list(z[k0])+list(z[k1]))
-            a, b, c, d = coef
-            if ierr==0:
-                CTi[k] = a*CT[k0[0]] + b*CT[k0[1]] + c*CT[k1[0]] + d*CT[k1[1]]
-                SAi[k] = a*SA[k0[0]] + b*SA[k0[1]] + c*SA[k1[0]] + d*SA[k1[1]]
-            else:
-                CTi[k] = np.NaN
-                SAi[k] = np.NaN
-        elif (nbpi[k-2]+nbpi[k-1] >= 2) and (nbpi[k]+nbpi[k+1] == 1):
-            k0 = (ks[k-2]+ks[k-1])[-2:]
-            k1 = (ks[k]+ks[k+1])[0]
-            coef, ierr = paraboliccoef(zref[k], list(z[k0])+[z[k1]])
-            a, b, c = coef
-            if ierr==0:
-                CTi[k] = a*CT[k0[0]] + b*CT[k0[1]] + c*CT[k1]
-                SAi[k] = a*SA[k0[0]] + b*SA[k0[1]] + c*SA[k1]
-            else:
-                CTi[k] = np.NaN
-                SAi[k] = np.NaN
-            
-        elif (nbpi[k-2]+nbpi[k-1] == 1) and (nbpi[k]+nbpi[k+1] >=2):
-            k0 = (ks[k-2]+ks[k-1])[-2:]
-            k1 = (ks[k]+ks[k+1])[0:2]
-            coef, ierr = paraboliccoef(zref[k], [z[k0]]+list(z[k1]))
-            a, b, c = coef
-            if ierr==0:
-                CTi[k] = a*CT[k0] + b*CT[k1[0]] + c*CT[k1[1]]
-                SAi[k] = a*SA[k0] + b*SA[k1[0]] + c*SA[k1[1]]
-            else:
-                CTi[k] = np.NaN
-                SAi[k] = np.NaN
+    dCTdzi = np.zeros((nref,), dtype=float)
+    dSAdzi = np.zeros((nref,), dtype=float)
 
-            
-        elif (nbpi[k-2]+nbpi[k-1] >= 1) and (nbpi[k]+nbpi[k+1] >= 1):
-            k0 = (ks[k-2]+ks[k-1])[-1]
-            k1 = (ks[k]+ks[k+1])[0]
-            a, b = lincoef(zref[k], [z[k0], z[k1]])
-            CTi[k] = a*CT[k0] + b*CT[k1]
-            SAi[k] = a*SA[k0] + b*SA[k1]            
+    nbpi, ks = select_depth(zref, z)
+    nupper = np.zeros((nref,), dtype=int)
+    nlower = np.zeros((nref,), dtype=int)
+
+    # count the number of data that are lower and upper than zref[k]
+    for k in range(nref):
+        if k > 0:
+            nlower[k] += nbpi[k-1]
+        if k > 1:
+            nlower[k] += nbpi[k-2]
+        if k < nref:
+            nupper[k] += nbpi[k]
+        if k < nref-1:
+            nupper[k] += nbpi[k+1]
+
+    # for each zref, form the list of z[j] used for the interpolation
+    # if the list has at least two elements (a linear interpolatio is possible)
+    # then do it, otherwise, skip that depth
+    for k in range(nref):
+        idx = []
+        if k == 0:
+            if nupper[k] >= 2:
+                idx = (ks[0]+ks[1]+ks[2])[:3]
+        elif k == 1:
+            if (nlower[k] >= 1) and (nupper[k] >= 1):
+                idx = ks[0][:-3]+(ks[1]+ks[2])[:3]
+        elif k == (nref-1):
+            if (nlower[k]+nupper[k]) >= 2:
+                idx = (ks[k-2]+ks[k-1])[-3:]+ks[k][:3]
+        elif k == (nref-2):
+            if (nlower[k] >= 1) and (nupper[k] >= 1):
+                idx = (ks[k-2]+ks[k-1])[-3:]+(ks[k]+ks[k+1])[:3]
         else:
-            CTi[k] = np.NaN
-            SAi[k] = np.NaN
+            if (nlower[k] >= 1) and (nupper[k] >= 1):
+                idx = (ks[k-2]+ks[k-1])[-3:]+(ks[k]+ks[k+1])[:3]
 
-    k = nref-2
-    if (nbpi[k-2]+nbpi[k-1] >= 1) and (nbpi[k] >= 1):
-        k0 = (ks[k-2]+ks[k-1])[-1]
-        k1 = (ks[k])[0]
-        a, b = lincoef(zref[k], [z[k0], z[k1]])
-        CTi[k] = a*CT[k0] + b*CT[k1]
-        SAi[k] = a*SA[k0] + b*SA[k1]
-    else:
-        CTi[k] = np.NaN
-        SAi[k] = np.NaN
-    
-    # bottom level
-    k = nref-1
-    nbottom = nbpi[-2]+nbpi[-1]
-    if nbottom==1:
-        CTi[k] = CT[-1]
-        SAi[k] = SA[-1]
-    elif nbottom>=2:
-        a, b = lincoef(zref[k], (zs[-2]+zs[-1])[-2:])
-        CTi[k] = a*CT[-2] + b*CT[-1]
-        SAi[k] = a*SA[-2] + b*SA[-1]
-    else:
-        CTi[k] = np.NaN
-        SAi[k] = np.NaN
-    return CTi, SAi
+        if len(idx) >= 2:
+            # print('****', k, idx, z[idx].data)
+            cs, ds = lagrangepoly(zref[k], z[idx])
+            # the meaning of the weights computed by lagrangepoly should
+            # be clear in the code below
+            #
+            # cs[i] (resp. ds[i]) is the weight to apply on CT[idx[i]]
+            # sitting at z[idx[i]] to compute CT (resp. dCT/dz) at zref[k]
+            #
+            CTi[k] = np.sum(cs*CT[idx])
+            SAi[k] = np.sum(cs*SA[idx])
+            dCTdzi[k] = np.sum(ds*CT[idx])
+            dSAdzi[k] = np.sum(ds*SA[idx])
+        else:
+            CTi[k] = np.nan
+            SAi[k] = np.nan
+            dCTdzi[k] = np.nan
+            dSAdzi[k] = np.nan
+
+    return CTi, SAi, dCTdzi, dSAdzi
 
 
 def select_depth(zref, z):
     """Return the number of data points we have between successive zref.
-    This is used to decide which interpolation is the best: none,
-    linear or cubic. For endpoints (zref=0) and bottom(zref=2000) use
-    linear extrapolation
+
+    for each intervale k, we select the z_j such that
+
+    zref[k] <= z_j < zref[k+1], for k=0 .. nref-2
+
+    zref[nref-1] <= z_j < zextra, for k=nref-1
+
+    and return
+
+    nbperintervale[k] = number of z_j
+
+    kperint[k] = list of j's
+
+
+    with zextra = 2*zref[-1] - zref[-2]
 
     """
-    j = 0
     nz = len(z)
     nref = len(zref)
+    zextra = 2*zref[-1]-zref[-2]
+    zrefextended = list(zref)+[zextra]
     nbperintervale = np.zeros((nref,), dtype=int)
-    zperint = []
     kperint = []
-    for k, z0 in enumerate(zref[1:]):
+    zprev = -1.
+    j = 0
+    for k, z0 in enumerate(zrefextended[1:]):
         n = 0
-        zs = []
         ks = []
         while (j < nz) and (z[j] < z0):
-            n += 1
-            zs.append(z[j])
-            ks.append(j)
+            # for a few profiles it may happens that two consecutive
+            # data sit at the same depth this causes a division by
+            # zero in the interpolation routine.  Here we fix this by
+            # simply skipping depths that are already used.
+            if z[j] > zprev:
+                n += 1
+                ks.append(j)
+            zprev = z[j]
             j += 1
         nbperintervale[k] = n
-        zperint.append(zs)
         kperint.append(ks)
-    return nbperintervale, zperint, kperint
+    return nbperintervale, kperint
 
 
-def lincoef(z0, zs):
-    """Weights for linear interpolation at z0 given the two depths in zs"""
-    dz = zs[1]-zs[0]
-    if abs(dz)<1e-3:
-        a, b = 0.5, 0.5
-    else:
-        a = (zs[1]-z0)/dz
-        b = (z0-zs[0])/dz
-    return a, b
+def lagrangepoly(x0, xi):
+    """Weights for polynomial interpolation at x0 given a list of xi
+    return both the weights for function (cs) and its first derivative
+    (ds)
 
+    Example:
+    lagrangepoly(0.25, [0, 1])
+    >>> [0.75, 0.25,], [1, -1]
 
-def paraboliccoef(z0, zs):
-    """Weights for cubic interpolation at z0 given the four depths in zs"""
-    coef = np.zeros((3,), dtype=float)
-    #  print(zs)
-    ncoef = len(zs)
-    if ncoef < 3:
-        print('**** pb with parabolic interp, only %i different zs' % ncoef)
-        ierr = 1
-    else:
-        ierr = 0
+    """
+    xi = np.asarray(xi)
+    ncoef = len(xi)
+    cs = np.ones((ncoef,))
+    ds = np.zeros((ncoef,))
+
+    denom = np.zeros((ncoef, ncoef))
     for i in range(ncoef):
-        coef[i] = 1.
         for j in range(ncoef):
             if i != j:
-                coef[i] *= (z0-zs[j])/(zs[i]-zs[j])
-    return coef, ierr
+                dx = xi[i]-xi[j]
+                if dx == 0:
+                    # should not happen because select_depth removes
+                    # duplicate depths
+                    raise ValueError('division by zero in lagrangepoly')
+                else:
+                    denom[i, j] = 1./dx
 
-
-def cubiccoef(z0, zs):
-    """Weights for cubic interpolation at z0 given the four depths in zs"""
-    coef = np.zeros((4,), dtype=float)
-    ncoef = len(set(zs))
-    if ncoef < 4:
-        print('**** pb with cubic interp, only %i different zs' % ncoef)
-        ierr = 1
-    else:
-        ierr = 0
     for i in range(ncoef):
-        coef[i] = 1.
         for j in range(ncoef):
             if i != j:
-                coef[i] *= (z0-zs[j])/(zs[i]-zs[j])
-    return coef, ierr
-
-
-def fixqcarray(qc):
-    qcm = np.zeros_like(qc, dtype=int)
-    shape = np.shape(qcm)
-    for j in range(shape[0]):
-        for i in range(shape[1]):
-            if qc[j,i] == '1':
-                qcm[j,i] = 1
-    return qcm
+                cff = 1.
+                cs[i] *= (x0-xi[j])*denom[i, j]
+                for k in range(ncoef):
+                    if (k != i) and (k != j):
+                        cff *= (x0-xi[k])*denom[i, k]
+                ds[i] += cff*denom[i, j]
+    return cs, ds
