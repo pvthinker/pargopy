@@ -3,9 +3,13 @@
 Created on Mon Mar 12 13:10:24 2018
 
 @author: herry
+
+Tools used by all the python files to generate the atlas
+
 """
-# import jdcal
+
 from __future__ import with_statement
+import jdcal
 import os
 import glob
 import pickle
@@ -15,6 +19,7 @@ import matplotlib.pyplot as plt
 import param as param
 
 path_argo = param.path_to_argo
+path_filter = param.path_to_filter
 path_localdata = param.path_to_data
 
 daclist = ['aoml', 'bodc', 'coriolis', 'csio',
@@ -134,6 +139,7 @@ def read_profile(dac, wmo, iprof=None,
             if header:
                 for key in key_header:
                     output[key] = f.variables[key][idx]
+                    output['DATA_MODE'] = np.asarray([c for c in f.variables['DATA_MODE'][idx]])
 
             if headerqc:
                 for key in key_headerqc:
@@ -154,7 +160,6 @@ def read_profile(dac, wmo, iprof=None,
                     else:
                         output[key] = np.zeros(
                                 (output['N_PROF'], output['N_LEVELS']), dtype=str)
-    print('file red')
 
     return output
 
@@ -205,6 +210,8 @@ def get_tag(kdac, wmo, kprof):
     """Compute the tag number of a profile
 
     The inverse of get_tag() is retrieve_infos_from_tag()"""
+    if kprof > 1000:
+        raise ValueError("kprof > 1000, the tag may be wrong")
 
     return (kdac*10000000+wmo)*1000+kprof
 
@@ -221,6 +228,21 @@ def retrieve_infos_from_tag(argodb, tag):
     idac = tag
     output = {'IDAC': idac, 'WMO': wmo, 'IPROF': iprof}
     return output
+
+
+def get_datamode(data):
+    """Return the data mode of the profile"""
+    mode = np.zeros(len(data), dtype=int)
+    for i, d in enumerate(data):
+        if d == 'R':
+            mode[i] = 0
+        elif d == 'A':
+            mode[i] = 1
+        elif d == 'D':
+            mode[i] = 2
+        else:
+            raise ValueError("No data mode given")
+    return mode
 
 
 def plot_location_profiles(argodb):
@@ -265,6 +287,7 @@ def plot_wmos_stats(wmostats):
 
 #  ----------------------------------------------------------------------------
 def read_wmstats():
+    """Read the full wmstats database"""
     print('read wmostats.pkl')
     with open('%s/wmstats.pkl' % path_localdata, 'r') as f:
         wmstats = pickle.load(f)
@@ -283,6 +306,7 @@ def read_argodb():
 
 #  ----------------------------------------------------------------------------
 def read_wmodic():
+    """Read the database containing the list of all the wmos"""
     print('read wmodic.pkl')
     with open('%s/wmodic.pkl' % path_localdata, 'r') as f:
         wmodic = pickle.load(f)
@@ -291,11 +315,10 @@ def read_wmodic():
 
 #  ----------------------------------------------------------------------------
 def read_argo_filter(i):
+    """Read the files containing parts of argodb chosen with lat/lon filters"""
     print('read argodic%003i.pkl' % i)
-    with open('%s/argodic%003i.pkl' % (path_localdata, i), 'rb') as f:
-        print('argodic opened')
+    with open('%s/argodic%003i.pkl' % (path_filter, i), 'rb') as f:
         argodic = pickle.load(f)
-        print('argodic%003i red' % i)
     return argodic
 
 
@@ -314,7 +337,7 @@ def conversion_gregd_juld(day, month, year):
     """Method converting gregorian day into julian day"""
     #  Petit décalage possible
     julianday = jdcal.gcal2jd(year, month, day)
-    print('This Gregorian Day corresponds to {0}'.format((julianday[0]+julianday[1]+0.5)-2433282.500000))
+    return julianday
 
 
 if False:

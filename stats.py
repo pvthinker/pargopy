@@ -12,13 +12,13 @@ import param as param
 
 
 path_to_stats = param.path_to_stats
-
+key_extraction = ['JULD', 'LONGITUDE', 'DATA_MODE', 'TAG', 'RHO', 'LATITUDE', 'SA', 'CT']
 zref = argotools.zref
 daclist = argotools.daclist
 
 def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     """Create statistics netcdf file"""
-    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date, mode, typestat, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     rootgrp = Dataset(filename, "w", format="NETCDF4")
     argodic = argotools.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
@@ -125,7 +125,7 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
 def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
     """Write statistics into a netcdf file"""
     # idem, depend du type de stat
-    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso_deg, date, mode, typestat, typestat, reso_deg, timeflag, itile)
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso_deg, date[0], mode, typestat, typestat, reso_deg, timeflag, itile)
     if (os.path.isfile(filename)):
         print('filename existe')
         f = Dataset(filename, "r+", format="NETCDF4")
@@ -158,7 +158,7 @@ def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
 
 def read_stat_file(typestat, itile, reso, timeflag, date, mode):
     """Read statistics into a netcdf file"""
-    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date, mode, typestat, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     print('read stat file : %s' % filename)
     # filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, typestat, reso, timeflag, itile)
 
@@ -206,7 +206,7 @@ def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
 
 def compute_mean_at_zref(itile, reso_deg, mode, date):
     """Compute the mean at depths zref"""
-    tile = datas_choice(mode, date, itile)
+    tile = data_choice(mode, date, itile)
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
     argodic = argotools.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
@@ -267,7 +267,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag, date, mode, verbose=False):
 
     # gridded arrays of CT, SA variances
     lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stat_file('zmean', itile, reso_deg, timeflag, date, mode) # read it from the file
-    tile = datas_choice(mode, date, itile)
+    tile = data_choice(mode, date, itile)
     # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
     # iprof = output['IPROF']
     CT, SA, RI, lat, lon = tile['CT'], tile['SA'], tile['RHO'], tile['LATITUDE'], tile['LONGITUDE']
@@ -366,21 +366,26 @@ def compute_std_at_zref(itile, reso_deg, timeflag, date, mode, verbose=False):
     return lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd
 
 
-def datas_choice(mode, date, itile):
+def data_choice(mode, date, itile):
     tile = tiler.read_tile(itile)
-    julday = argotools.conversion_gregd_juld(int(date))
-    idx_f = []
-    list(mode)
-    for m in list(mode):
-            idx = np.where(tile['DATA_MODE'] == m)
-    idx1 = np.where(tile['JULD'] <= julday)
-    for i in range(len(idx)):
-        for j in range(len(idx1)):
-            if idx[i] == idx1[j]:
-                idx_f.append(idx[i])
+    julday = argotools.conversion_gregd_juld(int(date[0]), int(date[1]), int(date[2]))
+    mode_list = list(mode)
+    idx = []
+    tile_extract = {}
+    for m in mode_list:
+            idx += np.where((tile['DATA_MODE'] == m) & (tile['JULD'] < julday))
+    if len(mode_list) == 2:
+        idx1 = np.concatenate((idx[0], idx[1]))
+    elif len(mode_list) == 3:
+        idx1 = np.concatenate((idx[0], idx[1], idx[2]))
+    else:
+        idx1 = idx[0]
+    for k in key_extraction:
+        tile_extract[k] = tile[k][idx1]
+    tile_extract['ZREF'] = tile['ZREF']
         
 
-    return tile[idx_f]
+    return tile_extract
 
 
 def main(itile, typestat, reso, timeflag, date, mode):

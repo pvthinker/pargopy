@@ -18,13 +18,16 @@ import param as param
 
 path_to_tiles = param.path_to_tiles
 
-date = '2017'
+year = '2017'
+month = '12'
+day = '31'
+date = [year, month, day]
 # mode defines the values selected :
 # R : Real time
 # A : Adjusted Real Time
 # D : Delayed time (Values verified)
 mode = 'AD'
-typestat = 'zstd'
+typestat = 'zmean'
 reso = 0.5
 timeflag = 'annual'
 #  nbtasks = 80  # master will defined nbtasks of random size
@@ -100,7 +103,6 @@ def master_work_nonblocking(nslaves):
     tasks = range(300)
     #  tasks = [285, 283, 284, 292, 297, 295, 294, 296, 293]
     nbtasks = len(tasks)
-    print(nbtasks)
     # sorting the tasks according to their size
     # improves the load balance among slaves (by a lot)
     # for instance, it prevents cases where the last
