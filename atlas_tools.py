@@ -5,12 +5,14 @@ import research_tools as res
 import atlas as at
 import tile as tile
 import general_tools as gene
+import param as param
 
-diratlas = '/home1/datawork/groullet/Argo'
-# diratlas = '/net/libra/local/tmp/1/roullet/pargopy/atlas'
+diratlas = param.path_to_atlas
 
-atlas_name = 'zmean_0.5_annual'
-listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
+#  atlas_name = 'zmean_0.5_annual'
+#  listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
+atlas_name = at.atlas_name
+listvar = at.listvar
 
 reso = 0.5
 nlon = 20
