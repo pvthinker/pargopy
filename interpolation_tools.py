@@ -205,7 +205,7 @@ def interp_at_zref(CT, SA, z, zref):
             nupper[k] += nbpi[k+1]
 
     # for each zref, form the list of z[j] used for the interpolation
-    # if the list has at least two elements (a linear interpolatio is possible)
+    # if the list has at least two elements (a linear interpolation is possible)
     # then do it, otherwise, skip that depth
     for k in range(nref):
         idx = []

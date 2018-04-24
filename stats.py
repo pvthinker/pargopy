@@ -12,20 +12,16 @@ import param as param
 
 
 path_to_stats = param.path_to_stats
-key_extraction = ['JULD', 'LONGITUDE', 'DATA_MODE',
-                  'TAG', 'RHO', 'LATITUDE', 'SA', 'CT']
+key_extraction = ['JULD', 'LONGITUDE', 'DATA_MODE', 'TAG', 'RHO', 'LATITUDE', 'SA', 'CT']
 zref = argotools.zref
 daclist = argotools.daclist
 
-
 def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     """Create statistics netcdf file"""
-    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (
-        path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     rootgrp = Dataset(filename, "w", format="NETCDF4")
     argodic = argotools.read_argo_filter(itile)
-    minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic[
-        'LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
+    minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso)
     nlat, nlon = np.shape(lon_deg)
     rootgrp.createDimension('zref', len(zref))
@@ -57,8 +53,7 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
         Ribar.long_name = 'Density'
         Ribar.units = '???'
 
-        BVF2bar = rootgrp.createVariable(
-            'BVF2bar', 'f4', ('zref', 'lat', 'lon'))
+        BVF2bar = rootgrp.createVariable('BVF2bar', 'f4', ('zref', 'lat', 'lon'))
         BVF2bar.long_name = 'Brunt Vaisala frequency squared'
         BVF2bar.units = 's^-2'
 
@@ -98,26 +93,25 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
         Ristd.long_name = 'Density'
         Ristd.units = 'kg.m^-3'
 
-        BVF2std = rootgrp.createVariable(
-            'BVF2std', 'f4', ('zref', 'lat', 'lon'))
+        BVF2std = rootgrp.createVariable('BVF2std', 'f4', ('zref', 'lat', 'lon'))
         BVF2std.long_name = 'std of Brunt Vaisala frequency squared'
         BVF2std.units = 's^-2'
 
-        v = rootgrp.createVariable('DZmean', 'f4', ('depth', 'lat', 'lon'))
+        v = rootgrp.createVariable('DZmean', 'f4', ('zref', 'lat', 'lon'))
         v.long_name = 'Mean isopycnal displacement'
         v.units = 'm'
 
-        v = rootgrp.createVariable('DZstd', 'f4', ('depth', 'lat', 'lon'))
-        v.long_name = 'Std isopycnal displacement'
-        v.units = 'm'
+        w = rootgrp.createVariable('DZstd', 'f4', ('zref', 'lat', 'lon'))
+        w.long_name = 'Std isopycnal displacement'
+        w.units = 'm'
 
-        v = rootgrp.createVariable('DZskew', 'f4', ('depth', 'lat', 'lon'))
-        v.long_name = 'Skewness isopycnal displacement'
-        v.units = 'none'
+        x = rootgrp.createVariable('DZskew', 'f4', ('zref', 'lat', 'lon'))
+        x.long_name = 'Skewness isopycnal displacement'
+        x.units = 'none'
 
-        v = rootgrp.createVariable('EAPE', 'f4', ('depth', 'lat', 'lon'))
-        v.long_name = 'Eddy available potential energy'
-        v.units = 'J.m^-3'
+        y = rootgrp.createVariable('EAPE', 'f4', ('zref', 'lat', 'lon'))
+        y.long_name = 'Eddy available potential energy'
+        y.units = 'J.m^-3'
 
         rootgrp.close()
 
@@ -138,20 +132,14 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
 
 def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
     """Write statistics into a netcdf file"""
-
     # idem, depend du type de stat
-    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (
-        path_to_stats, reso_deg, date[0], mode, typestat, typestat, reso_deg, timeflag, itile)
-
+    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso_deg, date[0], mode, typestat, typestat, reso_deg, timeflag, itile)
     if (os.path.isfile(filename)):
         print('filename existe')
         f = Dataset(filename, "r+", format="NETCDF4")
         # idem, depend du type de stat
         if typestat == 'zmean':
-
-            lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar, BVF2bar = compute_mean_at_zref(
-                itile, reso_deg)
-
+            lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar, BVF2bar = compute_mean_at_zref(itile, reso_deg, mode, date)
             f.variables['CTbar'][:, :, :] = CTbar
             f.variables['SAbar'][:, :, :] = SAbar
             f.variables['Ribar'][:, :, :] = Ribar
@@ -162,9 +150,7 @@ def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
             f.variables['zref'][:] = zref
             f.close()
         elif typestat == 'zstd':
-
-            lon_deg, lat_deg, CTstd, SAstd, BVF2std, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd = compute_std_at_zref(
-                itile, reso_deg, timeflag)
+            lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd, BVF2std = compute_std_at_zref(itile, reso_deg, timeflag, mode, date)
             f.variables['NBstd'][:, :, :] = NBstd
             f.variables['CTstd'][:, :, :] = CTstd
             f.variables['SAstd'][:, :, :] = SAstd
@@ -182,10 +168,7 @@ def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
 
 def read_stat_file(typestat, itile, reso, timeflag, date, mode):
     """Read statistics into a netcdf file"""
-
-    # filename = '{0}/{1}/{2}/{1}_{2}_{3}_{4:03}.nc'.format(path_to_stats, typestat, reso, timeflag, itile)
-    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (
-        path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     print('read stat file : %s' % filename)
 
     if (os.path.isfile(filename)):
@@ -195,30 +178,28 @@ def read_stat_file(typestat, itile, reso, timeflag, date, mode):
             CTbar = f.variables['CTbar'][:, :, :]
             SAbar = f.variables['SAbar'][:, :, :]
             Ribar = f.variables['Ribar'][:, :, :]
-            # BVF2bar = f.variables['BVF2bar'][:, :, :]
+            BVF2bar = f.variables['BVF2bar'][:, :, :]
             NBbar = f.variables['NBbar'][:, :, :]
             lat_deg = f.variables['lat'][:, :]
             lon_deg = f.variables['lon'][:, :]
             f.close()
-            return lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar  # , BVF2bar
+            return lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar, BVF2bar
         elif typestat == 'zstd':
             NBstd = f.variables['CTstd'][:, :, :]
             CTstd = f.variables['CTstd'][:, :, :]
             SAstd = f.variables['SAstd'][:, :, :]
             Ristd = f.variables['Ristd'][:, :, :]
-
-            # todo: BVF2std
-
+            BVF2std = f.variables['BVF2std'][:, :, :]
             lat_deg = f.variables['lat'][:, :]
             lon_deg = f.variables['lon'][:, :]
             f.close()
-            return lon_deg, lat_deg, CTstd, SAstd, Ristd, NBstd
+            return lon_deg, lat_deg, CTstd, SAstd, Ristd, NBstd, BVF2std
 
 
 def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
     """ setup the grid coordinates (in degrees)
     coordinates are round multiples of reso_deg
-    reso_deg sets the grid resolution, typically 0.5deg"""
+    reso_deg sets the grid resolution, typically 0.5deg""" 
 
     minlon = np.ceil(minlon/reso_deg)*reso_deg
     maxlon = np.floor(maxlon/reso_deg)*reso_deg
@@ -236,18 +217,11 @@ def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
 
 def compute_mean_at_zref(itile, reso_deg, mode, date):
     """Compute the mean at depths zref"""
-
-    # argodb = research.read_argo_filter(itile)  # argo.read_argodb()
-    # tile = tiler.read_tile(itile)
     tile = data_choice(mode, date, itile)
-    # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
-    # nbprof = output['IPROF']
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
-
     argodic = argotools.read_argo_filter(itile)
-    minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic[
-        'LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
+    minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso_deg)
 
     lon_rad = np.deg2rad(lon_deg)
@@ -269,7 +243,7 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
     BVF2bar = np.zeros((nz, nlat, nlon))
 
     for k in range(nbprof):
-        # print('%4i/%i' % (k, nbprof))
+        #  print('%4i/%i' % (k, nbprof))
         # todo: weigh in time using juld,
         # e.g. only winter statistics
         time_weight = 1.
@@ -308,17 +282,13 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
     """Compute the standard deviations at depths zref"""
 
     # gridded arrays of CT, SA variances
-    lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar = read_stat_file(
-        'zmean', itile, reso_deg, timeflag, date, mode)  # read it from the file
+    lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar, BVF2bar = read_stat_file('zmean', itile, reso_deg, timeflag, date, mode) # read it from the file
     tile = data_choice(mode, date, itile)
-
     # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
     # iprof = output['IPROF']
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
-
-    nbprof = len(CT)
-
+    
     lon_rad = np.deg2rad(lon_deg)
     lat_rad = np.deg2rad(lat_deg)
     reso_rad = np.deg2rad(reso_deg)
@@ -342,7 +312,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
     Ristd = np.zeros((nz, nlat, nlon))
     EAPE = np.zeros((nz, nlat, nlon))
 
-    wmin = 5e-3  # minimum weight below which a profile is drop
+    wmin = 5e-3 # minimum weight below which a profile is drop
 
     # double loop on each grid point (instead of a loop on each profile)
     for j in range(nlat):
@@ -353,19 +323,20 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
 
             # do all profiles
             weight = tools.compute_weight(lon_rad[j, i], lat_rad[j, i],
-                                          xlon_rad, xlat_rad,
-                                          reso_rad)
+                                            xlon_rad, xlat_rad,
+                                            reso_rad)
             weight *= time_weight
             # print(np.shape(RHObar))
-            interpolator = ip.interp1d(
-                RHObar[:, j, i], zref, bounds_error=False)
-
+            interpolator = ip.interp1d(RHObar[:,j,i], zref, bounds_error=False)
+            print(zref)
+            print(lat[j])
             p = gsw.p_from_z(-zref, lat[j])
             g = gsw.grav(lat[j], p)
             cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
             rho0 = RHObar[:, j, i].copy()
 
             drho = RI - RHObar[:, j, i]
+            dbvf2 = BVF2 - BVF2bar[:, j, i]
             dCT = CT-CAbar[:, j, i]
             dSA = SA-SAbar[:, j, i]
             zrho = interpolator(RI)
@@ -378,7 +349,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
 
             def average(field):
                 return np.nansum(weight*field, axis=0)
-
+            
             NBstd[:, j, i] = average(1.)
             CTstd[:, j, i] = average(dCT**2)
             SAstd[:, j, i] = average(dSA**2)
@@ -386,6 +357,7 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
             DZstd[:, j, i] = average(dz**2)
             DZskew[:, j, i] = average(dz**3)
             Ristd[:, j, i] = average(drho**2)
+            BVF2std[:, j, i] = average(dbvf2**2)
             EAPE[:, j, i] = average(dz*drho)
             # NBstd[:, j, i] = np.nansum(weight, axis=0)
             # CTstd[:, j, i] = np.nansum(weight*dCT**2, axis=0)
@@ -410,20 +382,26 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
     # skew = E( ((X-mu)/sigma)**3 )
     DZskew *= coef/DZstd**3
     Ristd = np.sqrt(coef*Ristd)
+    BVF2std = np.sqrt(coef*BVF2std)
     EAPE *= 0.5*coef
 
-    return lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd
+    return lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd, BVF2std
 
 
 def data_choice(mode, date, itile):
+    """
+    Make the tile filter to choose keep only the chosen mode ('R', 'A', 'D', 'AD' or 'RAD')
+    and the profiles under the chosen date (year, month, day)
+    Return the tile_extract according to the filters used.
+    :return: tile_extract
+    """
     tile = tiler.read_tile(itile)
-    julday = argotools.conversion_gregd_juld(
-        int(date[0]), int(date[1]), int(date[2]))
+    julday = argotools.conversion_gregd_juld(int(date[0]), int(date[1]), int(date[2]))
     mode_list = list(mode)
     idx = []
     tile_extract = {}
     for m in mode_list:
-        idx += np.where((tile['DATA_MODE'] == m) & (tile['JULD'] < julday))
+            idx += np.where((tile['DATA_MODE'] == m) & (tile['JULD'] < julday))
     if len(mode_list) == 2:
         idx1 = np.concatenate((idx[0], idx[1]))
     elif len(mode_list) == 3:
@@ -433,6 +411,7 @@ def data_choice(mode, date, itile):
     for k in key_extraction:
         tile_extract[k] = tile[k][idx1]
     tile_extract['ZREF'] = tile['ZREF']
+        
 
     return tile_extract
 
@@ -448,20 +427,19 @@ def main(itile, typestat, reso, timeflag, date, mode):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    # itile = 80
-    # reso_deg = 0.5
-    # timeflag = 'annual'
-    # lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd = compute_std_at_zref(
-    #     itile, reso_deg, timeflag, verbose=True)
-    # main(50, 'zstd', 0.5, 'annual')
-    for i in range(300):
-        main(i, 'zmean', 0.5, 'annual', '2017', 'AD')
-# ==============================================================================
+    main(292, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
+    #  main(293, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
+    #  main(294, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
+    #  main(295, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
+    #  main(296, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
+    #  main(297, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
+    #  main(298, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
+#==============================================================================
 #     main(51, 'zmean', 0.5, 'annual')
 #     main(50, 'zmean', 0.5, 'annual')
 #     main(70, 'zmean', 0.5, 'annual')
 #     main(71, 'zmean', 0.5, 'annual')
 #     main(72, 'zmean', 0.5, 'annual')
-# ==============================================================================
+#==============================================================================
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

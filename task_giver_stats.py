@@ -26,8 +26,8 @@ date = [year, month, day]
 # R : Real time
 # A : Adjusted Real Time
 # D : Delayed time (Values verified)
-mode = 'AD'
-typestat = 'zmean'
+mode = 'D'
+typestat = 'zstd'
 reso = 0.5
 timeflag = 'annual'
 #  nbtasks = 80  # master will defined nbtasks of random size
@@ -100,7 +100,7 @@ def master_work_nonblocking(nslaves):
 
     """
 
-    tasks = range(300)
+    tasks = range(276, 300)
     #  tasks = [285, 283, 284, 292, 297, 295, 294, 296, 293]
     nbtasks = len(tasks)
     # sorting the tasks according to their size

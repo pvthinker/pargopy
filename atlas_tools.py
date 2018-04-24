@@ -123,4 +123,3 @@ plt.title('CT @ z=%.0fm' % zref[kz])
 plt.colorbar()
 cid = fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show(1)
-

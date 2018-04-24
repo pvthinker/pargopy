@@ -14,9 +14,11 @@ from mpi4py import MPI
 import numpy as np
 import time as time
 import tile as tile
-import argotools as argotools
+import os.path as path
+import param as param
 #  nbtasks = 80  # master will defined nbtasks of random size
 
+path_to_tiles = param.path_to_tiles
 tmax = 15  # max size of each task
 
 comm = MPI.COMM_WORLD
@@ -32,16 +34,15 @@ reqr = []
 
 
 def ordering_tasks(tasks):
-    size_of_tiles = []
-    sorted_tasks = []
-    for i, task in enumerate(tasks):
-        subargodb = argotools.read_argo_filter(task)
-        n_profiles = len(np.where(subargodb['FLAG'][:] == 0)[0])
-        size_of_tiles.append(n_profiles)
-    sorted_tiles = sorted(size_of_tiles, reverse=True)
-    for i, task in enumerate(tasks):
-        sorted_tasks.append(tasks[size_of_tiles.index(sorted_tiles[i])])
-    return sorted_tasks
+    """Sort the tasks according to their workload
+    workload is proportional to size of the tile file"""
+    def tilefilename(itile):
+        return '%s/tile%03i.pkl' % (path_to_tiles, itile)
+
+    workload = [path.getsize(tilefilename(t)) for t in tasks]
+    idx = np.argsort(workload)
+    print(type(idx[0]))
+    return tasks[int(idx)]
 
 
 def master_work_blocking(nslaves):
@@ -101,7 +102,7 @@ def getavailableslave(slavestate):
 
     if islave == nslaves:
         # all slaves are busy, let's wait for the first
-        print('waiting ...', len(reqr), answer)
+        print('%i slave waiting ...' % islave, len(reqr), answer)
         MPI.Request.Waitany(reqr, status)
         print('ok a slave is available', answer)
         islave = 0
@@ -126,7 +127,10 @@ def master_work_nonblocking(nslaves):
     Master basically supervises things but does no work
 
     """
-
+    
+    #  tasks = range(200, 300)
+    #  tasks = [126, 131, 146, 149, 151, 171, 188, 190, 210, 233, 234, 235, 244, 
+    #           253, 254, 255, 264, 265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
     tasks = range(300)
     nbtasks = len(tasks)
     # sorting the tasks according to their size
@@ -134,7 +138,7 @@ def master_work_nonblocking(nslaves):
     # for instance, it prevents cases where the last
     # task is a very long one, which would ruin their
     # global performance
-    tasks = ordering_tasks(tasks)
+    #  tasks = ordering_tasks(tasks)
 
     print('List of tasks to be done:', tasks)
 
@@ -215,7 +219,6 @@ def slave_work_nonblocking(islave):
 
 
 if __name__ == '__main__':
-    print('Task Giver')
 
     example = 'non-blocking'  # 'non-blocking' or 'blocking'
 

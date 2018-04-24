@@ -7,9 +7,6 @@ import param as param
 dirstats = param.path_to_stats
 diratlas = param.path_to_atlas
 
-#  listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
-listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
-
 year = '2017'
 month = '12'
 day = '31'
@@ -18,15 +15,22 @@ date = [year, month, day]
 # R : Real time
 # A : Adjusted Real Time
 # D : Delayed time (Values verified)
-mode = 'AD'
+mode = 'D'
 typestat = 'zstd'
 reso = 0.5
 timeflag = 'annual'
 nlon = 20
 nlat = 15
 
+if typestat == 'zmean':
+    listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
+elif typestat == 'zstd':
+    listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
+else:
+    raise ValueError('This typestat value does not exists')
+
 dirstats = '%s/%g/%s/%s/%s' % (dirstats, reso, year, mode, typestat)
-atlas_name = 'zstd_%g_annual' % reso
+atlas_name = '%s_%g_annual' % (typestat, reso)
 
 zref = argotools.zref
 
