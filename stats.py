@@ -18,7 +18,7 @@ daclist = argotools.daclist
 
 def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     """Create statistics netcdf file"""
-    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     rootgrp = Dataset(filename, "w", format="NETCDF4")
     argodic = argotools.read_argo_filter(itile)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
@@ -125,7 +125,7 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
 def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
     """Write statistics into a netcdf file"""
     # idem, depend du type de stat
-    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso_deg, date[0], mode, typestat, typestat, reso_deg, timeflag, itile)
+    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso_deg, date[0], mode, typestat, typestat, reso_deg, timeflag, itile)
     if (os.path.isfile(filename)):
         print('filename existe')
         f = Dataset(filename, "r+", format="NETCDF4")
@@ -158,9 +158,8 @@ def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
 
 def read_stat_file(typestat, itile, reso, timeflag, date, mode):
     """Read statistics into a netcdf file"""
-    filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
+    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     print('read stat file : %s' % filename)
-    # filename = '%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, typestat, reso, typestat, reso, timeflag, itile)
 
     if (os.path.isfile(filename)):
         f = Dataset(filename, "r", format="NETCDF4")
@@ -262,7 +261,7 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
     return lon_deg, lat_deg, NBbar, CTbar, SAbar, RIbar
 
 
-def compute_std_at_zref(itile, reso_deg, timeflag, date, mode, verbose=False):
+def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
     """Compute the standard deviations at depths zref"""
 
     # gridded arrays of CT, SA variances

@@ -337,10 +337,12 @@ def conversion_gregd_juld(day, month, year):
     """Method converting gregorian day into julian day"""
     #  Petit décalage possible
     julianday = jdcal.gcal2jd(year, month, day)
-    return julianday
+    juliandayf = julianday[0] + julianday[1] + 0.5
+    return juliandayf
 
 
 if False:
     wmodic = read_wmodic()
     wmodb = read_wmstats()
     argodb = read_argodb()
+
