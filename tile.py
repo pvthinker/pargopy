@@ -8,7 +8,6 @@ Created on Wed Apr  4 10:07:26 2018
 import pickle
 import time
 import matplotlib.pyplot as plt
-import research_tools as research
 import argotools as argotools
 import interpolation_tools as interpolation
 import param as param
@@ -23,8 +22,8 @@ def creating_tiles(i):
     #  Generation of the dimension of import matplotlib.pyplot as plt
     wmodic = argotools.read_wmodic()
     argodic = argotools.read_argo_filter(i)
-    print('argodic red')
     tile = interpolation.interpolate_profiles(argodic, wmodic)
+    del(argodic, wmodic)
     tile['ZREF'] = zref
 
     write_tile(tile, i)
@@ -34,12 +33,14 @@ def creating_tiles(i):
 
 #  ----------------------------------------------------------------------------
 def write_tile(tile, i):
+    """Write one tile in a .pkl file"""
     with open('%s/tile%003i.pkl' % (path_localdata, i), 'w') as f:
         pickle.dump(tile, f)
 
 
 #  ----------------------------------------------------------------------------
 def read_tile(i):
+    """Read one of the tiles"""
     print('read tile%003i.pkl' % i)
     with open('%s/tile%003i.pkl' % (path_localdata, i), 'r') as f:
         tile = pickle.load(f)
@@ -73,7 +74,6 @@ def plot_tile(i):
 
 def main(itile):
     """Main function of tile.py"""
-    print('Main of tile')
     creating_tiles(itile)
 
 
@@ -87,7 +87,10 @@ if __name__ == '__main__':
 #      main(51)
 #      main(50)
 #      main(51)
-    main(299)
+    tiles = [131, 146, 151, 171, 190, 233, 234, 235, 244, 253, 254, 255, 264, 
+             265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
+    for t in tiles:
+        main(t)
     #  73, 41, 118
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

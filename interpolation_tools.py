@@ -3,6 +3,9 @@
 Created on Wed Mar 14 14:37:02 2018
 
 @author: herry
+
+Tools used for the interpolation of the values from ARGO
+
 """
 import gsw as gsw
 import numpy as np
@@ -25,6 +28,7 @@ def interpolate_profiles(subargodb, wmodic):
     LON = np.zeros((n_profiles,))
     LAT = np.zeros((n_profiles,))
     JULD = np.zeros((n_profiles,))
+    DATA_MODE = np.zeros((n_profiles,), dtype='c')
     TAG = np.zeros((n_profiles,), dtype=int)
 
     kprof = 0
@@ -32,7 +36,7 @@ def interpolate_profiles(subargodb, wmodic):
     wmos = set(infos['WMO'])
 
     for w in wmos:
-        print('interpolate profiles from wmo %i' % w)
+        #  print('interpolate profiles from wmo %i' % w)
         idx = np.where(infos['WMO'] == w)[0]
         iprof = infos['IPROF'][idx]
         dac = argotools.dac_from_wmo(wmodic, w)
@@ -49,8 +53,11 @@ def interpolate_profiles(subargodb, wmodic):
                 lon = data['LONGITUDE'][k]
                 lat = data['LATITUDE'][k]
                 Ti, Si, Ri, BVF2i, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
-                                                                    temp_qc, psal_qc, pres_qc,
-                                                                    lon, lat, zref)
+                                                                           temp_qc, psal_qc, pres_qc,
+                                                                           lon, lat, zref)
+
+                del(temp, psal, pres, temp_qc, psal_qc, pres_qc, lon, lat)
+
                 ierr = 0
                 if len(Ti) == 0:
                     ierr = 1
@@ -73,6 +80,7 @@ def interpolate_profiles(subargodb, wmodic):
                     LON[kprof] = subargodb['LONGITUDE'][idx[l]]
                     LAT[kprof] = subargodb['LATITUDE'][idx[l]]
                     JULD[kprof] = subargodb['JULD'][idx[l]]
+                    DATA_MODE[kprof] = subargodb['DATA_MODE'][idx[l]]
                     kprof += 1
                 else:
                     subargodb['FLAG'][idx[l]] = 202
@@ -89,7 +97,8 @@ def interpolate_profiles(subargodb, wmodic):
            'TAG': TAG[:kprof],
            'LONGITUDE': LON[:kprof],
            'LATITUDE': LAT[:kprof],
-           'JULD': JULD[:kprof]}
+           'JULD': JULD[:kprof],
+           'DATA_MODE': DATA_MODE[:kprof]}
     print('Interpolation ended')
     return res
 

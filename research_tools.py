@@ -3,6 +3,9 @@
 Created on Tue Mar 20 15:24:20 2018
 
 @author: herry
+
+Tools used to generate the filters that are used after to generate the tiles
+
 """
 import os
 import time
@@ -10,7 +13,7 @@ import numpy as np
 import time
 import pickle
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
+#  from mpl_toolkits.basemap import Basemap
 import param as param
 import argotools as argotools
 
@@ -108,6 +111,7 @@ def test_tiles(argo_extract, i):
 
 #  ----------------------------------------------------------------------------
 def write_argo_filter(argo_extract, i):
+    """Writing each filter corresponding to the future tiles"""
     with open('%s/argodic%003i.pkl' % (path_localdata, i), 'wb') as f:
         pickle.dump(argo_extract, f)
 
@@ -158,6 +162,10 @@ def extract_idx_from_argodb(argodb, idx):
 
 #  ----------------------------------------------------------------------------
 def extract_idx_from_wmostats(wmostats, idx):
+    """Return a wmostats type dictionnary that is a subset of wmostats and
+       containing only entries given in idx (list)
+
+    """
     wmostats_extract = {}
     keys = wmostats.keys()
     keys.remove('N_WMO')
@@ -174,8 +182,7 @@ def extract_idx_from_wmostats(wmostats, idx):
 def main():
     """Main function of stats.py"""
     creating_tiles()
-    plot_map()
-
+    #  plot_map()
 
 # ----------------------------------------
 # Plot the tiles on map
@@ -193,7 +200,7 @@ def plot_map():
     lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
     plt.figure(figsize=(12, 6))
     m = Basemap(projection='cea', llcrnrlat=-90, urcrnrlat=90,
-            	llcrnrlon=-180, urcrnrlon=180, resolution='c')
+                llcrnrlon=-180, urcrnrlon=180, resolution='c')
     m.drawcoastlines()
     m.fillcontinents(color='coral', lake_color='white')
 

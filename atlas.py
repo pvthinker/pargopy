@@ -1,30 +1,48 @@
 from netCDF4  import Dataset
 import numpy as np
 import os
-import argodb as argo
 import argotools as argotools
-import research_tools as res
-import stats as stats
+import param as param
 
-dirstats = '/net/libra/local/tmp/1/roullet/pargopy/stats'
-diratlas = '/net/libra/local/tmp/1/roullet/pargopy/atlas'
+dirstats = param.path_to_stats
+diratlas = param.path_to_atlas
 
-dirstats = '/home2/datawork/therry/stats'
-diratlas = '/home1/datawork/groullet/pargopy/atlas'
+#  listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
+listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
 
-listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
-
-reso = 0.25
+year = '2017'
+month = '12'
+day = '31'
+date = [year, month, day]
+# mode defines the values selected :
+# R : Real time
+# A : Adjusted Real Time
+# D : Delayed time (Values verified)
+mode = 'AD'
+typestat = 'zstd'
+reso = 0.5
+timeflag = 'annual'
 nlon = 20
 nlat = 15
 
-dirstats = '%s/%g' % (dirstats, reso)
-atlas_name = 'zmean_%g_annual' % reso
+dirstats = '%s/%g/%s/%s/%s' % (dirstats, reso, year, mode, typestat)
+atlas_name = 'zstd_%g_annual' % reso
+
+zref = argotools.zref
 
 def ij2tile(i, j):
     return i + j*nlon
 
+def gridindex2lonlat(ix, iy):
+    
+    lonmin_glo = -180.
+    lonmax_glo = +180.
+    latmin_glo = -80.
+    latmax_glo = +80
 
+    lon = lonmin_glo + ix*reso
+    lat = latmin_glo + iy*reso
+    return lon, lat
 
 def get_glo_grid():
     lonsize = np.zeros((nlon,), dtype=int)
@@ -49,8 +67,8 @@ def get_glo_grid():
                 ncfile = '%s/%s_%03i.nc' % (dirstats, atlas_name, itile)
                 if os.path.isfile(ncfile):
                     with Dataset(ncfile, 'r') as nc:
-                        lonsize[i] = len(nc.variables['lon_deg'][0, :])
-                        latsize[j]= len(nc.variables['lat_deg'][:, 0])
+                        lonsize[i] = len(nc.variables['lon'][0, :])
+                        latsize[j]= len(nc.variables['lat'][:, 0])
 
     j0 = 0
     for j in range(nlat):
@@ -64,12 +82,12 @@ def get_glo_grid():
             if os.path.isfile(ncfile):
                 print(i,j,itile)
                 with Dataset(ncfile, 'r') as nc:
-                    lon[i0:i1] = nc.variables['lon_deg'][0, :]
-                    lat[j0:j1] = nc.variables['lat_deg'][:, 0]
+                    lon[i0:i1] = nc.variables['lon'][0, :]
+                    lat[j0:j1] = nc.variables['lat'][:, 0]
                     zref = nc.variables['zref'][:]
             i0 = i1-1
         j0 = j1
-    return lonsize, latsize, lon, lat, zref
+    return lonsize, latsize, lon, lat
     
 
 def glue_tiles(iloc, jloc,lonsize, latsize, lon, lat, zref):
@@ -98,7 +116,7 @@ def glue_tiles(iloc, jloc,lonsize, latsize, lon, lat, zref):
     
     nz = len(zref)
 
-    ncfile = '%s/%s.nc' % (diratlas, atlas_name)
+    ncfile = '%s/%s/%s/%s/%s/%s.nc' % (diratlas, reso, year, mode , typestat, atlas_name)
     nc = Dataset(ncfile, 'w', format='NETCDF4')
     nc.createDimension('zref', nz)
     nc.createDimension('lat', len(lat))       
@@ -145,6 +163,12 @@ def glue_tiles(iloc, jloc,lonsize, latsize, lon, lat, zref):
     nc.close()
 
 # glue_tiles(np.arange(10,13),np.arange(2,4))
-lonsize, latsize, lon, lat, zref = get_glo_grid()
-glue_tiles(np.arange(nlon),np.arange(nlat),lonsize, latsize, lon, lat, zref)
+
+
 # glue_tiles(np.arange(5),np.arange(5),lonsize, latsize, lon, lat, zref)
+
+
+#  ----------------------------------------------------------------------------
+if __name__ == '__main__':
+    lonsize, latsize, lon, lat = get_glo_grid()
+    glue_tiles(np.arange(nlon),np.arange(nlat),lonsize, latsize, lon, lat, zref)
