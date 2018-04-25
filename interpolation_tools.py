@@ -9,6 +9,7 @@ Tools used for the interpolation of the values from ARGO
 """
 import gsw as gsw
 import numpy as np
+import time
 import argotools as argotools
 
 
@@ -52,6 +53,9 @@ def interpolate_profiles(subargodb, wmodic):
                 pres_qc = data['PRES_QC'][k, :]
                 lon = data['LONGITUDE'][k]
                 lat = data['LATITUDE'][k]
+                print(data['WMO'])
+                print(data['DACID'])
+                print(data['IPROF'][k])
                 Ti, Si, Ri, BVF2i, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
                                                                            temp_qc, psal_qc, pres_qc,
                                                                            lon, lat, zref)
@@ -134,18 +138,14 @@ def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
     and the error flag ierr
     ierr = 0 : no pb
     ierr = 1 : too few data in the profile"""
-# ==============================================================================
-#     klist = np.zeros((len(temp_qc))) + n
-#     for i, rank in enumerate(temp_qc):
-#         if temp_qc[i] == '1':
-#             klist[:] = i
-# ==============================================================================
+
     klist = [k for k in range(len(temp_qc)) if (temp_qc[k] == '1') and (
         sal_qc[k] == '1') and (pres_qc[k] == '1')]
-    #  print(klist)
-    nk = len(klist)
     ierr = 0
-    if nk < 5:
+    #  ~~~~~~~~~~~~~~~~~~~~~~to do~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #  make the filter in a better way to avoid pres problems
+    p = set(pres[klist])
+    if len(p) < 5:
         ierr = 1
     #  print(klist)
     return klist, ierr
@@ -156,6 +156,9 @@ def insitu_to_absolute(Tis, SP, p, lon, lat, zref):
     #  SP is in p.s.u.
     SA = gsw.SA_from_SP(SP, p, lon, lat)
     CT = gsw.CT_from_t(SA, Tis, p)
+    print('p =', p)
+    print('lat = %f' % lat)
+    print('lon = %f' % lon)
     z = -gsw.z_from_p(p, lat)
     return(CT, SA, z)
 
@@ -227,6 +230,7 @@ def interp_at_zref(CT, SA, z, zref):
 
         if len(idx) >= 2:
             # print('****', k, idx, z[idx].data)
+            #  print(z[idx])
             cs, ds = lagrangepoly(zref[k], z[idx])
             # the meaning of the weights computed by lagrangepoly should
             # be clear in the code below
@@ -329,3 +333,14 @@ def lagrangepoly(x0, xi):
                         cff *= (x0-xi[k])*denom[i, k]
                 ds[i] += cff*denom[i, j]
     return cs, ds
+
+
+def timing(func):
+    def wrapper(*args, **kwargs):
+        tmps1 = time.time()
+        response = func(*args, **kwargs)
+        tmps2 = time.time() - tmps1
+        print("Temps d'execution de la fonction %s = %f" % (func.__name__, tmps2))
+        return response
+    return wrapper
+
