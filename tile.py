@@ -12,9 +12,11 @@ import argotools as argotools
 import interpolation_tools as interpolation
 import param as param
 import numpy as np
+import decorator as deco
 
 zref = argotools.zref
 path_localdata = param.path_to_tiles
+
 
 
 #  ----------------------------------------------------------------------------
@@ -77,7 +79,6 @@ def main(itile):
     """Main function of tile.py"""
     creating_tiles(itile)
 
-
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
@@ -91,9 +92,7 @@ if __name__ == '__main__':
     #  tiles = [131, 146, 151, 171, 190, 233, 234, 235, 244, 253, 254, 255, 264, 
     #         265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
     #for t in tiles:
-    main(8)
-    print interpolation.interpolate_profiles.results()
-    #  73, 41, 118
+    main(91)
+    deco.call_results('interpolation_tools.py')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
-

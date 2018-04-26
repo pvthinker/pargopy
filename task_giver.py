@@ -13,7 +13,7 @@
 from mpi4py import MPI
 import numpy as np
 import time as time
-import tile as tile
+import tile as tiler
 import os.path as path
 import param as param
 #  nbtasks = 80  # master will defined nbtasks of random size
@@ -131,7 +131,8 @@ def master_work_nonblocking(nslaves):
     #  tasks = range(200, 300)
     #  tasks = [126, 131, 146, 149, 151, 171, 188, 190, 210, 233, 234, 235, 244, 
     #           253, 254, 255, 264, 265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
-    tasks = range(300)
+    #  tasks = range(300)
+    tasks = range(27,83)
     nbtasks = len(tasks)
     # sorting the tasks according to their size
     # improves the load balance among slaves (by a lot)
@@ -203,7 +204,7 @@ def slave_work_nonblocking(islave):
 
             # do the work, replace 'sleep' with a real work!
             #  time.sleep(nx)
-            tile.main(itile)
+            tiler.main(itile)
 
             # tell the master that we are done and that he
             # can send another task
