@@ -10,6 +10,7 @@ import functools
 import types
 import time
 import ast
+
  
 def call_results(filename):
     """
@@ -19,16 +20,22 @@ def call_results(filename):
     before using this function !
     """
     if filename == 'interpolation_tools.py':
+        import interpolation_tools as interpolation
         name_module = 'interpolation'
     elif filename == 'research_tools.py':
+        import research_tools as research
         name_module = 'research'
     elif filename == 'argotools.py':
+        import argotools as argotools
         name_module = 'argotools'
     elif filename == 'stats.py':
+        import stats as stats
         name_module = 'stats'
     elif filename == 'argodb.py':
+        import argodb as argodb
         name_module = 'argodb'
     elif filename == 'tile.py':
+        import tile as tiler
         name_module = 'tiler'
     else:
         raise ValueError('Filename not recognize')
