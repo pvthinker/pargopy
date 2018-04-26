@@ -11,8 +11,10 @@ import gsw as gsw
 import numpy as np
 import time
 import argotools as argotools
+import decorator as decorator
 
 
+@decorator.exec_time
 def interpolate_profiles(subargodb, wmodic):
     """Interpolate the profiles in subargodb"""
 
@@ -53,9 +55,11 @@ def interpolate_profiles(subargodb, wmodic):
                 pres_qc = data['PRES_QC'][k, :]
                 lon = data['LONGITUDE'][k]
                 lat = data['LATITUDE'][k]
-                print(data['WMO'])
-                print(data['DACID'])
-                print(data['IPROF'][k])
+#==============================================================================
+#                 print(data['WMO'])
+#                 print(data['DACID'])
+#                 print(data['IPROF'][k])
+#==============================================================================
                 Ti, Si, Ri, BVF2i, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
                                                                            temp_qc, psal_qc, pres_qc,
                                                                            lon, lat, zref)
@@ -107,6 +111,7 @@ def interpolate_profiles(subargodb, wmodic):
     return res
 
 
+@decorator.exec_time
 def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref):
     """Interpolate in situ data on zref depths
     ierr = 0: no pb
@@ -133,6 +138,7 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
     return Ti, Si, Ri, BVF2i, CT, SA, z, ierr
 
 
+@decorator.exec_time
 def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
     """Return the index list of data for which the three qc's are 1
     and the error flag ierr
@@ -151,18 +157,22 @@ def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
     return klist, ierr
 
 
+@decorator.exec_time
 def insitu_to_absolute(Tis, SP, p, lon, lat, zref):
     """Transform in situ variables to TEOS10 variables"""
     #  SP is in p.s.u.
     SA = gsw.SA_from_SP(SP, p, lon, lat)
     CT = gsw.CT_from_t(SA, Tis, p)
-    print('p =', p)
-    print('lat = %f' % lat)
-    print('lon = %f' % lon)
+#==============================================================================
+#     print('p =', p)
+#     print('lat = %f' % lat)
+#     print('lon = %f' % lon)
+#==============================================================================
     z = -gsw.z_from_p(p, lat)
     return(CT, SA, z)
 
 
+@decorator.exec_time
 def interp_at_zref(CT, SA, z, zref):
     """Interpolate CT, SA, dCT/dz and dSA/dz from their native depths z to
     zref
@@ -251,6 +261,7 @@ def interp_at_zref(CT, SA, z, zref):
     return CTi, SAi, dCTdzi, dSAdzi
 
 
+@decorator.exec_time
 def select_depth(zref, z):
     """Return the number of data points we have between successive zref.
 
@@ -296,6 +307,7 @@ def select_depth(zref, z):
     return nbperintervale, kperint
 
 
+@decorator.exec_time
 def lagrangepoly(x0, xi):
     """Weights for polynomial interpolation at x0 given a list of xi
     return both the weights for function (cs) and its first derivative
@@ -333,14 +345,4 @@ def lagrangepoly(x0, xi):
                         cff *= (x0-xi[k])*denom[i, k]
                 ds[i] += cff*denom[i, j]
     return cs, ds
-
-
-def timing(func):
-    def wrapper(*args, **kwargs):
-        tmps1 = time.time()
-        response = func(*args, **kwargs)
-        tmps2 = time.time() - tmps1
-        print("Temps d'execution de la fonction %s = %f" % (func.__name__, tmps2))
-        return response
-    return wrapper
 

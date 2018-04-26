@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import argotools as argotools
 import interpolation_tools as interpolation
 import param as param
+import numpy as np
 
 zref = argotools.zref
 path_localdata = param.path_to_tiles
@@ -87,10 +88,12 @@ if __name__ == '__main__':
 #      main(51)
 #      main(50)
 #      main(51)
-    tiles = [131, 146, 151, 171, 190, 233, 234, 235, 244, 253, 254, 255, 264, 
-             265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
-    for t in tiles:
-        main(t)
+    #  tiles = [131, 146, 151, 171, 190, 233, 234, 235, 244, 253, 254, 255, 264, 
+    #         265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
+    #for t in tiles:
+    main(8)
+    print interpolation.interpolate_profiles.results()
     #  73, 41, 118
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
+
