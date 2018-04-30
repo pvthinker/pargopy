@@ -3,6 +3,9 @@
 Created on Wed Apr  4 10:07:26 2018
 
 @author: herry
+
+File used to generate the different tiles of the atlas
+
 """
 
 import pickle
@@ -21,7 +24,9 @@ path_localdata = param.path_to_tiles
 
 #  ----------------------------------------------------------------------------
 def creating_tiles(i):
-    """Giving values to the variables"""
+    """Giving values to the variables
+    
+    :rtype: dic"""
     #  Generation of the dimension of import matplotlib.pyplot as plt
     wmodic = argotools.read_wmodic()
     argodic = argotools.read_argo_filter(i)
@@ -36,14 +41,18 @@ def creating_tiles(i):
 
 #  ----------------------------------------------------------------------------
 def write_tile(tile, i):
-    """Write one tile in a .pkl file"""
+    """Write one tile in a .pkl file
+    
+    :rtype: None"""
     with open('%s/tile%003i.pkl' % (path_localdata, i), 'w') as f:
         pickle.dump(tile, f)
 
 
 #  ----------------------------------------------------------------------------
 def read_tile(i):
-    """Read one of the tiles"""
+    """Read one of the tiles
+    
+    :rtype: dic"""
     print('read tile%003i.pkl' % i)
     with open('%s/tile%003i.pkl' % (path_localdata, i), 'r') as f:
         tile = pickle.load(f)
@@ -52,7 +61,9 @@ def read_tile(i):
 
 #  ----------------------------------------------------------------------------
 def plot_tile(i):
-    """Plots the tiles values (Ti, Si, Ri) with the values non interpolate"""
+    """Plots the tiles values (Ti, Si, Ri) with the values non interpolate
+    
+    :rtype: None"""
     depth = zref
     argodic = argotools.read_argo_filter(i)
     tile = read_tile(i)
@@ -92,7 +103,7 @@ if __name__ == '__main__':
     #  tiles = [131, 146, 151, 171, 190, 233, 234, 235, 244, 253, 254, 255, 264, 
     #         265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
     #for t in tiles:
-    main(91)
+    main(33)
     deco.call_results('interpolation_tools.py')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

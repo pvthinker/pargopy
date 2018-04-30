@@ -1,4 +1,8 @@
-"""Compute statistics on one tile"""
+"""
+Compute statistics on one tile
+
+"""
+
 from netCDF4 import Dataset
 import os
 import numpy as np
@@ -12,12 +16,14 @@ import param as param
 
 
 path_to_stats = param.path_to_stats
-key_extraction = ['JULD', 'LONGITUDE', 'DATA_MODE', 'TAG', 'RHO', 'LATITUDE', 'SA', 'CT']
+key_extraction = ['JULD', 'LONGITUDE', 'DATA_MODE', 'TAG', 'RHO', 'LATITUDE', 'SA', 'CT', 'BVF2']
 zref = argotools.zref
 daclist = argotools.daclist
 
 def create_stat_file(itile, typestat, reso, timeflag, date, mode):
-    """Create statistics netcdf file"""
+    """Create statistics netcdf file
+    
+    :rtype: None"""
     filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     rootgrp = Dataset(filename, "w", format="NETCDF4")
     argodic = argotools.read_argo_filter(itile)
@@ -27,6 +33,10 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     rootgrp.createDimension('zref', len(zref))
     rootgrp.createDimension('lat', nlat)
     rootgrp.createDimension('lon', nlon)
+    rootgrp.setncattr('data_mode', mode)
+    rootgrp.setncattr('year', date[0])
+    rootgrp.setncattr('month', date[1])
+    rootgrp.setncattr('day', date[2])
 
     if typestat == 'zmean':
         lon_deg = rootgrp.createVariable('lon', 'f4', ('lat', 'lon'))
@@ -131,7 +141,9 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
 
 
 def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
-    """Write statistics into a netcdf file"""
+    """Write statistics into a netcdf file
+    
+    :rtype: None"""
     # idem, depend du type de stat
     filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso_deg, date[0], mode, typestat, typestat, reso_deg, timeflag, itile)
     if (os.path.isfile(filename)):
@@ -167,7 +179,10 @@ def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
 
 
 def read_stat_file(typestat, itile, reso, timeflag, date, mode):
-    """Read statistics into a netcdf file"""
+    """Read statistics into a netcdf file
+    
+    :rtype: float, float, float, float, float, float, float"""
+
     filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     print('read stat file : %s' % filename)
 
@@ -199,7 +214,9 @@ def read_stat_file(typestat, itile, reso, timeflag, date, mode):
 def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
     """ setup the grid coordinates (in degrees)
     coordinates are round multiples of reso_deg
-    reso_deg sets the grid resolution, typically 0.5deg""" 
+    reso_deg sets the grid resolution, typically 0.5deg
+    
+    :rtype: float, float""" 
 
     minlon = np.ceil(minlon/reso_deg)*reso_deg
     maxlon = np.floor(maxlon/reso_deg)*reso_deg
@@ -216,7 +233,9 @@ def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
 
 
 def compute_mean_at_zref(itile, reso_deg, mode, date):
-    """Compute the mean at depths zref"""
+    """Compute the mean at depths zref
+    
+    :rtype: float, float, float, float, float, float, float"""
     tile = data_choice(mode, date, itile)
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
@@ -279,7 +298,9 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
 
 
 def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
-    """Compute the standard deviations at depths zref"""
+    """Compute the standard deviations at depths zref
+    
+    :rtype: float, float, float, float, float, float, float, float, float, float, float"""
 
     # gridded arrays of CT, SA variances
     lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar, BVF2bar = read_stat_file('zmean', itile, reso_deg, timeflag, date, mode) # read it from the file
@@ -328,8 +349,6 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
             weight *= time_weight
             # print(np.shape(RHObar))
             interpolator = ip.interp1d(RHObar[:,j,i], zref, bounds_error=False)
-            print(zref)
-            print(lat[j])
             p = gsw.p_from_z(-zref, lat[j])
             g = gsw.grav(lat[j], p)
             cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
@@ -393,7 +412,8 @@ def data_choice(mode, date, itile):
     Make the tile filter to choose keep only the chosen mode ('R', 'A', 'D', 'AD' or 'RAD')
     and the profiles under the chosen date (year, month, day)
     Return the tile_extract according to the filters used.
-    :return: tile_extract
+    
+    :rtype: dic
     """
     tile = tiler.read_tile(itile)
     julday = argotools.conversion_gregd_juld(int(date[0]), int(date[1]), int(date[2]))
@@ -427,7 +447,7 @@ def main(itile, typestat, reso, timeflag, date, mode):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(292, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
+    main(32, 'zmean', 0.5, 'annual', ['2017', '12', '31'], 'D')
     #  main(293, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
     #  main(294, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
     #  main(295, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')

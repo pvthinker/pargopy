@@ -11,15 +11,20 @@ import gsw as gsw
 import numpy as np
 import time
 import argotools as argotools
+import check_decreasing_pressure as check
 import decorator as decorator
 
 
 @decorator.exec_time
 def interpolate_profiles(subargodb, wmodic):
-    """Interpolate the profiles in subargodb"""
+    """Interpolate the profiles in subargodb
+    
+    :rtype: dic"""
+
+    maskarraytype = np.ma.core.MaskedArray
+    key = ['TEMP', 'PSAL', 'PRES', 'TEMP_QC', 'PSAL_QC', 'PRES_QC']
 
     infos = argotools.retrieve_infos_from_tag(subargodb, subargodb['TAG'])
-
     zref = argotools.zref
     n_zref = len(zref)
     n_profiles = len(np.where(subargodb['FLAG'][:] == 0)[0])
@@ -47,6 +52,11 @@ def interpolate_profiles(subargodb, wmodic):
             dac, w, header=True, data=True, dataqc=True)
         for l, k in enumerate(iprof):
             if subargodb['FLAG'][idx[l]] == 0:
+#==============================================================================
+#                 for ke in key:
+#                     if data[ke][k, :].any == maskarraytype:
+#                         data[ke][k, :] = data[ke][k, :].compressed()
+#==============================================================================
                 temp = data['TEMP'][k, :]
                 psal = data['PSAL'][k, :]
                 pres = data['PRES'][k, :]
@@ -114,8 +124,12 @@ def interpolate_profiles(subargodb, wmodic):
 @decorator.exec_time
 def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref):
     """Interpolate in situ data on zref depths
+    
     ierr = 0: no pb
+    
     ierr > 0: pb
+    
+    :rtype: float, float, float, float, float, float, float, int
     """
     #  print(len(temp_qc))
     CT, SA, z = [], [], []
@@ -142,24 +156,31 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
 def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
     """Return the index list of data for which the three qc's are 1
     and the error flag ierr
+    
     ierr = 0 : no pb
-    ierr = 1 : too few data in the profile"""
-
-    klist = [k for k in range(len(temp_qc)) if (temp_qc[k] == '1') and (
+    
+    ierr = 1 : too few data in the profile
+    
+    :rtype: list, int"""
+    maskarraytype = np.ma.core.MaskedArray
+    keys = [temp, sal, pres, temp_qc, sal_qc, pres_qc]
+    for key in keys:
+                    if key.any == maskarraytype:
+                        key = key.compressed()
+    klist = [k for k in range(len(pres)) if (temp_qc[k] == '1') and (
         sal_qc[k] == '1') and (pres_qc[k] == '1')]
     ierr = 0
-    #  ~~~~~~~~~~~~~~~~~~~~~~to do~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #  make the filter in a better way to avoid pres problems
-    p = set(pres[klist])
-    if len(p) < 5:
-        ierr = 1
-    #  print(klist)
+    p = pres[klist]
+    ierr = check.check_pressure(p)
+
     return klist, ierr
 
 
 @decorator.exec_time
 def insitu_to_absolute(Tis, SP, p, lon, lat, zref):
-    """Transform in situ variables to TEOS10 variables"""
+    """Transform in situ variables to TEOS10 variables
+    
+    :rtype: float, float, float"""
     #  SP is in p.s.u.
     SA = gsw.SA_from_SP(SP, p, lon, lat)
     CT = gsw.CT_from_t(SA, Tis, p)
@@ -193,6 +214,8 @@ def interp_at_zref(CT, SA, z, zref):
 
     For the bottom level (zref=2000), we do either extrapolation or
     interpolation if data deeper than 2000 are available.
+    
+    :rtype: float, float, float, float
 
     """
 
@@ -279,6 +302,8 @@ def select_depth(zref, z):
 
 
     with zextra = 2*zref[-1] - zref[-2]
+    
+    :rtype: int, list
 
     """
     nz = len(z)
@@ -316,6 +341,8 @@ def lagrangepoly(x0, xi):
     Example:
     lagrangepoly(0.25, [0, 1])
     >>> [0.75, 0.25,], [1, -1]
+    
+    :rtype: float, float
 
     """
     xi = np.asarray(xi)
@@ -331,7 +358,8 @@ def lagrangepoly(x0, xi):
                 if dx == 0:
                     # should not happen because select_depth removes
                     # duplicate depths
-                    raise ValueError('division by zero in lagrangepoly')
+                    #  raise ValueError('division by zero in lagrangepoly')
+                    print('WARNING, division by zero in lagrangepoly')
                 else:
                     denom[i, j] = 1./dx
 

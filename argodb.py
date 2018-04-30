@@ -2,8 +2,6 @@
 """
 Created on Mon Mar 12 13:10:24 2018
 
-.. automodule:: argodb.py
-
 File creating the summary of ARGO used to generate the atlas
 
 """
@@ -27,11 +25,15 @@ path_localdata = param.path_to_data
 
 
 def get_all_wmos():
-    """Return a dictionnary of all wmo (list of int) with dac (string) as
-       keys HAVING a *_prof.nc file
+    """
+    Return a dictionnary of all wmo (list of int) with dac (string) as
+    keys HAVING a \*_prof.nc file
 
-       A few wmo have no *_prof.nc (352 exactly) because ... they have
-       actually no profile reported """
+    A few wmo have no \*_prof.nc (352 exactly) because ... they have
+    actually no profile reported 
+    
+    :rtype: dic
+    """
     wmodic = {}
     for dac in daclist:
         prfiles = glob.glob('{}/{}/*/*_prof.nc'.format(path_argo, dac))
@@ -41,7 +43,11 @@ def get_all_wmos():
 
 #  ----------------------------------------------------------------------------
 def get_header_of_all_wmos(wmodic):
-    """Get the header of all wmo"""
+    """
+    Get the header of all wmo
+    
+    :rtype: dic
+    """
 
     n_wmo = argotools.count_wmos(wmodic)
     keys = ['DACID', 'WMO', 'N_PROF', 'N_LEVELS', 'DATE_UPDATE']
@@ -67,6 +73,8 @@ def get_header_of_all_profiles(wmostats):
 
     Once it is created it is more efficient to read it from the disk
     using 'read_argodb()'
+    
+    :rtype: dic
 
     """
     n_profiles = argotools.count_profiles_in_database(wmostats)
@@ -106,14 +114,22 @@ def get_header_of_all_profiles(wmostats):
 
 #  ----------------------------------------------------------------------------
 def write_wmodic(wmodic):
-    """Write the .pkl file with the list of all the wmos"""
+    """
+    Write the .pkl file with the list of all the wmos
+    
+    :rtype: None
+    """
     with open('%s/wmodic.pkl' % path_localdata, 'w') as f:
         pickle.dump(wmodic, f)
 
 
 #  ----------------------------------------------------------------------------
 def write_wmstats(wmstats):
-    """Write the full wmstats database"""
+    """
+    Write the full wmstats database
+    
+    :rtype: None
+    """
 
     with open('%s/wmstats.pkl' % path_localdata, 'w') as f:
         pickle.dump(wmstats, f)
@@ -121,14 +137,22 @@ def write_wmstats(wmstats):
 
 #  ----------------------------------------------------------------------------
 def write_argodb(argodb):
-    """Write the argo sumary with the informations of dac, wmo, flag, ..."""
+    """
+    Write the argo sumary with the informations of dac, wmo, flag, ...
+    
+    :rtype: None
+    """
     with open('%s/argodb.pkl' % path_localdata, 'wb') as f:
         pickle.dump(argodb, f)
 
 
 #  ----------------------------------------------------------------------------
 def update_wmodic():
-    """Read the full argodb database and update argodb.pkl"""
+    """
+    Read the full argodb database and update argodb.pkl
+    
+    :rtype: None
+    """
     wmodic = {}
     new_wmodic = get_all_wmos()
     old_wmodic = argotools.read_wmodic()
@@ -141,7 +165,10 @@ def update_wmodic():
 
 #  ----------------------------------------------------------------------------
 def propagate_flag_backward(argodb, subargodb, verbose=True):
-    """Update argodb FLAG using subargodb"""
+    """
+    Update argodb FLAG using subargodb
+    :rtype: None
+    """
 
     for k, tag in enumerate(subargodb['TAG']):
         idx = np.where(argodb['TAG'] == tag)[0][0]

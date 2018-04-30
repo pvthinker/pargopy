@@ -1,3 +1,15 @@
+"""
+Created on Mon Mar 12 13:10:24 2018
+
+File creating the atlas of stats
+
+from netCDF4  import Dataset
+import numpy as np
+import os
+import argotools as argotools
+import param as param
+
+"""
 from netCDF4  import Dataset
 import numpy as np
 import os
@@ -23,9 +35,9 @@ nlon = 20
 nlat = 15
 
 if typestat == 'zmean':
-    listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
+    listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar', 'BVF2bar']
 elif typestat == 'zstd':
-    listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
+    listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'BVF2std', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
 else:
     raise ValueError('This typestat value does not exists')
 

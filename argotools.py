@@ -48,7 +48,10 @@ zref = np.array([0., 10., 20., 30., 40., 50., 60., 70., 80., 90.,
 
 
 def dac_from_wmo(wmodic, wmo):
-    """Retrieve the dac of a wmo"""
+    """
+    Retrieve the dac of a wmo
+    :rtype: list of dac
+    """
 
     dac = ''
     for d in daclist:
@@ -58,7 +61,10 @@ def dac_from_wmo(wmodic, wmo):
 
 
 def count_wmos(wmodic):
-    """Count the total number of wmo in the Argo database base"""
+    """
+    Count the total number of wmo in the Argo database base
+    :rtype: list of wmo
+    """
 
     nwmos = 0
     for dac in daclist:
@@ -68,7 +74,10 @@ def count_wmos(wmodic):
 
 
 def count_profiles_in_database(wmostats):
-    """Count the total number of profiles in database"""
+    """
+    Count the total number of profiles in database
+    :rtype: int
+    """
 
     nbprofiles = 0
     for nbpr in wmostats['N_PROF']:
@@ -78,7 +87,11 @@ def count_profiles_in_database(wmostats):
 
 
 def get_profile_file_path(dac, wmo):
-    """Return the file path to the *_prof.nc data file"""
+    """
+    Return the file path to the \*_prof.nc data file
+    
+    :rtype: string
+    """
 
     if type(dac) is int:
         dac = daclist[dac]
@@ -90,13 +103,14 @@ def read_profile(dac, wmo, iprof=None,
                  header=False, data=False,
                  headerqc=False, dataqc=False,
                  verbose=True):
-    """Basic driver to read the *_prof.nc data file
+    """Basic driver to read the \*_prof.nc data file
 
     The output is a dictionnary of vectors
     - read one or all profiles read the header (lat, lon, juld) or not
     - read the data or not always return IDAC, WMO, N_PROF, N_LEVELS
     - and DATA_UPDATE (all 5 are int)
-
+    
+    :rtype: dic
     """
     if type(dac) is int:
         dac = daclist[dac]
@@ -165,7 +179,11 @@ def read_profile(dac, wmo, iprof=None,
 
 
 def flag_argodb(argodb, wmodic):
-    """Add the flag to argodb"""
+    """
+    Add the flag to argodb
+    
+    :rtype: dic
+    """
 
     infos = retrieve_infos_from_tag(argodb, argodb['TAG'])
     wmos = set(infos['WMO'])
@@ -198,7 +216,8 @@ def fix_flag_latlonf(argodb):
 
     Bad masked position yield value of 99999. This fix only concerns a
     few profiles from dac='jma'
-
+    
+    :rtype: None
     """
     idx = np.where(argodb['LONGITUDE'] == 99999.)[0]
     if len(idx) > 0:
@@ -209,7 +228,10 @@ def fix_flag_latlonf(argodb):
 def get_tag(kdac, wmo, kprof):
     """Compute the tag number of a profile
 
-    The inverse of get_tag() is retrieve_infos_from_tag()"""
+    The inverse of get_tag() is retrieve_infos_from_tag()
+    
+    :rtype: int
+    """
     if kprof > 1000:
         raise ValueError("kprof > 1000, the tag may be wrong")
 
@@ -219,7 +241,10 @@ def get_tag(kdac, wmo, kprof):
 def retrieve_infos_from_tag(argodb, tag):
     """Retrieve idac, wmo and iprof from tag (array of int)
 
-    It is the inverse of get_tag()"""
+    It is the inverse of get_tag()
+    
+    :rtype: dic
+    """
 
     iprof = tag % 1000
     tag = (tag-iprof) // 1000
@@ -231,7 +256,10 @@ def retrieve_infos_from_tag(argodb, tag):
 
 
 def get_datamode(data):
-    """Return the data mode of the profile"""
+    """Return the data mode of the profile
+    
+    :rtype: np.array
+    """
     mode = np.zeros(len(data), dtype=int)
     for i, d in enumerate(data):
         if d == 'R':
@@ -249,7 +277,8 @@ def plot_location_profiles(argodb):
     """Plot a scatter plot of profiles in argodb
 
     argodb can be the full database or any subset
-
+    
+    :rtype: None
     """
     idx = np.where(argodb['FLAG'][:] == 0)[0]
     lon = argodb['LONGITUDE'][idx]
@@ -260,7 +289,9 @@ def plot_location_profiles(argodb):
 
 
 def plot_wmo_data(dac, wmo):
-    """Plot raw 'TEMP' data for dac, wmo"""
+    """Plot raw 'TEMP' data for dac, wmo
+    
+    :rtype: None"""
 
     data = read_profile(dac, wmo, data=True)
 
@@ -274,7 +305,9 @@ def plot_wmo_data(dac, wmo):
 
 
 def plot_wmos_stats(wmostats):
-    """Plot the histogram of number of profiles per number of levels"""
+    """Plot the histogram of number of profiles per number of levels
+    
+    :rtype: None"""
 
     plt.figure()
     plt.hist(wmostats['N_LEVELS'],
@@ -287,7 +320,9 @@ def plot_wmos_stats(wmostats):
 
 #  ----------------------------------------------------------------------------
 def read_wmstats():
-    """Read the full wmstats database"""
+    """Read the full wmstats database
+    
+    :rtype: dic"""
     print('read wmostats.pkl')
     with open('%s/wmstats.pkl' % path_localdata, 'r') as f:
         wmstats = pickle.load(f)
@@ -296,7 +331,9 @@ def read_wmstats():
 
 #  ----------------------------------------------------------------------------
 def read_argodb():
-    """Read the full argodb database"""
+    """Read the full argodb database
+    
+    :rtype: dic"""
 
     print('read argodb.pkl')
     with open('%s/argodb.pkl' % path_localdata, 'rb') as f:
@@ -306,7 +343,9 @@ def read_argodb():
 
 #  ----------------------------------------------------------------------------
 def read_wmodic():
-    """Read the database containing the list of all the wmos"""
+    """Read the database containing the list of all the wmos
+    
+    :rtype: dic"""
     print('read wmodic.pkl')
     with open('%s/wmodic.pkl' % path_localdata, 'r') as f:
         wmodic = pickle.load(f)
@@ -315,7 +354,9 @@ def read_wmodic():
 
 #  ----------------------------------------------------------------------------
 def read_argo_filter(i):
-    """Read the files containing parts of argodb chosen with lat/lon filters"""
+    """Read the files containing parts of argodb chosen with lat/lon filters
+    
+    :rtype: dic"""
     print('read argodic%003i.pkl' % i)
     with open('%s/argodic%003i.pkl' % (path_filter, i), 'rb') as f:
         argodic = pickle.load(f)
@@ -324,7 +365,9 @@ def read_argo_filter(i):
 
 #  ----------------------------------------------------------------------------
 def conversion_juld_gregd(juld):
-    """Method converting julian day into gregorian day"""
+    """Method converting julian day into gregorian day
+    
+    :rtype: list of int"""
     #  lats, lons, juld = self.reading_variables()
     #  2433282.5000000 corresponds to the Argo origin date
     gregday = jdcal.jd2jcal(2433282.500000, juld)
@@ -334,7 +377,9 @@ def conversion_juld_gregd(juld):
 
 #  ----------------------------------------------------------------------------
 def conversion_gregd_juld(day, month, year):
-    """Method converting gregorian day into julian day"""
+    """Method converting gregorian day into julian day
+    
+    :rtype: float"""
     #  Petit décalage possible
     julianday = jdcal.gcal2jd(year, month, day)
     juliandayf = julianday[0] + julianday[1] + 0.5

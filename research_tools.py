@@ -22,7 +22,9 @@ path_localdata = param.path_to_filter
 
 #  ----------------------------------------------------------------------------
 def tile_definition():
-    """Creating the variables"""
+    """Creating the variables
+    
+    :rtype: float, float, int, int, float, float"""
 
     minlon = -180.
     maxlon = 180.
@@ -59,7 +61,9 @@ def tile_definition():
 
 #  ----------------------------------------------------------------------------
 def creating_tiles():
-    """Giving values to the variables"""
+    """Giving values to the variables
+    
+    :rtype: None"""
     #  Generation of the dimension of import matplotlib.pyplot as plt
     
     argodb = argotools.read_argodb()
@@ -99,7 +103,9 @@ def creating_tiles():
 #  ----------------------------------------------------------------------------
 def test_tiles(argo_extract, i):
     """ Test to know if the tiles are correctly done with the lat and lon 
-    limits"""
+    limits
+    
+    :rtype: None"""
     idx1 = np.where(argo_extract['LATITUDE'] > argo_extract['LATMAX_NO_M'] + argo_extract['MARGINLAT'])
     idx2 = np.where(argo_extract['LATITUDE'] < argo_extract['LATMIN_NO_M'] - argo_extract['MARGINLAT'])
     idx3 = np.where(argo_extract['LONGITUDE'] > argo_extract['LONMAX_NO_M'] + argo_extract['MARGINLON'])
@@ -111,7 +117,9 @@ def test_tiles(argo_extract, i):
 
 #  ----------------------------------------------------------------------------
 def write_argo_filter(argo_extract, i):
-    """Writing each filter corresponding to the future tiles"""
+    """Writing each filter corresponding to the future tiles
+    
+    :rtype: None"""
     with open('%s/argodic%003i.pkl' % (path_localdata, i), 'wb') as f:
         pickle.dump(argo_extract, f)
 
@@ -119,7 +127,9 @@ def write_argo_filter(argo_extract, i):
 #  ----------------------------------------------------------------------------
 def get_idx_from_tiles_lim(res, argodb):
     """Get the list of profile indices present in argodb that correspond
-       to the list of wmos"""
+       to the list of wmos
+       
+       :rtype: dic"""
     if res['LONMIN_WITH_M'] > res['LONMAX_WITH_M']:
         idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & ((argodb['LONGITUDE'] > res['LONMIN_WITH_M']) | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
     else:
@@ -139,6 +149,8 @@ def get_idx_from_tiles_lim(res, argodb):
 def get_idx_from_list_wmo(argodb, wmos):
     """Get the list of profile indices present in argodb that correspond
        to the list of wmos
+       
+       :rtype: list of int
 
     """
     infos = argotools.retrieve_infos_from_tag(argodb, argodb['TAG'])
@@ -152,6 +164,8 @@ def get_idx_from_list_wmo(argodb, wmos):
 def extract_idx_from_argodb(argodb, idx):
     """Return a argodb type dictionnary that is a subset of argodb and
        containing only entries given in idx (list)
+       
+       :rtype: dic
 
     """
     argodb_extract = {}
@@ -164,6 +178,8 @@ def extract_idx_from_argodb(argodb, idx):
 def extract_idx_from_wmostats(wmostats, idx):
     """Return a wmostats type dictionnary that is a subset of wmostats and
        containing only entries given in idx (list)
+       
+       :rtype: dic
 
     """
     wmostats_extract = {}

@@ -1,3 +1,9 @@
+"""
+Created on Mon Mar 12 13:10:24 2018
+
+File used to create the on-click tools for the atlas
+
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 from netCDF4  import Dataset
@@ -33,7 +39,9 @@ def lonlatstr(lon, lat):
     return pos
 
 def retrieve_tile_from_position(lon0, lat0):
-    """Return the tile index in which (lon0, lat0) sits"""
+    """Return the tile index in which (lon0, lat0) sits
+    
+    :rtype: list"""
 
     lat, lon, nlat, nlon, marginlat, marginlon = res.tile_definition()
     j = [k for k in range(len(lat)) if lat[k]<lat0][-1]
@@ -43,7 +51,9 @@ def retrieve_tile_from_position(lon0, lat0):
 
 def select_profiles_near_point(lon0, lat0):
     """Return the list of profiles at a distance 'reso' from
-    (lon0, lat0)"""
+    (lon0, lat0)
+    
+    :rtype: None"""
     
     itile = retrieve_tile_from_position(lon0, lat0)
     argodb = tile.read_tile(itile)

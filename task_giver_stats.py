@@ -1,12 +1,5 @@
-"""Example of master & slaves program:
-
-- a very simple one with blocking communications, to get a first idea
-  of how mpi works
-
-- a more advanced one with non-blocking communications, where each
-  slave works at its pace. Master is monitoring the collective
-  work. As soon as one slave is done with a task, master sends it a
-  new task, until all tasks have been done.
+"""
+Masternslave used to create the stats files
 
 """
 
@@ -48,7 +41,9 @@ reqr = []
 
 def ordering_tasks(tasks):
     """Sort the tasks according to their workload
-    workload is proportional to size of the tile file"""
+    workload is proportional to size of the tile file
+    
+    :rtype: list of int"""
     def tilefilename(itile):
         return '%s/tile%03i.pkl' % (path_to_tiles, itile)
 
@@ -100,7 +95,7 @@ def master_work_nonblocking(nslaves):
 
     """
 
-    tasks = range(276, 300)
+    tasks = range(295, 300)
     #  tasks = [285, 283, 284, 292, 297, 295, 294, 296, 293]
     nbtasks = len(tasks)
     # sorting the tasks according to their size
