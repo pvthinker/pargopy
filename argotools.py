@@ -17,6 +17,7 @@ import numpy as np
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import param as param
+import melted_functions as melted
 
 path_argo = param.path_to_argo
 path_filter = param.path_to_filter
@@ -387,6 +388,9 @@ def conversion_gregd_juld(day, month, year):
 
 
 if False:
-    wmodic = read_wmodic()
-    wmodb = read_wmstats()
-    argodb = read_argodb()
+    wmodic = melted.read_dic('wmodic', path_localdata)
+    wmodb = melted.read_dic('wmodb', path_localdata)
+    argodb = melted.read_dic('argodb', path_localdata)
+    #  wmodic = read_wmodic()
+    #  wmodb = read_wmstats()
+    #  argodb = read_argodb()

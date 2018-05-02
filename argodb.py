@@ -15,6 +15,7 @@ import numpy as np
 import param as param
 import matplotlib.pyplot as plt
 import argotools as argotools
+import melted_functions as melted
 tmps1 = time.time()
 
 path_argo = param.path_to_argo
@@ -155,7 +156,8 @@ def update_wmodic():
     """
     wmodic = {}
     new_wmodic = get_all_wmos()
-    old_wmodic = argotools.read_wmodic()
+    #  old_wmodic = argotools.read_wmodic()
+    old_wmodic = melted.read_dic('wmodic', path_localdata)
     for dac in daclist:
         new_wmodic[dac] = set(new_wmodic[dac])
         old_wmodic[dac] = set(old_wmodic[dac])
@@ -189,12 +191,15 @@ def propagate_flag_backward(argodb, subargodb, verbose=True):
 def main():
     """Main function of argodb.py"""
     wmodic = get_all_wmos()
-    write_wmodic(wmodic)
+    #  write_wmodic(wmodic)
+    melted.write_dic('wmodic', wmodic, path_localdata)
     wmostats = get_header_of_all_wmos(wmodic)
-    write_wmstats(wmostats)
+    #  write_wmstats(wmostats)
+    melted.write_dic('wmostats', wmostats, path_localdata)
     argodb = get_header_of_all_profiles(wmostats)
     argodb = argotools.flag_argodb(argodb, wmodic)
-    write_argodb(argodb)
+    #  write_argodb(argodb)
+    melted.write_dic('argodb', argodb, path_localdata)
 
 
 #  ----------------------------------------------------------------------------

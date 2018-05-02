@@ -1,0 +1,52 @@
+{  
+  "zmean" : [    
+    { "name" : "lon",     
+      "type" : "f4",      
+      "dim" : 2,      
+      "long_name" : "Longitude in Degrees",
+      "unit" : "Degrees"  
+    },    
+    { "name" : "lat",     
+      "type" : "f4",      
+      "dim" : 2,      
+      "long_name" : "Latitude in Degrees",
+      "unit" : "Degrees"  
+    },    
+    { "name" : "NBbar",
+      "type" : "f4",
+      "dim" : 3,
+      "long_name" : "Weight",
+      "unit" : "None"
+    },    
+    { "name" : "CTbar",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Temperature",
+      "unit" : "Celsius"  
+    },    
+    { "name" : "SAbar",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Salinity",
+      "unit" : "g.kg^-1"  
+    },    
+    { "name" : "Ribar",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Density",
+      "unit" : "???"  
+    },    
+    { "name" : "BVF2bar",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Brunt Vaisala frequency squared",
+      "unit" : "s^⁻2"  
+    },    
+    { "name" : "zref",     
+      "type" : "f4",      
+      "dim" : 1,      
+      "long_name" : "Depth reference",
+      "unit" : "Meter"  
+    }
+  ]  
+}

@@ -1,0 +1,76 @@
+{  
+  "zstd" : [    
+    { "name" : "lon",     
+      "type" : "f4",      
+      "dim" : 2,      
+      "long_name" : "Longitude in Degrees",
+      "unit" : "Degrees"  
+    },    
+    { "name" : "lat",     
+      "type" : "f4",      
+      "dim" : 2,      
+      "long_name" : "Latitude in Degrees",
+      "unit" : "Degrees"  
+    },    
+    { "name" : "NBstd",
+      "type" : "f4",
+      "dim" : 3,
+      "long_name" : "Weight",
+      "unit" : "None"
+    },    
+    { "name" : "CTstd",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Temperature",
+      "unit" : "Celsius"  
+    },    
+    { "name" : "SAstd",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Salinity",
+      "unit" : "g.kg^-1"  
+    },    
+    { "name" : "Ristd",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Density",
+      "unit" : "???"  
+    },    
+    { "name" : "BVF2std",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Brunt Vaisala frequency squared",
+      "unit" : "s^⁻2"  
+    },    
+    { "name" : "zref",     
+      "type" : "f4",      
+      "dim" : 1,      
+      "long_name" : "Depth reference",
+      "unit" : "Meter"  
+    },    
+    { "name" : "DZmean",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Mean isopycnal displacement",
+      "unit" : "Meter"  
+    },    
+    { "name" : "DZstd",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Std isopycnal displacement",
+      "unit" : "Meter"  
+    },    
+    { "name" : "DZskew",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Skewness isopycnal displacement",
+      "unit" : "None"  
+    },    
+    { "name" : "EAPE",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Eddy available potential energy",
+      "unit" : "J.m^-3"  
+    }
+  ]  
+}

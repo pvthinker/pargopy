@@ -9,10 +9,13 @@ import research_tools as research
 import argotools as argotools
 import param as param
 import numpy as np
+import melted_functions as melted
 
-wmodic = argotools.read_wmodic()
-argodb = argotools.read_argodb()
-
+#  wmodic = argotools.read_wmodic()
+#  argodb = argotools.read_argodb()
+path_localdata = param.path_to_data
+wmodic = melted.read_dic('wmodic', path_localdata)
+argodb = melted.read_dic('argodb', path_localdata)
 
 maskarraytype = np.ma.core.MaskedArray
 

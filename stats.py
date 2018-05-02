@@ -13,9 +13,11 @@ import general_tools as tools
 import argotools as argotools
 import tile as tiler
 import param as param
-
+import melted_functions as melted
 
 path_to_stats = param.path_to_stats
+path_to_tiles = param.path_to_tiles
+path_to_filter = param.path_to_filter
 key_extraction = ['JULD', 'LONGITUDE', 'DATA_MODE', 'TAG', 'RHO', 'LATITUDE', 'SA', 'CT', 'BVF2']
 zref = argotools.zref
 daclist = argotools.daclist
@@ -26,7 +28,8 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     :rtype: None"""
     filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
     rootgrp = Dataset(filename, "w", format="NETCDF4")
-    argodic = argotools.read_argo_filter(itile)
+    #  argodic = argotools.read_argo_filter(itile)
+    argodic = melted.read_dic('argodic%003i' % itile, path_to_filter)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso)
     nlat, nlon = np.shape(lon_deg)
@@ -39,6 +42,8 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     rootgrp.setncattr('day', date[2])
 
     if typestat == 'zmean':
+
+        netCDF_var['lon_deg'] = rootgrp.createVariable(longitude['name'], longitude['type'], dimension)
         lon_deg = rootgrp.createVariable('lon', 'f4', ('lat', 'lon'))
         lon_deg.long_name = 'Longitude in degrees'
         lon_deg.units = 'Degrees'
@@ -239,7 +244,8 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
     tile = data_choice(mode, date, itile)
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
-    argodic = argotools.read_argo_filter(itile)
+    #  argodic = argotools.read_argo_filter(itile)
+    argodic = melted.read_dic('argodic%003i' % itile, path_to_filter)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso_deg)
 
@@ -415,7 +421,8 @@ def data_choice(mode, date, itile):
     
     :rtype: dic
     """
-    tile = tiler.read_tile(itile)
+    tile = melted.read_dic('tile%003i' % i, path_to_tiles)
+    #  tile = tiler.read_tile(itile)
     julday = argotools.conversion_gregd_juld(int(date[0]), int(date[1]), int(date[2]))
     mode_list = list(mode)
     idx = []

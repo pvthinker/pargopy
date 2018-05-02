@@ -12,8 +12,10 @@ import atlas as at
 import tile as tile
 import general_tools as gene
 import param as param
+import melted_functions as melted
 
 diratlas = param.path_to_atlas
+dirtile = param.path_to_tiles
 
 #  atlas_name = 'zmean_0.5_annual'
 #  listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
@@ -56,7 +58,8 @@ def select_profiles_near_point(lon0, lat0):
     :rtype: None"""
     
     itile = retrieve_tile_from_position(lon0, lat0)
-    argodb = tile.read_tile(itile)
+    argodb = melted.read_dic('tile%003i' % itile, dirtile)
+    #  argodb = tile.read_tile(itile)
     zref = argodb.pop('ZREF')
     dmin = np.deg2rad(reso)
     lonpro = argodb['LONGITUDE']

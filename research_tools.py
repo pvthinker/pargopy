@@ -16,8 +16,10 @@ import matplotlib.pyplot as plt
 #  from mpl_toolkits.basemap import Basemap
 import param as param
 import argotools as argotools
+import melted_functions as melted
 
-path_localdata = param.path_to_filter
+path_to_filter = param.path_to_filter
+path_to_data = param.path_to_data
 
 
 #  ----------------------------------------------------------------------------
@@ -66,7 +68,8 @@ def creating_tiles():
     :rtype: None"""
     #  Generation of the dimension of import matplotlib.pyplot as plt
     
-    argodb = argotools.read_argodb()
+    #  argodb = argotools.read_argodb()
+    argodb = melted.read_dic('argodb', path_to_data)
     lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
     k = 0
     for i in range(nlat):
@@ -96,7 +99,8 @@ def creating_tiles():
 
             argo_extract = get_idx_from_tiles_lim(res, argodb)
             test_tiles(argo_extract, k)
-            write_argo_filter(argo_extract, k)
+            melted.write_dic('argodic%003i' % k, argo_extract, path_to_filter)
+            #  write_argo_filter(argo_extract, k)
             k += 1
 
 
@@ -120,7 +124,7 @@ def write_argo_filter(argo_extract, i):
     """Writing each filter corresponding to the future tiles
     
     :rtype: None"""
-    with open('%s/argodic%003i.pkl' % (path_localdata, i), 'wb') as f:
+    with open('%s/argodic%003i.pkl' % (path_to_filter, i), 'wb') as f:
         pickle.dump(argo_extract, f)
 
 
