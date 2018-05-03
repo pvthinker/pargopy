@@ -23,45 +23,6 @@ path_to_data = param.path_to_data
 
 
 #  ----------------------------------------------------------------------------
-def tile_definition():
-    """Creating the variables
-    
-    :rtype: float, float, int, int, float, float"""
-
-    minlon = -180.
-    maxlon = 180.
-    latmin = -80.
-    maxlat = 80.
-
-    nlon = 20
-    nlat = 15
-
-    minmargin = 1.
-
-    deltalon = maxlon-minlon
-    deltalat = maxlat-latmin
-
-    lon = minlon + np.arange(nlon+1) * deltalon/nlon
-    lat = latmin + np.arange(nlat+1) * deltalat/nlat
-
-    # distribute the latitudes so that their differences
-    # vary in cos(lat)
-    # do it via an iterative method
-    for k in range(5):
-        latm = 0.5*(lat[1:]+lat[:-1])
-        dlat = np.diff(lat) * np.cos(latm*np.pi/180)
-        dlat = dlat*0 + np.mean(dlat)
-        dlat = dlat / np.cos(latm*np.pi/180)
-        dlat = dlat/sum(dlat)*deltalat
-        lat[1:] = latmin + np.cumsum(dlat)
-
-    marginlat = minmargin / np.cos(latm*np.pi/180)
-    marginlon = 2
-
-    return lat, lon, nlat, nlon, marginlat, marginlon
-
-
-#  ----------------------------------------------------------------------------
 def creating_tiles():
     """Giving values to the variables
     
@@ -70,7 +31,7 @@ def creating_tiles():
     
     #  argodb = argotools.read_argodb()
     argodb = melted.read_dic('argodb', path_to_data)
-    lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
+    lat, lon, nlat, nlon, marginlat, marginlon = argotools.tile_definition()
     k = 0
     for i in range(nlat):
         for j in range(nlon):
@@ -217,7 +178,7 @@ def mbox(x1, x2, y1, y2, dlat, dlon, col, itile, m):
 
 
 def plot_map():
-    lat, lon, nlat, nlon, marginlat, marginlon = tile_definition()
+    lat, lon, nlat, nlon, marginlat, marginlon = argotools.tile_definition()
     plt.figure(figsize=(12, 6))
     m = Basemap(projection='cea', llcrnrlat=-90, urcrnrlat=90,
                 llcrnrlon=-180, urcrnrlon=180, resolution='c')

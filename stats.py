@@ -83,6 +83,29 @@ def generate_filename(itile, typestat, reso, timeflag, date, mode):
                                                      timeflag, itile)
     return filename
 
+
+def grid_coordinate(itile, reso):
+    """ 
+    Returns the coordinates of each point of the grid for a given tile
+    
+    :rtype: numpy.ndarray, numpy.ndarray""" 
+    lat, lon, nlat, nlon, marginlat, marginlon = argotools.tile_definition()
+
+    i = itile / nlon
+    j = itile - (i * nlon)
+
+    latmin = lat[i]
+    latmax = lat[i+1]
+    lonmin = lon[j]
+    lonmax = lon[j+1]
+
+    grid_lat = np.arange(latmin, (latmax+reso), reso)
+    grid_lon = np.arange(lonmin, (lonmax+reso), reso)
+
+    return(grid_lat, grid_lon)
+    
+
+
 def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
     """ setup the grid coordinates (in degrees)
     coordinates are round multiples of reso_deg
@@ -334,6 +357,7 @@ def main(itile, typestat, reso, timeflag, date, mode):
     """Main function of stats.py"""
     create_stat_file(itile, typestat, reso, timeflag, date, mode)
     write_stat_file(itile, typestat, reso, timeflag, date, mode)
+    #  grid_coordinate(299, 0.5)
     #  read_stat_file(itile, typestat, reso, timeflag, date, mode)
     #  create_stat_file(68, 'zmean', 0.5, 'annual')
     #  write_stat_file(68, 'zmean', 0.5, 'annual')
