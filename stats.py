@@ -132,6 +132,7 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
     
     :rtype: dict"""
     tile = data_choice(mode, date, itile)
+    print(tile)
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
     #  argodic = argotools.read_argo_filter(itile)
@@ -347,6 +348,7 @@ def data_choice(mode, date, itile):
         idx1 = idx[0]
     for k in key_extraction:
         tile_extract[k] = tile[k][idx1]
+
     tile_extract['ZREF'] = tile['ZREF']
         
 
@@ -366,7 +368,7 @@ def main(itile, typestat, reso, timeflag, date, mode):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(32, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'D')
+    main(272, 'zstd', 0.5, 'annual', ['2012', '6', '15'], 'D')
     #  main(293, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
     #  main(294, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
     #  main(295, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')

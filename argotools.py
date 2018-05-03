@@ -410,26 +410,24 @@ def conversion_juld_gregd(juld):
     :rtype: list of int"""
     #  lats, lons, juld = self.reading_variables()
     #  2433282.5000000 corresponds to the Argo origin date
-    gregday = jdcal.jd2jcal(2433282.500000, juld)
+    #  gregday = jdcal.jd2jcal(2433282.500000, juld)
+    gregday = jdcal.jd2gcal(2433282.5, juld)
     print('This Julian Day corresponds to {0}/{1}/{2}'.format(gregday[2], gregday[1], gregday[0]))
     return(gregday)
 
 
 #  ----------------------------------------------------------------------------
-def conversion_gregd_juld(day, month, year):
+def conversion_gregd_juld(year, month, day):
     """Method converting gregorian day into julian day
     
     :rtype: float"""
     #  Petit décalage possible
     julianday = jdcal.gcal2jd(year, month, day)
-    juliandayf = julianday[0] + julianday[1] + 0.5
-    return juliandayf
+    juliandayf = julianday[0] + julianday[1]
+    return juliandayf - 2433282.5
 
 
 if False:
     wmodic = melted.read_dic('wmodic', path_localdata)
     wmodb = melted.read_dic('wmodb', path_localdata)
     argodb = melted.read_dic('argodb', path_localdata)
-    #  wmodic = read_wmodic()
-    #  wmodb = read_wmstats()
-    #  argodb = read_argodb()
