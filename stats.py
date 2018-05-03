@@ -11,9 +11,9 @@ import time
 from scipy import interpolate as ip
 import general_tools as tools
 import argotools as argotools
-import tile as tiler
 import param as param
 import melted_functions as melted
+import netCDF_form as ncform
 
 path_to_stats = param.path_to_stats
 path_to_tiles = param.path_to_tiles
@@ -22,199 +22,66 @@ key_extraction = ['JULD', 'LONGITUDE', 'DATA_MODE', 'TAG', 'RHO', 'LATITUDE', 'S
 zref = argotools.zref
 daclist = argotools.daclist
 
+
 def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     """Create statistics netcdf file
     
-    :rtype: None"""
-    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
-    rootgrp = Dataset(filename, "w", format="NETCDF4")
-    #  argodic = argotools.read_argo_filter(itile)
+    :rtype: None
+    """
+    
+    filename = generate_filename(itile, typestat, reso, timeflag, date, mode)
     argodic = melted.read_dic('argodic%003i' % itile, path_to_filter)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
     lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso)
     nlat, nlon = np.shape(lon_deg)
-    rootgrp.createDimension('zref', len(zref))
-    rootgrp.createDimension('lat', nlat)
-    rootgrp.createDimension('lon', nlon)
-    rootgrp.setncattr('data_mode', mode)
-    rootgrp.setncattr('year', date[0])
-    rootgrp.setncattr('month', date[1])
-    rootgrp.setncattr('day', date[2])
 
-    if typestat == 'zmean':
-
-        netCDF_var['lon_deg'] = rootgrp.createVariable(longitude['name'], longitude['type'], dimension)
-        lon_deg = rootgrp.createVariable('lon', 'f4', ('lat', 'lon'))
-        lon_deg.long_name = 'Longitude in degrees'
-        lon_deg.units = 'Degrees'
-
-        lat_deg = rootgrp.createVariable('lat', 'f4', ('lat', 'lon'))
-        lat_deg.long_name = 'Latitude in degrees'
-        lat_deg.units = 'Degrees'
-
-        NBbar = rootgrp.createVariable('NBbar', 'f4', ('zref', 'lat', 'lon'))
-        NBbar.long_name = 'Weight'
-        NBbar.units = 'None'
-
-        CTbar = rootgrp.createVariable('CTbar', 'f4', ('zref', 'lat', 'lon'))
-        CTbar.long_name = 'Temperature'
-        CTbar.units = 'Celsius'
-
-        SAbar = rootgrp.createVariable('SAbar', 'f4', ('zref', 'lat', 'lon'))
-        SAbar.long_name = 'Salinity'
-        SAbar.units = '???'
-
-        Ribar = rootgrp.createVariable('Ribar', 'f4', ('zref', 'lat', 'lon'))
-        Ribar.long_name = 'Density'
-        Ribar.units = '???'
-
-        BVF2bar = rootgrp.createVariable('BVF2bar', 'f4', ('zref', 'lat', 'lon'))
-        BVF2bar.long_name = 'Brunt Vaisala frequency squared'
-        BVF2bar.units = 's^-2'
-
-        zreference = rootgrp.createVariable('zref', 'f4', ('zref', ))
-        zreference.long_name = 'Depth reference'
-        zreference.units = 'Meter'
-
-        rootgrp.close()
-
-    elif typestat == 'zstd':
-
-        zreference = rootgrp.createVariable('zref', 'f4', ('zref', ))
-        zreference.long_name = 'Depth reference'
-        zreference.units = 'Meter'
-
-        lon_deg = rootgrp.createVariable('lon', 'f4', ('lat', 'lon'))
-        lon_deg.long_name = 'Longitude in degrees'
-        lon_deg.units = 'Degrees'
-
-        lat_deg = rootgrp.createVariable('lat', 'f4', ('lat', 'lon'))
-        lat_deg.long_name = 'Latitude in degrees'
-        lat_deg.units = 'Degrees'
-
-        NBstd = rootgrp.createVariable('NBstd', 'f4', ('zref', 'lat', 'lon'))
-        NBstd.long_name = 'Weight'
-        NBstd.units = 'None'
-
-        CTstd = rootgrp.createVariable('CTstd', 'f4', ('zref', 'lat', 'lon'))
-        CTstd.long_name = 'Temperature'
-        CTstd.units = 'Degree Celsius'
-
-        SAstd = rootgrp.createVariable('SAstd', 'f4', ('zref', 'lat', 'lon'))
-        SAstd.long_name = 'Salinity'
-        SAstd.units = 'g.kg^-1'
-
-        Ristd = rootgrp.createVariable('Ristd', 'f4', ('zref', 'lat', 'lon'))
-        Ristd.long_name = 'Density'
-        Ristd.units = 'kg.m^-3'
-
-        BVF2std = rootgrp.createVariable('BVF2std', 'f4', ('zref', 'lat', 'lon'))
-        BVF2std.long_name = 'std of Brunt Vaisala frequency squared'
-        BVF2std.units = 's^-2'
-
-        v = rootgrp.createVariable('DZmean', 'f4', ('zref', 'lat', 'lon'))
-        v.long_name = 'Mean isopycnal displacement'
-        v.units = 'm'
-
-        w = rootgrp.createVariable('DZstd', 'f4', ('zref', 'lat', 'lon'))
-        w.long_name = 'Std isopycnal displacement'
-        w.units = 'm'
-
-        x = rootgrp.createVariable('DZskew', 'f4', ('zref', 'lat', 'lon'))
-        x.long_name = 'Skewness isopycnal displacement'
-        x.units = 'none'
-
-        y = rootgrp.createVariable('EAPE', 'f4', ('zref', 'lat', 'lon'))
-        y.long_name = 'Eddy available potential energy'
-        y.units = 'J.m^-3'
-
-        rootgrp.close()
-
-    # nom de fichier:
-    # typestat_reso_timeflag_tileidx.nc
-    #
-    # where
-    # typestat = 'zmean', 'zstd' etc
-    # reso = 0.5, 1.0, 0.25 etc
-    # timeflag = 'annual', 'DJF', 'MAM', 'JJA', 'SON'
-    # tileidx = 0 ... 299
-
-    # en fonction du type de stat on ne sauve pas les memes variables...
-
-    # pour ecrire un attribut global_clim
-    # nc.setncattr('lonmin', -32.)if typestat == 'zmean':
+    ncform.netCDF_dim_creation(filename, zref, nlat, nlon, mode, date)
+    ncform.netCDF_var_creation(filename, typestat)
 
 
-def write_stat_file(itile, typestat, reso_deg, timeflag, date, mode):
+def write_stat_file(itile, typestat, reso, timeflag, date, mode):
     """Write statistics into a netcdf file
     
-    :rtype: None"""
-    # idem, depend du type de stat
-    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso_deg, date[0], mode, typestat, typestat, reso_deg, timeflag, itile)
-    if (os.path.isfile(filename)):
-        print('filename existe')
-        f = Dataset(filename, "r+", format="NETCDF4")
-        # idem, depend du type de stat
-        if typestat == 'zmean':
-            lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar, BVF2bar = compute_mean_at_zref(itile, reso_deg, mode, date)
-            f.variables['CTbar'][:, :, :] = CTbar
-            f.variables['SAbar'][:, :, :] = SAbar
-            f.variables['Ribar'][:, :, :] = Ribar
-            f.variables['BVF2bar'][:, :, :] = BVF2bar
-            f.variables['NBbar'][:, :, :] = NBbar
-            f.variables['lat'][:, :] = lat_deg
-            f.variables['lon'][:, :] = lon_deg
-            f.variables['zref'][:] = zref
-            f.close()
-        elif typestat == 'zstd':
-            lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd, BVF2std = compute_std_at_zref(itile, reso_deg, timeflag, mode, date)
-            f.variables['NBstd'][:, :, :] = NBstd
-            f.variables['CTstd'][:, :, :] = CTstd
-            f.variables['SAstd'][:, :, :] = SAstd
-            f.variables['BVF2std'][:, :, :] = BVF2std
-            f.variables['DZmean'][:, :, :] = DZmean
-            f.variables['DZstd'][:, :, :] = DZstd
-            f.variables['DZskew'][:, :, :] = DZskew
-            f.variables['Ristd'][:, :, :] = Ristd
-            f.variables['EAPE'][:, :, :] = EAPE
-            f.variables['lat'][:, :] = lat_deg
-            f.variables['lon'][:, :] = lon_deg
-            f.variables['zref'][:] = zref
-            f.close()
+    :rtype: None
+    """
+
+    filename = generate_filename(itile, typestat, reso, timeflag, date, mode)
+    res = {}
+
+    if typestat == 'zmean':
+        res = compute_mean_at_zref(itile, reso, mode, date)
+    elif typestat == 'zstd':
+        res = compute_std_at_zref(itile, reso, timeflag, mode, date)
+
+    res['zref'] = zref
+    ncform.netCDF_var_writing(filename, typestat, res)
 
 
-def read_stat_file(typestat, itile, reso, timeflag, date, mode):
+def read_stat_file(itile, typestat, reso, timeflag, date, mode):
     """Read statistics into a netcdf file
     
-    :rtype: float, float, float, float, float, float, float"""
+    :rtype: dict"""
 
-    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, reso, date[0], mode, typestat, typestat, reso, timeflag, itile)
+    filename = generate_filename(itile, typestat, reso, timeflag, date, mode)
     print('read stat file : %s' % filename)
 
-    if (os.path.isfile(filename)):
-        f = Dataset(filename, "r", format="NETCDF4")
-        # idem, depend du type de stat
-        if typestat == 'zmean':
-            CTbar = f.variables['CTbar'][:, :, :]
-            SAbar = f.variables['SAbar'][:, :, :]
-            Ribar = f.variables['Ribar'][:, :, :]
-            BVF2bar = f.variables['BVF2bar'][:, :, :]
-            NBbar = f.variables['NBbar'][:, :, :]
-            lat_deg = f.variables['lat'][:, :]
-            lon_deg = f.variables['lon'][:, :]
-            f.close()
-            return lon_deg, lat_deg, NBbar, CTbar, SAbar, Ribar, BVF2bar
-        elif typestat == 'zstd':
-            NBstd = f.variables['CTstd'][:, :, :]
-            CTstd = f.variables['CTstd'][:, :, :]
-            SAstd = f.variables['SAstd'][:, :, :]
-            Ristd = f.variables['Ristd'][:, :, :]
-            BVF2std = f.variables['BVF2std'][:, :, :]
-            lat_deg = f.variables['lat'][:, :]
-            lon_deg = f.variables['lon'][:, :]
-            f.close()
-            return lon_deg, lat_deg, CTstd, SAstd, Ristd, NBstd, BVF2std
+    res = ncform.netCDF_var_reading(filename, typestat)
+    print(res)
+    return res
 
+
+def generate_filename(itile, typestat, reso, timeflag, date, mode):
+    """
+    Generates the filename of the netCDF stat file
+    
+    :rtype: str
+    """
+    filename = '%s/%s/%s/%s/%s/%s_%s_%s_%003i.nc' % (path_to_stats, 
+                                                     reso, date[0], 
+                                                     mode, typestat, 
+                                                     typestat, reso, 
+                                                     timeflag, itile)
+    return filename
 
 def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
     """ setup the grid coordinates (in degrees)
@@ -240,7 +107,7 @@ def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
 def compute_mean_at_zref(itile, reso_deg, mode, date):
     """Compute the mean at depths zref
     
-    :rtype: float, float, float, float, float, float, float"""
+    :rtype: dict"""
     tile = data_choice(mode, date, itile)
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
@@ -300,27 +167,35 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
     RIbar *= coef
     BVF2bar *= coef
 
-    return lon_deg, lat_deg, NBbar, CTbar, SAbar, RIbar, BVF2bar
+    res = {'NBbar': NBbar,
+           'CTbar': CTbar,
+           'SAbar': SAbar,
+           'Ribar': RIbar,
+           'BVF2bar': BVF2bar,
+           'lon': lon_deg,
+           'lat': lat_deg}
+
+    return res
 
 
 def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
     """Compute the standard deviations at depths zref
     
-    :rtype: float, float, float, float, float, float, float, float, float, float, float"""
+    :rtype: dict"""
 
     # gridded arrays of CT, SA variances
-    lon_deg, lat_deg, NBbar, CAbar, SAbar, RHObar, BVF2bar = read_stat_file('zmean', itile, reso_deg, timeflag, date, mode) # read it from the file
+    res = read_stat_file(itile, 'zmean', reso_deg, timeflag, date, mode) # read it from the file
     tile = data_choice(mode, date, itile)
     # output = argotools.retrieve_infos_from_tag(argodb, tile['TAG'])
     # iprof = output['IPROF']
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
     
-    lon_rad = np.deg2rad(lon_deg)
-    lat_rad = np.deg2rad(lat_deg)
+    lon_rad = np.deg2rad(res['lon'])
+    lat_rad = np.deg2rad(res['lat'])
     reso_rad = np.deg2rad(reso_deg)
 
-    nlat, nlon = np.shape(lon_deg)
+    nlat, nlon = np.shape(res['lon'])
 
     # RI is rho in situ
 
@@ -354,16 +229,16 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
                                             reso_rad)
             weight *= time_weight
             # print(np.shape(RHObar))
-            interpolator = ip.interp1d(RHObar[:,j,i], zref, bounds_error=False)
+            interpolator = ip.interp1d(res['Ribar'][:,j,i], zref, bounds_error=False)
             p = gsw.p_from_z(-zref, lat[j])
             g = gsw.grav(lat[j], p)
-            cs = gsw.sound_speed(SAbar[:, j, i], CAbar[:, j, i], p)
-            rho0 = RHObar[:, j, i].copy()
+            cs = gsw.sound_speed(res['SAbar'][:, j, i], res['CTbar'][:, j, i], p)
+            rho0 = res['Ribar'][:, j, i].copy()
 
-            drho = RI - RHObar[:, j, i]
-            dbvf2 = BVF2 - BVF2bar[:, j, i]
-            dCT = CT-CAbar[:, j, i]
-            dSA = SA-SAbar[:, j, i]
+            drho = RI - res['Ribar'][:, j, i]
+            dbvf2 = BVF2 - res['BVF2bar'][:, j, i]
+            dCT = CT - res['CTbar'][:, j, i]
+            dSA = SA - res['SAbar'][:, j, i]
             zrho = interpolator(RI)
             dzstar = zrho-zref
             dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
@@ -410,7 +285,19 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
     BVF2std = np.sqrt(coef*BVF2std)
     EAPE *= 0.5*coef
 
-    return lon_deg, lat_deg, CTstd, SAstd, DZmean, DZstd, DZskew, Ristd, EAPE, NBstd, BVF2std
+    res = {'NBstd': NBstd,
+           'CTstd': CTstd,
+           'SAstd': SAstd,
+           'Ristd': Ristd,
+           'BVF2std': BVF2std,
+           'DZmean': DZmean,
+           'DZstd': DZstd,
+           'DZskew': DZskew,
+           'EAPE': EAPE,
+           'lon': res['lon'],
+           'lat': res['lat']}
+
+    return res
 
 
 def data_choice(mode, date, itile):
@@ -421,7 +308,7 @@ def data_choice(mode, date, itile):
     
     :rtype: dic
     """
-    tile = melted.read_dic('tile%003i' % i, path_to_tiles)
+    tile = melted.read_dic('tile%003i' % itile, path_to_tiles)
     #  tile = tiler.read_tile(itile)
     julday = argotools.conversion_gregd_juld(int(date[0]), int(date[1]), int(date[2]))
     mode_list = list(mode)
@@ -447,6 +334,7 @@ def main(itile, typestat, reso, timeflag, date, mode):
     """Main function of stats.py"""
     create_stat_file(itile, typestat, reso, timeflag, date, mode)
     write_stat_file(itile, typestat, reso, timeflag, date, mode)
+    #  read_stat_file(itile, typestat, reso, timeflag, date, mode)
     #  create_stat_file(68, 'zmean', 0.5, 'annual')
     #  write_stat_file(68, 'zmean', 0.5, 'annual')
 
@@ -454,7 +342,7 @@ def main(itile, typestat, reso, timeflag, date, mode):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(32, 'zmean', 0.5, 'annual', ['2017', '12', '31'], 'D')
+    main(32, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'D')
     #  main(293, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
     #  main(294, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')
     #  main(295, 'zstd', 0.5, 'annual', ['2017', '12', '31'], 'AD')

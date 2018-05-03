@@ -29,7 +29,12 @@ def write_dic(name, dic, path_localdata):
 
 #  ----------------------------------------------------------------------------
 def read_dic(name, path_localdata):
-    """Read the full wmstats database
+    """
+    Function used to read each dic used to create .pkl files
+    Regroups :
+    - read_wmodic, read_wmstats, read_argodb from argodb.py
+    - read_argo_filter from research_tools.py
+    - read_tile from tile.py
     
     :rtype: dict"""
 
