@@ -14,9 +14,7 @@ import matplotlib.pyplot as plt
 import argotools as argotools
 import interpolation_tools as interpolation
 import param as param
-import numpy as np
 import decorator as deco
-import melted_functions as melted
 
 zref = argotools.zref
 path_to_tiles = param.path_to_tiles
@@ -31,16 +29,13 @@ def creating_tiles(i):
     
     :rtype: dic"""
     #  Generation of the dimension of import matplotlib.pyplot as plt
-    #  wmodic = argotools.read_wmodic()
-    #  argodic = argotools.read_argo_filter(i)
-    wmodic = melted.read_dic('wmodic', path_to_data)
-    argodic = melted.read_dic('argodic%003i' % i, path_to_filter)
+    wmodic = argotools.read_dic('wmodic', path_to_data)
+    argodic = argotools.read_dic('argodic%003i' % i, path_to_filter)
     tile = interpolation.interpolate_profiles(argodic, wmodic)
     del(argodic, wmodic)
     tile['ZREF'] = zref
 
-    #  write_tile(tile, i)
-    melted.write_dic('tile%003i' % i, tile, path_to_tiles)
+    argotools.write_dic('tile%003i' % i, tile, path_to_tiles)
 
     return tile
 
@@ -71,10 +66,8 @@ def plot_tile(i):
     
     :rtype: None"""
     depth = zref
-    #  argodic = argotools.read_argo_filter(i)
-    #  tile = read_tile(i)
-    argodic = melted.read_dic('argodic%003i' % i, path_to_filter)
-    tile = melted.read_dic('tile%003i' % i, path_to_tiles)
+    argodic = argotools.read_dic('argodic%003i' % i, path_to_filter)
+    tile = argotools.read_dic('tile%003i' % i, path_to_tiles)
     output = argotools.retrieve_infos_from_tag(argodic, argodic['TAG'])
     print(len(output['IDAC']))
     print(output['IDAC'])

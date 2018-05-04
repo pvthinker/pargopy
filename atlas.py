@@ -19,9 +19,9 @@ import param as param
 dirstats = param.path_to_stats
 diratlas = param.path_to_atlas
 
-year = '2017'
-month = '12'
-day = '31'
+year = '2012'
+month = '6'
+day = '15'
 date = [year, month, day]
 # mode defines the values selected :
 # R : Real time

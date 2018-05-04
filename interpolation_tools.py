@@ -44,7 +44,6 @@ def interpolate_profiles(subargodb, wmodic):
     wmos = set(infos['WMO'])
 
     for w in wmos:
-        #  print('interpolate profiles from wmo %i' % w)
         idx = np.where(infos['WMO'] == w)[0]
         iprof = infos['IPROF'][idx]
         dac = argotools.dac_from_wmo(wmodic, w)
@@ -52,11 +51,6 @@ def interpolate_profiles(subargodb, wmodic):
             dac, w, header=True, data=True, dataqc=True)
         for l, k in enumerate(iprof):
             if subargodb['FLAG'][idx[l]] == 0:
-#==============================================================================
-#                 for ke in key:
-#                     if data[ke][k, :].any == maskarraytype:
-#                         data[ke][k, :] = data[ke][k, :].compressed()
-#==============================================================================
                 temp = data['TEMP'][k, :]
                 psal = data['PSAL'][k, :]
                 pres = data['PRES'][k, :]
@@ -65,11 +59,6 @@ def interpolate_profiles(subargodb, wmodic):
                 pres_qc = data['PRES_QC'][k, :]
                 lon = data['LONGITUDE'][k]
                 lat = data['LATITUDE'][k]
-#==============================================================================
-#                 print(data['WMO'])
-#                 print(data['DACID'])
-#                 print(data['IPROF'][k])
-#==============================================================================
                 Ti, Si, Ri, BVF2i, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
                                                                            temp_qc, psal_qc, pres_qc,
                                                                            lon, lat, zref)
@@ -131,7 +120,7 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
     
     :rtype: float, float, float, float, float, float, float, int
     """
-    #  print(len(temp_qc))
+    
     CT, SA, z = [], [], []
     klist, ierr = remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc)
     if ierr == 0:
@@ -184,11 +173,6 @@ def insitu_to_absolute(Tis, SP, p, lon, lat, zref):
     #  SP is in p.s.u.
     SA = gsw.SA_from_SP(SP, p, lon, lat)
     CT = gsw.CT_from_t(SA, Tis, p)
-#==============================================================================
-#     print('p =', p)
-#     print('lat = %f' % lat)
-#     print('lon = %f' % lon)
-#==============================================================================
     z = -gsw.z_from_p(p, lat)
     return(CT, SA, z)
 
@@ -262,8 +246,6 @@ def interp_at_zref(CT, SA, z, zref):
                 idx = (ks[k-2]+ks[k-1])[-3:]+(ks[k]+ks[k+1])[:3]
 
         if len(idx) >= 2:
-            # print('****', k, idx, z[idx].data)
-            #  print(z[idx])
             cs, ds = lagrangepoly(zref[k], z[idx])
             # the meaning of the weights computed by lagrangepoly should
             # be clear in the code below

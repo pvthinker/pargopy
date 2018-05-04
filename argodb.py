@@ -7,15 +7,12 @@ File creating the summary of ARGO used to generate the atlas
 """
 # import jdcal
 from __future__ import with_statement
-import os
 import glob
-import pickle
 import time
 import numpy as np
 import param as param
-import matplotlib.pyplot as plt
+#  import matplotlib.pyplot as plt
 import argotools as argotools
-import melted_functions as melted
 tmps1 = time.time()
 
 path_argo = param.path_to_argo
@@ -114,40 +111,6 @@ def get_header_of_all_profiles(wmostats):
 
 
 #  ----------------------------------------------------------------------------
-def write_wmodic(wmodic):
-    """
-    Write the .pkl file with the list of all the wmos
-    
-    :rtype: None
-    """
-    with open('%s/wmodic.pkl' % path_localdata, 'w') as f:
-        pickle.dump(wmodic, f)
-
-
-#  ----------------------------------------------------------------------------
-def write_wmstats(wmstats):
-    """
-    Write the full wmstats database
-    
-    :rtype: None
-    """
-
-    with open('%s/wmstats.pkl' % path_localdata, 'w') as f:
-        pickle.dump(wmstats, f)
-
-
-#  ----------------------------------------------------------------------------
-def write_argodb(argodb):
-    """
-    Write the argo sumary with the informations of dac, wmo, flag, ...
-    
-    :rtype: None
-    """
-    with open('%s/argodb.pkl' % path_localdata, 'wb') as f:
-        pickle.dump(argodb, f)
-
-
-#  ----------------------------------------------------------------------------
 def update_wmodic():
     """
     Read the full argodb database and update argodb.pkl
@@ -157,12 +120,12 @@ def update_wmodic():
     wmodic = {}
     new_wmodic = get_all_wmos()
     #  old_wmodic = argotools.read_wmodic()
-    old_wmodic = melted.read_dic('wmodic', path_localdata)
+    old_wmodic = argotools.read_dic('wmodic', path_localdata)
     for dac in daclist:
         new_wmodic[dac] = set(new_wmodic[dac])
         old_wmodic[dac] = set(old_wmodic[dac])
         wmodic[dac] = new_wmodic[dac].difference(old_wmodic[dac])
-    write_wmodic(new_wmodic)
+    argotools.write_dic('wmodic', new_wmodic, path_localdata)
 
 
 #  ----------------------------------------------------------------------------
@@ -183,7 +146,7 @@ def propagate_flag_backward(argodb, subargodb, verbose=True):
                 print('tag %i flag changed from %i to %i' % (tag, prev, new))
             argodb['FLAG'][idx] = subargodb['FLAG'][k]
     print('Going to rewrite argodb')
-    write_argodb(argodb)
+    argotools.write_dic('argodb', argodb, path_localdata)
     print('Argodb rewrited')
 
 
@@ -192,14 +155,14 @@ def main():
     """Main function of argodb.py"""
     wmodic = get_all_wmos()
     #  write_wmodic(wmodic)
-    melted.write_dic('wmodic', wmodic, path_localdata)
+    argotools.write_dic('wmodic', wmodic, path_localdata)
     wmostats = get_header_of_all_wmos(wmodic)
     #  write_wmstats(wmostats)
-    melted.write_dic('wmostats', wmostats, path_localdata)
+    argotools.write_dic('wmostats', wmostats, path_localdata)
     argodb = get_header_of_all_profiles(wmostats)
     argodb = argotools.flag_argodb(argodb, wmodic)
     #  write_argodb(argodb)
-    melted.write_dic('argodb', argodb, path_localdata)
+    argotools.write_dic('argodb', argodb, path_localdata)
 
 
 #  ----------------------------------------------------------------------------

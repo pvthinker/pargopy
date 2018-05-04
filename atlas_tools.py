@@ -9,16 +9,13 @@ import matplotlib.pyplot as plt
 from netCDF4  import Dataset
 import research_tools as res
 import atlas as at
-import tile as tile
 import general_tools as gene
 import param as param
-import melted_functions as melted
+import argotools as argotools
 
 diratlas = param.path_to_atlas
 dirtile = param.path_to_tiles
 
-#  atlas_name = 'zmean_0.5_annual'
-#  listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar']
 atlas_name = at.atlas_name
 listvar = at.listvar
 
@@ -58,8 +55,7 @@ def select_profiles_near_point(lon0, lat0):
     :rtype: None"""
     
     itile = retrieve_tile_from_position(lon0, lat0)
-    argodb = melted.read_dic('tile%003i' % itile, dirtile)
-    #  argodb = tile.read_tile(itile)
+    argodb = argotools.read_dic('tile%003i' % itile, dirtile)
     zref = argodb.pop('ZREF')
     dmin = np.deg2rad(reso)
     lonpro = argodb['LONGITUDE']

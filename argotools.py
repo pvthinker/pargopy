@@ -11,11 +11,10 @@ Tools used by all the python files to generate the atlas
 from __future__ import with_statement
 import jdcal
 import os
-import glob
-import pickle
 import numpy as np
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
+import pickle as pickle
 import param as param
 import melted_functions as melted
 
@@ -274,6 +273,38 @@ def get_datamode(data):
     return mode
 
 
+#  ----------------------------------------------------------------------------
+def write_dic(name, dic, path_localdata):
+    """
+    Function used to write each dic used to create .pkl files
+    Regroups :
+    - write_wmodic, write_wmstats, write_argodb from argodb.py
+    - write_argo_filter from research_tools.py
+    - write_tile from tile.py
+    
+    :rtype: None
+    """
+
+    with open('%s/%s.pkl' % (path_localdata, name), 'w') as f:
+        pickle.dump(dic, f)
+
+#  ----------------------------------------------------------------------------
+def read_dic(name, path_localdata):
+    """
+    Function used to read each dic used to create .pkl files
+    Regroups :
+    - read_wmodic, read_wmstats, read_argodb from argodb.py
+    - read_argo_filter from research_tools.py
+    - read_tile from tile.py
+    
+    :rtype: dict"""
+
+    print('read %s.pkl' % name)
+    with open('%s/%s.pkl' % (path_localdata, name), 'r') as f:
+        dic = pickle.load(f)
+    return dic
+
+
 def plot_location_profiles(argodb):
     """Plot a scatter plot of profiles in argodb
 
@@ -317,51 +348,6 @@ def plot_wmos_stats(wmostats):
     plt.xlabel('nb of levels')
     plt.ylabel('nb of profiles')
     plt.show()
-
-
-#  ----------------------------------------------------------------------------
-def read_wmstats():
-    """Read the full wmstats database
-    
-    :rtype: dic"""
-    print('read wmostats.pkl')
-    with open('%s/wmstats.pkl' % path_localdata, 'r') as f:
-        wmstats = pickle.load(f)
-    return wmstats
-
-
-#  ----------------------------------------------------------------------------
-def read_argodb():
-    """Read the full argodb database
-    
-    :rtype: dic"""
-
-    print('read argodb.pkl')
-    with open('%s/argodb.pkl' % path_localdata, 'rb') as f:
-        argodb = pickle.load(f)
-    return argodb
-
-
-#  ----------------------------------------------------------------------------
-def read_wmodic():
-    """Read the database containing the list of all the wmos
-    
-    :rtype: dic"""
-    print('read wmodic.pkl')
-    with open('%s/wmodic.pkl' % path_localdata, 'r') as f:
-        wmodic = pickle.load(f)
-    return wmodic
-
-
-#  ----------------------------------------------------------------------------
-def read_argo_filter(i):
-    """Read the files containing parts of argodb chosen with lat/lon filters
-    
-    :rtype: dic"""
-    print('read argodic%003i.pkl' % i)
-    with open('%s/argodic%003i.pkl' % (path_filter, i), 'rb') as f:
-        argodic = pickle.load(f)
-    return argodic
 
 
 #  ----------------------------------------------------------------------------
@@ -428,6 +414,6 @@ def conversion_gregd_juld(year, month, day):
 
 
 if False:
-    wmodic = melted.read_dic('wmodic', path_localdata)
-    wmodb = melted.read_dic('wmodb', path_localdata)
-    argodb = melted.read_dic('argodb', path_localdata)
+    wmodic = read_dic('wmodic', path_localdata)
+    wmodb = read_dic('wmodb', path_localdata)
+    argodb = read_dic('argodb', path_localdata)

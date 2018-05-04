@@ -7,16 +7,12 @@ Created on Tue Mar 20 15:24:20 2018
 Tools used to generate the filters that are used after to generate the tiles
 
 """
-import os
 import time
 import numpy as np
-import time
-import pickle
 import matplotlib.pyplot as plt
 #  from mpl_toolkits.basemap import Basemap
 import param as param
 import argotools as argotools
-import melted_functions as melted
 
 path_to_filter = param.path_to_filter
 path_to_data = param.path_to_data
@@ -24,13 +20,13 @@ path_to_data = param.path_to_data
 
 #  ----------------------------------------------------------------------------
 def creating_tiles():
-    """Giving values to the variables
+    """
+    Giving values to the variables
     
-    :rtype: None"""
+    :rtype: None
+    """
     #  Generation of the dimension of import matplotlib.pyplot as plt
-    
-    #  argodb = argotools.read_argodb()
-    argodb = melted.read_dic('argodb', path_to_data)
+    argodb = argotools.read_dic('argodb', path_to_data)
     lat, lon, nlat, nlon, marginlat, marginlon = argotools.tile_definition()
     k = 0
     for i in range(nlat):
@@ -60,8 +56,7 @@ def creating_tiles():
 
             argo_extract = get_idx_from_tiles_lim(res, argodb)
             test_tiles(argo_extract, k)
-            melted.write_dic('argodic%003i' % k, argo_extract, path_to_filter)
-            #  write_argo_filter(argo_extract, k)
+            argotools.write_dic('argodic%003i' % k, argo_extract, path_to_filter)
             k += 1
 
 
@@ -76,17 +71,7 @@ def test_tiles(argo_extract, i):
     idx3 = np.where(argo_extract['LONGITUDE'] > argo_extract['LONMAX_NO_M'] + argo_extract['MARGINLON'])
     idx4 = np.where(argo_extract['LONGITUDE'] < argo_extract['LONMIN_NO_M'] - argo_extract['MARGINLON'])
     if (idx1[0] != []) | (idx2[0] != []) | (idx3[0] != []) | (idx4[0] != []):
-        print('There is an error with the dimensions of the tile number %i' % i)
-        exit(0)
-
-
-#  ----------------------------------------------------------------------------
-def write_argo_filter(argo_extract, i):
-    """Writing each filter corresponding to the future tiles
-    
-    :rtype: None"""
-    with open('%s/argodic%003i.pkl' % (path_to_filter, i), 'wb') as f:
-        pickle.dump(argo_extract, f)
+        raise ValueError('There is an error with the dimensions of the tile number %i' % i)
 
 
 #  ----------------------------------------------------------------------------
