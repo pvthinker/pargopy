@@ -3,67 +3,67 @@
     { "name" : "lon",     
       "type" : "f4",      
       "dim" : 2,      
-      "long_name" : "Longitude in Degrees",
+      "long_name" : "Longitude",
       "unit" : "Degrees"  
     },    
     { "name" : "lat",     
       "type" : "f4",      
       "dim" : 2,      
-      "long_name" : "Latitude in Degrees",
+      "long_name" : "Latitude",
       "unit" : "Degrees"  
     },    
     { "name" : "NBstd",
       "type" : "f4",
       "dim" : 3,
-      "long_name" : "Weight",
+      "long_name" : "Number of profiles used",
       "unit" : "None"
     },    
     { "name" : "CTstd",     
       "type" : "f4",      
       "dim" : 3,      
-      "long_name" : "Temperature",
-      "unit" : "Celsius"  
+      "long_name" : "Standard Deviation of Conservative Temperature",
+      "unit" : "°C"  
     },    
     { "name" : "SAstd",     
       "type" : "f4",      
       "dim" : 3,      
-      "long_name" : "Salinity",
+      "long_name" : "Standard Deviation of Absolute Salinity",
       "unit" : "g.kg^-1"  
     },    
     { "name" : "Ristd",     
       "type" : "f4",      
       "dim" : 3,      
-      "long_name" : "Density",
-      "unit" : "???"  
+      "long_name" : "Standard Deviation of in-situtu Density",
+      "unit" : "kg.m^-3"  
     },    
     { "name" : "BVF2std",     
       "type" : "f4",      
       "dim" : 3,      
-      "long_name" : "Brunt Vaisala frequency squared",
+      "long_name" : "Standard Deviation of Brunt Vaisala Frequency squared",
       "unit" : "s^⁻2"  
     },    
     { "name" : "zref",     
       "type" : "f4",      
       "dim" : 1,      
-      "long_name" : "Depth reference",
-      "unit" : "Meter"  
+      "long_name" : "Depth",
+      "unit" : "mx"  
     },    
     { "name" : "DZmean",     
       "type" : "f4",      
       "dim" : 3,      
       "long_name" : "Mean isopycnal displacement",
-      "unit" : "Meter"  
+      "unit" : "m"  
     },    
     { "name" : "DZstd",     
       "type" : "f4",      
       "dim" : 3,      
-      "long_name" : "Std isopycnal displacement",
-      "unit" : "Meter"  
+      "long_name" : "Standard Deviation of isopycnal displacement",
+      "unit" : "mxs"  
     },    
     { "name" : "DZskew",     
       "type" : "f4",      
       "dim" : 3,      
-      "long_name" : "Skewness isopycnal displacement",
+      "long_name" : "Skewness of isopycnal displacement",
       "unit" : "None"  
     },    
     { "name" : "EAPE",     
