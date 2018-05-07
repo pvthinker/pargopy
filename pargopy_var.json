@@ -1,17 +1,57 @@
 {  
-  "zstd" : [    
+  "general" : [    
     { "name" : "lon",     
       "type" : "f4",      
       "dim" : 2,      
       "long_name" : "Longitude",
       "unit" : "Degrees"  
-    },    
+    }, 
     { "name" : "lat",     
       "type" : "f4",      
       "dim" : 2,      
       "long_name" : "Latitude",
       "unit" : "Degrees"  
+    },
+    { "name" : "zref",     
+      "type" : "f4",      
+      "dim" : 1,      
+      "long_name" : "Depth",
+      "unit" : "Meter" 
+    }
+  ],
+  "zmean" : [       
+    { "name" : "NBbar",
+      "type" : "f4",
+      "dim" : 3,
+      "long_name" : "Number of profiles used",
+      "unit" : "None"
     },    
+    { "name" : "CTbar",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Mean Conservative Temperature",
+      "unit" : "Celsius"  
+    },    
+    { "name" : "SAbar",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Mean absolute Salinity",
+      "unit" : "g.kg^-1"  
+    },    
+    { "name" : "Ribar",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Mean in-situ Density",
+      "unit" : "kg.m^-3"  
+    },    
+    { "name" : "BVF2bar",     
+      "type" : "f4",      
+      "dim" : 3,      
+      "long_name" : "Mean Brunt Vaisala frequency squared",
+      "unit" : "s^-2"   
+    }
+  ], 
+  "zstd" : [       
     { "name" : "NBstd",
       "type" : "f4",
       "dim" : 3,
@@ -22,7 +62,7 @@
       "type" : "f4",      
       "dim" : 3,      
       "long_name" : "Standard Deviation of Conservative Temperature",
-      "unit" : "°C"  
+      "unit" : "Celsius"  
     },    
     { "name" : "SAstd",     
       "type" : "f4",      
@@ -41,24 +81,18 @@
       "dim" : 3,      
       "long_name" : "Standard Deviation of Brunt Vaisala Frequency squared",
       "unit" : "s^⁻2"  
-    },    
-    { "name" : "zref",     
-      "type" : "f4",      
-      "dim" : 1,      
-      "long_name" : "Depth",
-      "unit" : "mx"  
-    },    
+    },   
     { "name" : "DZmean",     
       "type" : "f4",      
       "dim" : 3,      
       "long_name" : "Mean isopycnal displacement",
-      "unit" : "m"  
+      "unit" : "Meter"  
     },    
     { "name" : "DZstd",     
       "type" : "f4",      
       "dim" : 3,      
       "long_name" : "Standard Deviation of isopycnal displacement",
-      "unit" : "mxs"  
+      "unit" : "Meter"  
     },    
     { "name" : "DZskew",     
       "type" : "f4",      
@@ -72,5 +106,6 @@
       "long_name" : "Eddy available potential energy",
       "unit" : "J.m^-3"  
     }
-  ]  
+  ] 
 }
+
