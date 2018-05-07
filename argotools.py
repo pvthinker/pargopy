@@ -390,6 +390,91 @@ def tile_definition():
 
 
 #  ----------------------------------------------------------------------------
+def test_tiles(argo_extract, i):
+    """ Test to know if the tiles are correctly done with the lat and lon 
+    limits
+    
+    :rtype: None"""
+    idx1 = np.where(argo_extract['LATITUDE'] > argo_extract['LATMAX_NO_M'] + argo_extract['MARGINLAT'])
+    idx2 = np.where(argo_extract['LATITUDE'] < argo_extract['LATMIN_NO_M'] - argo_extract['MARGINLAT'])
+    idx3 = np.where(argo_extract['LONGITUDE'] > argo_extract['LONMAX_NO_M'] + argo_extract['MARGINLON'])
+    idx4 = np.where(argo_extract['LONGITUDE'] < argo_extract['LONMIN_NO_M'] - argo_extract['MARGINLON'])
+    if (idx1[0] != []) | (idx2[0] != []) | (idx3[0] != []) | (idx4[0] != []):
+        raise ValueError('There is an error with the dimensions of the tile number %i' % i)
+
+
+#  ----------------------------------------------------------------------------
+def get_idx_from_tiles_lim(res, argodb):
+    """Get the list of profile indices present in argodb that correspond
+       to the list of wmos
+       
+       :rtype: dic"""
+    if res['LONMIN_WITH_M'] > res['LONMAX_WITH_M']:
+        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & ((argodb['LONGITUDE'] > res['LONMIN_WITH_M']) | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
+    else:
+        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & (argodb['LONGITUDE'] > res['LONMIN_WITH_M']) & (argodb['LONGITUDE'] < res['LONMAX_WITH_M']))
+    argo_extract = extract_idx_from_argodb(argodb, idx)
+    argo_extract['LATMIN_NO_M'] = res['LATMIN_NO_M']
+    argo_extract['LATMAX_NO_M'] = res['LATMAX_NO_M']
+    argo_extract['LONMIN_NO_M'] = res['LONMIN_NO_M']
+    argo_extract['LONMAX_NO_M'] = res['LONMAX_NO_M']
+    argo_extract['MARGINLAT'] = res['MARGINLAT']
+    argo_extract['MARGINLON'] = res['MARGINLON']
+
+    return argo_extract
+
+
+#  ----------------------------------------------------------------------------
+def get_idx_from_list_wmo(argodb, wmos):
+    """Get the list of profile indices present in argodb that correspond
+       to the list of wmos
+       
+       :rtype: list of int
+
+    """
+    infos = retrieve_infos_from_tag(argodb, argodb['TAG'])
+    idx = []
+    for w in wmos:
+        idx += list(np.where(infos['WMO'] == w)[0])
+    return idx
+
+
+#  ----------------------------------------------------------------------------
+def extract_idx_from_argodb(argodb, idx):
+    """Return a argodb type dictionnary that is a subset of argodb and
+       containing only entries given in idx (list)
+       
+       :rtype: dic
+
+    """
+    argodb_extract = {}
+    for k in argodb.keys():
+        argodb_extract[k] = argodb[k][idx]
+    return argodb_extract
+
+
+#  ----------------------------------------------------------------------------
+def extract_idx_from_wmostats(wmostats, idx):
+    """Return a wmostats type dictionnary that is a subset of wmostats and
+       containing only entries given in idx (list)
+       
+       :rtype: dic
+
+    """
+    wmostats_extract = {}
+    keys = wmostats.keys()
+    keys.remove('N_WMO')
+    for k in keys:
+        wmostats_extract[k] = wmostats[k][idx]
+    if type(idx) in [int, np.int64]:
+        n_wmo = 1
+    else:
+        n_wmo = len(idx)
+    wmostats_extract['N_WMO'] = n_wmo
+    return wmostats_extract
+
+
+#  ----------------------------------------------------------------------------
 def conversion_juld_gregd(juld):
     """Method converting julian day into gregorian day
     

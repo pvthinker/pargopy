@@ -61,6 +61,48 @@ def read_tile(i):
 
 
 #  ----------------------------------------------------------------------------
+def creating_argodic():
+    """
+    Giving values to the variables
+    
+    :rtype: None
+    """
+    #  Generation of the dimension of import matplotlib.pyplot as plt
+    argodb = argotools.read_dic('argodb', path_to_data)
+    lat, lon, nlat, nlon, marginlat, marginlon = argotools.tile_definition()
+    k = 0
+    for i in range(nlat):
+        for j in range(nlon):
+            latmin = lat[i] - marginlat[i]
+            latmax = lat[i + 1] + marginlat[i]
+            lonmin = lon[j] - marginlon
+            lonmax = lon[j + 1] + marginlon
+            if lonmin < -180:
+                lonmin += 360
+            elif lonmax > 180:
+                lonmax -= 360
+            else:
+                pass
+            #  WITH_M : with margin
+            #  NO_M : without margin
+            res = {'LATMIN_WITH_M': latmin,
+                   'LATMAX_WITH_M': latmax,
+                   'LONMIN_WITH_M': lonmin,
+                   'LONMAX_WITH_M': lonmax,
+                   'LATMIN_NO_M': lat[i],
+                   'LATMAX_NO_M': lat[i+1],
+                   'LONMIN_NO_M': lon[j],
+                   'LONMAX_NO_M': lon[j+1],
+                   'MARGINLAT': marginlat[i],
+                   'MARGINLON': marginlon}
+
+            argo_extract = argotools.get_idx_from_tiles_lim(res, argodb)
+            argotools.test_tiles(argo_extract, k)
+            argotools.write_dic('argodic%003i' % k, argo_extract, path_to_filter)
+            k += 1
+
+
+#  ----------------------------------------------------------------------------
 def plot_tile(i):
     """Plots the tiles values (Ti, Si, Ri) with the values non interpolate
     
