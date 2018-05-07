@@ -83,44 +83,30 @@ def generate_filename(itile, typestat, reso, timeflag, date, mode):
 def grid_coordinate(itile, reso):
     """ 
     Returns the coordinates of each point of the grid for a given tile
+
+    coordinates are round multiples of reso_deg
+    reso sets the grid resolution, typically 0.5deg
     
     :rtype: numpy.ndarray, numpy.ndarray""" 
     lat, lon, nlat, nlon, marginlat, marginlon = argotools.tile_definition()
 
-    i = itile / nlon
-    j = itile - (i * nlon)
+    i = itile // nlon
+    j = itile % nlon
 
-    latmin = lat[i]
-    latmax = lat[i+1]
-    lonmin = lon[j]
-    lonmax = lon[j+1]
+    latmin = np.ceil(lat[i]/reso)*reso
+    latmax = np.floor(lat[i+1]/reso)*reso
+    lonmin = np.ceil(lon[j]/reso)*reso
+    lonmax = np.floor(lon[j+1]/reso)*reso
+    if (lonmax % 1. == 0.):
+        # remove rightmost point (it's the leftmost point of the next
+        # tile). That's also true for +180 (that is == -180).
+        lonmax -= reso
 
     grid_lat = np.arange(latmin, (latmax+reso), reso)
     grid_lon = np.arange(lonmin, (lonmax+reso), reso)
 
     return(grid_lat, grid_lon)
     
-
-
-def define_grid(minlon, maxlon, minlat, maxlat, reso_deg):
-    """ setup the grid coordinates (in degrees)
-    coordinates are round multiples of reso_deg
-    reso_deg sets the grid resolution, typically 0.5deg
-    
-    :rtype: float, float""" 
-
-    minlon = np.ceil(minlon/reso_deg)*reso_deg
-    maxlon = np.floor(maxlon/reso_deg)*reso_deg
-
-    minlat = np.ceil(minlat/reso_deg)*reso_deg
-    maxlat = np.floor(maxlat/reso_deg)*reso_deg
-
-    lon1D = np.arange(minlon, maxlon+reso_deg, reso_deg)
-    lat1D = np.arange(minlat, maxlat+reso_deg, reso_deg)
-
-    lon, lat = np.meshgrid(lon1D, lat1D)
-
-    return lon, lat
 
 
 def compute_mean_at_zref(itile, reso_deg, mode, date):
@@ -132,7 +118,9 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
     argodic = argotools.read_dic('argodic%003i' % itile, path_to_filter)
     minlon, maxlon, minlat, maxlat = argodic['LONMIN_NO_M'], argodic['LONMAX_NO_M'], argodic['LATMIN_NO_M'], argodic['LATMAX_NO_M']
-    lon_deg, lat_deg = define_grid(minlon, maxlon, minlat, maxlat, reso_deg)
+
+    grid_lat, grid_lon = grid_coordinate(itile, reso_deg)
+    lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
 
     lon_rad = np.deg2rad(lon_deg)
     lat_rad = np.deg2rad(lat_deg)
