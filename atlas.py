@@ -19,9 +19,9 @@ import param as param
 dirstats = param.path_to_stats
 diratlas = param.path_to_atlas
 
-year = '2012'
-month = '6'
-day = '15'
+year = '2017'
+month = '12'
+day = '31'
 date = [year, month, day]
 # mode defines the values selected :
 # R : Real time
@@ -29,10 +29,13 @@ date = [year, month, day]
 # D : Delayed time (Values verified)
 mode = 'D'
 typestat = 'zstd'
-reso = 0.5
+reso = 0.25
 timeflag = 'annual'
 nlon = 20
 nlat = 15
+
+# Will be used in the future to generate just the wanted variables
+#  listvar = stats.var_choice
 
 if typestat == 'zmean':
     listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar', 'BVF2bar']

@@ -9,6 +9,7 @@ from netCDF4 import Dataset
 import os
 import simplejson as json
 
+typestat = ['general', 'zmean', 'zstd']
 
 #  ----------------------------------------------------------------------------
 def netCDF_dim_creation(filename, zref, nlat, nlon, mode, date):
@@ -27,7 +28,7 @@ def netCDF_dim_creation(filename, zref, nlat, nlon, mode, date):
 
 
 #  ----------------------------------------------------------------------------
-def netCDF_var_creation(filename, typestat):
+def netCDF_var_creation(filename, var_choice):
     """
     Function creating the netDCF variables.
     This function takes its values from a .json file where all the desired
@@ -39,28 +40,41 @@ def netCDF_var_creation(filename, typestat):
     """
 
     if (os.path.isfile(filename)):
-        print('filename existe')
+        print('filename exists')
         rootgrp = Dataset(filename, "r+", format="NETCDF4")
 
-        data = json.load(open('%s_var.json' % typestat))
+        data = json.load(open('pargopy_var.json'))
         nc_var = {}
 
-        for d in data[typestat]:
-            if d['dim'] == 1:
-                dimension = ('zref', )
-            elif d['dim'] == 2:
-                dimension = ('lat', 'lon')
-            elif d['dim']== 3:
-                dimension = ('zref', 'lat', 'lon')
-        
-            nc_var[d['name']] = rootgrp.createVariable(d['name'], d['type'], dimension)
-            nc_var[d['name']].long_name = d['long_name']
-            nc_var[d['name']].units = d['unit']
+        for g in data['general']:
+            if g['name'] in var_choice:
+                pass
+            else:
+                var_choice.append(g['name'])
+            print(var_choice)
+
+        for v in var_choice:
+            for t in typestat:
+                for d in data[t]:
+                    if v == d['name']:
+                        if d['dim'] == 1:
+                            dimension = ('zref', )
+                        elif d['dim'] == 2:
+                            dimension = ('lat', 'lon')
+                        elif d['dim']== 3:
+                            dimension = ('zref', 'lat', 'lon')
+
+                        if d['name'] in nc_var:
+                            pass
+                        else:
+                            nc_var[d['name']] = rootgrp.createVariable(d['name'], d['type'], dimension)
+                            nc_var[d['name']].long_name = d['long_name']
+                            nc_var[d['name']].units = d['unit']
 
         rootgrp.close()
 
 #  ----------------------------------------------------------------------------
-def netCDF_var_writing(filename, typestat, res):
+def netCDF_var_writing(filename, var_choice, res):
     """
     Function writing the netDCF variables.
     This function takes its values from a .json file where all the desired
@@ -72,24 +86,35 @@ def netCDF_var_writing(filename, typestat, res):
     """
 
     if (os.path.isfile(filename)):
-        print('filename existe')
+        print('filename exists')
         f = Dataset(filename, "r+", format="NETCDF4")
 
-        data = json.load(open('%s_var.json' % typestat))
+        data = json.load(open('pargopy_var.json'))
 
-        for d in data[typestat]:
-            if d['dim'] == 1:
-                f.variables[d['name']][:] = res[d['name']]
-            elif d['dim'] == 2:
-                f.variables[d['name']][:, :] = res[d['name']]
-            elif d['dim']== 3:
-                f.variables[d['name']][:, :, :] = res[d['name']]
+        for g in data['general']:
+            if g['name'] in var_choice:
+                pass
+            else:
+                var_choice.append(g['name'])
+            print(var_choice)
+
+        for v in var_choice:
+            for t in typestat:
+                for d in data[t]:
+                    if v == d['name']:
+                        #  print(d['name'])
+                        if d['dim'] == 1:
+                            f.variables[d['name']][:] = res[d['name']]
+                        elif d['dim'] == 2:
+                            f.variables[d['name']][:, :] = res[d['name']]
+                        elif d['dim']== 3:
+                            f.variables[d['name']][:, :, :] = res[d['name']]
 
         f.close()
 
 
 #  ----------------------------------------------------------------------------
-def netCDF_var_reading(filename, typestat):
+def netCDF_var_reading(filename, var_choice):
     """
     Function reading the netDCF files.
     This function takes its values from a .json file where all the desired
@@ -103,16 +128,22 @@ def netCDF_var_reading(filename, typestat):
     if (os.path.isfile(filename)):
         f = Dataset(filename, "r", format="NETCDF4")
 
-        data = json.load(open('%s_var.json' % typestat))
+        data = json.load(open('pargopy_var.json'))
         res = {}
 
-        for d in data[typestat]:
-            if d['dim'] == 1:
-                res[d['name']] = f.variables[d['name']][:]
-            elif d['dim'] == 2:
-                res[d['name']] = f.variables[d['name']][:, :]
-            elif d['dim']== 3:
-                res[d['name']] = f.variables[d['name']][:, :, :]
+        for g in data['general']:
+            var_choice.append(g['name'])
+
+        for v in var_choice:
+            for t in typestat:
+                for d in data[t]:
+                    if v == d['name']:
+                        if d['dim'] == 1:
+                            res[d['name']] = f.variables[d['name']][:]
+                        elif d['dim'] == 2:
+                            res[d['name']] = f.variables[d['name']][:, :]
+                        elif d['dim']== 3:
+                            res[d['name']] = f.variables[d['name']][:, :, :]
 
         f.close()
 
