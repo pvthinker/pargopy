@@ -11,11 +11,14 @@ import general_tools as tools
 import argotools as argotools
 import param as param
 import netCDF_form as ncform
+import variable_selector as vs
 
 # Put in var_choice list the variables you want in your atlas
 
-var_choice = ['NBstd', 'SAstd', 'CTstd', 'Ristd', 'BVF2std', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
-
+#  var_choice = ['NBstd', 'SAstd', 'CTstd', 'Ristd', 'BVF2std', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
+var_choice = {'zmean':['NBbar', 'SAbar', 'CTbar', 'Ribar', 'BVF2bar'],
+              'zstd':['NBstd', 'SAstd', 'CTstd', 'Ristd', 'BVF2std'], 
+              'zdz':['DZmean', 'DZstd', 'DZskew', 'EAPE']}
 # var_choice used by stats_read
 # You need to know which variables are existing in the stats_i.nc file to know
 # which variables are available
@@ -43,10 +46,10 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     nlat, nlon = np.shape(lon_deg)
 
     ncform.netCDF_dim_creation(filename, zref, nlat, nlon, mode, date)
-    ncform.netCDF_var_creation(filename, var_choice)
+    ncform.netCDF_var_creation(filename, var_choice[typestat])
 
 
-def write_stat_file(itile, typestat, reso, timeflag, date, mode):
+def write_stat_file(itile, typestat, reso, timeflag, date, mode, stats_mode):
     """Write statistics into a netcdf file
     
     :rtype: None
@@ -55,14 +58,18 @@ def write_stat_file(itile, typestat, reso, timeflag, date, mode):
     filename = generate_filename(itile, typestat, reso, timeflag, date, mode)
     res = {}
 
-    if typestat == 'zmean':
-        res = compute_mean_at_zref(itile, reso, mode, date)
-    elif typestat == 'zstd':
-        res = compute_std_at_zref(itile, reso, timeflag, mode, date)
+    res = vs.compute_at_zref(itile, reso, mode, date, stats_mode)
+
+#==============================================================================
+#     if typestat[0] == 'zmean':
+#         res = compute_mean_at_zref(itile, reso, mode, date)
+#     elif typestat[0] == 'zstd':
+#         res = compute_std_at_zref(itile, reso, timeflag, mode, date)
+#==============================================================================
 
     res['zref'] = zref
     print(res)
-    ncform.netCDF_var_writing(filename, var_choice, res)
+    ncform.netCDF_var_writing(filename, var_choice[typestat], res)
 
 
 def read_stat_file(itile, typestat, reso, timeflag, date, mode, var_choice):
@@ -171,17 +178,18 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
                 SAbar[l, :, :] += weight*SA[k, l]
                 RIbar[l, :, :] += weight*RI[k, l]
                 BVF2bar[l, :, :] += weight*BVF2[k, l]
-
+    print(CTbar)
     # normalize with the number of profiles (fractional
     # because NBbar is fractionnal)
     coef = 1./NBbar
     coef[NBbar < 1] = np.NaN
 
+    #  print(CTbar)
+    exit(0)
     CTbar *= coef
     SAbar *= coef
     RIbar *= coef
     BVF2bar *= coef
-
     res = {'NBbar': NBbar,
            'CTbar': CTbar,
            'SAbar': SAbar,
@@ -274,13 +282,17 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
                         return np.nansum(weight*field, axis=0)
             
                     NBstd[:, j, i] = average(1.)
+                    
+                    # zstd
                     CTstd[:, j, i] = average(dCT**2)
                     SAstd[:, j, i] = average(dSA**2)
+                    BVF2std[:, j, i] = average(dbvf2**2)
+                    Ristd[:, j, i] = average(drho**2)
+
+                    # zdz
                     DZmean[:, j, i] = average(dz)
                     DZstd[:, j, i] = average(dz**2)
                     DZskew[:, j, i] = average(dz**3)
-                    Ristd[:, j, i] = average(drho**2)
-                    BVF2std[:, j, i] = average(dbvf2**2)
                     EAPE[:, j, i] = average(dz*drho)
 
     # normalize with the number of profiles (fractional
@@ -347,14 +359,15 @@ def date_mode_filter(mode, date, itile):
 
 def main(itile, typestat, reso, timeflag, date, mode):
     """Main function of stats.py"""
-    create_stat_file(itile, typestat, reso, timeflag, date, mode)
-    write_stat_file(itile, typestat, reso, timeflag, date, mode)
+    for t in typestat:
+        create_stat_file(itile, t, reso, timeflag, date, mode)
+        write_stat_file(itile, t, reso, timeflag, date, mode, typestat)
     #  grid_coordinate(itile, reso)
 
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(52, 'zstd', 0.25, 'annual', ['2017', '12', '31'], 'D')
+    main(52, ['zstd'], 0.5, 'annual', ['2017', '12', '31'], 'D')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
