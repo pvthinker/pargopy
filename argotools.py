@@ -16,7 +16,6 @@ from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import pickle as pickle
 import param as param
-import melted_functions as melted
 
 path_argo = param.path_to_argo
 path_filter = param.path_to_filter
@@ -89,7 +88,7 @@ def count_profiles_in_database(wmostats):
 def get_profile_file_path(dac, wmo):
     """
     Return the file path to the \*_prof.nc data file
-    
+
     :rtype: string
     """
 
@@ -109,7 +108,7 @@ def read_profile(dac, wmo, iprof=None,
     - read one or all profiles read the header (lat, lon, juld) or not
     - read the data or not always return IDAC, WMO, N_PROF, N_LEVELS
     - and DATA_UPDATE (all 5 are int)
-    
+
     :rtype: dic
     """
     if type(dac) is int:
@@ -153,7 +152,8 @@ def read_profile(dac, wmo, iprof=None,
             if header:
                 for key in key_header:
                     output[key] = f.variables[key][idx]
-                    output['DATA_MODE'] = np.asarray([c for c in f.variables['DATA_MODE'][idx]])
+                    output['DATA_MODE'] = np.asarray(
+                        [c for c in f.variables['DATA_MODE'][idx]])
 
             if headerqc:
                 for key in key_headerqc:
@@ -165,7 +165,7 @@ def read_profile(dac, wmo, iprof=None,
                         output[key] = f.variables[key][idx, :]
                     else:
                         output[key] = np.NaN+np.zeros(
-                                (output['N_PROF'], output['N_LEVELS']))
+                            (output['N_PROF'], output['N_LEVELS']))
 
             if dataqc:
                 for key in key_dataqc:
@@ -173,7 +173,7 @@ def read_profile(dac, wmo, iprof=None,
                         output[key] = f.variables[key][idx]
                     else:
                         output[key] = np.zeros(
-                                (output['N_PROF'], output['N_LEVELS']), dtype=str)
+                            (output['N_PROF'], output['N_LEVELS']), dtype=str)
 
     return output
 
@@ -181,7 +181,7 @@ def read_profile(dac, wmo, iprof=None,
 def flag_argodb(argodb, wmodic):
     """
     Add the flag to argodb
-    
+
     :rtype: dic
     """
 
@@ -216,7 +216,7 @@ def fix_flag_latlonf(argodb):
 
     Bad masked position yield value of 99999. This fix only concerns a
     few profiles from dac='jma'
-    
+
     :rtype: None
     """
     idx = np.where(argodb['LONGITUDE'] == 99999.)[0]
@@ -229,7 +229,7 @@ def get_tag(kdac, wmo, kprof):
     """Compute the tag number of a profile
 
     The inverse of get_tag() is retrieve_infos_from_tag()
-    
+
     :rtype: int
     """
     if kprof > 1000:
@@ -242,7 +242,7 @@ def retrieve_infos_from_tag(argodb, tag):
     """Retrieve idac, wmo and iprof from tag (array of int)
 
     It is the inverse of get_tag()
-    
+
     :rtype: dic
     """
 
@@ -257,7 +257,7 @@ def retrieve_infos_from_tag(argodb, tag):
 
 def get_datamode(data):
     """Return the data mode of the profile
-    
+
     :rtype: np.array
     """
     mode = np.zeros(len(data), dtype=int)
@@ -281,7 +281,7 @@ def write_dic(name, dic, path_localdata):
     - write_wmodic, write_wmstats, write_argodb from argodb.py
     - write_argo_filter from research_tools.py
     - write_tile from tile.py
-    
+
     :rtype: None
     """
 
@@ -289,6 +289,8 @@ def write_dic(name, dic, path_localdata):
         pickle.dump(dic, f)
 
 #  ----------------------------------------------------------------------------
+
+
 def read_dic(name, path_localdata):
     """
     Function used to read each dic used to create .pkl files
@@ -296,7 +298,7 @@ def read_dic(name, path_localdata):
     - read_wmodic, read_wmstats, read_argodb from argodb.py
     - read_argo_filter from research_tools.py
     - read_tile from tile.py
-    
+
     :rtype: dict"""
 
     print('read %s.pkl' % name)
@@ -309,7 +311,7 @@ def plot_location_profiles(argodb):
     """Plot a scatter plot of profiles in argodb
 
     argodb can be the full database or any subset
-    
+
     :rtype: None
     """
     idx = np.where(argodb['FLAG'][:] == 0)[0]
@@ -322,7 +324,7 @@ def plot_location_profiles(argodb):
 
 def plot_wmo_data(dac, wmo):
     """Plot raw 'TEMP' data for dac, wmo
-    
+
     :rtype: None"""
 
     data = read_profile(dac, wmo, data=True)
@@ -338,7 +340,7 @@ def plot_wmo_data(dac, wmo):
 
 def plot_wmos_stats(wmostats):
     """Plot the histogram of number of profiles per number of levels
-    
+
     :rtype: None"""
 
     plt.figure()
@@ -352,15 +354,38 @@ def plot_wmos_stats(wmostats):
 
 #  ----------------------------------------------------------------------------
 def tile_definition():
-    """Creating the variables
-    
-    :rtype: float, float, int, int, float, float"""
+    """Define the tiles coordinates, in the form of a vector of lon and
+lat + their margins
+
+The tile indexing is
+
+|-----+-----+-----+-----+-----|
+| 280 | 281 | 282 | ... | 299 |
+|-----+-----+-----+-----+-----|
+| ... | ... | ... | ... | ... |
+|-----+-----+-----+-----+-----|
+|  20 |  21 |  22 | ... |  39 |
+|-----+-----+-----+-----+-----|
+|   0 |   1 |   2 | ... |  19 |
+|-----+-----+-----+-----+-----|
+
+
+    :rtype: float, float, int, int, float, float
+
+    """
 
     minlon = -180.
     maxlon = 180.
+    # The Arctic is excluded from this procedure
+    #
+    # TODO: add the Arctic at some point but adopt a more general way
+    # of defining tiles (lon x lat rectangles are not suited for the
+    # North pole)
     latmin = -80.
     maxlat = 80.
 
+    # number of tiles in longitude and latitude
+    # this is hard-coded. We thus have 20x15=300 tiles
     nlon = 20
     nlat = 15
 
@@ -383,6 +408,10 @@ def tile_definition():
         dlat = dlat/sum(dlat)*deltalat
         lat[1:] = latmin + np.cumsum(dlat)
 
+    # add margins around each tile. This implies some overlapping
+    # between tiles. This allows to do statistics at each interior
+    # point of the tile, including near the boundaries where margins
+    # are large enough to include all nearby profiles.
     marginlat = minmargin / np.cos(latm*np.pi/180)
     marginlon = 2
 
@@ -390,29 +419,58 @@ def tile_definition():
 
 
 #  ----------------------------------------------------------------------------
-def test_tiles(argo_extract, i):
-    """ Test to know if the tiles are correctly done with the lat and lon 
-    limits
-    
-    :rtype: None"""
-    idx1 = np.where(argo_extract['LATITUDE'] > argo_extract['LATMAX_NO_M'] + argo_extract['MARGINLAT'])
-    idx2 = np.where(argo_extract['LATITUDE'] < argo_extract['LATMIN_NO_M'] - argo_extract['MARGINLAT'])
-    idx3 = np.where(argo_extract['LONGITUDE'] > argo_extract['LONMAX_NO_M'] + argo_extract['MARGINLON'])
-    idx4 = np.where(argo_extract['LONGITUDE'] < argo_extract['LONMIN_NO_M'] - argo_extract['MARGINLON'])
-    if (idx1[0] != []) | (idx2[0] != []) | (idx3[0] != []) | (idx4[0] != []):
-        raise ValueError('There is an error with the dimensions of the tile number %i' % i)
+def test_tiles(argo, i):
+    """Test that tile 'i' is correctly defined with all profiles positions
+    within the tile limits, encompassing the margins
+
+    :rtype: None
+
+    """
+    # profiles position
+    lat = argo['LATITUDE']
+    lon = argo['LONGITUDE']
+
+    # tile limits
+    latmax = argo['LATMAX_NO_M']
+    latmin = argo['LATMIN_NO_M']
+    latmargin = argo['MARGINLAT']
+
+    lonmax = argo['LONMAX_NO_M']
+    lonmin = argo['LONMIN_NO_M']
+    lonmargin = argo['MARGINLON']
+
+    idx1 = np.where(lat > latmax+latmargin)
+    idx2 = np.where(lat < latmin-latmargin)
+    idx3 = np.where(lon > lonmax+lonmargin)
+    idx4 = np.where(lon < lonmin-lonmargin)
+
+    if idx1[0]+idx2[0]+idx3[0]+idx4[0]:
+        # the above test is True if the list is not empty
+        raise ValueError(
+            'There is an error with the dimensions of the tile number %i' % i)
 
 
 #  ----------------------------------------------------------------------------
-def get_idx_from_tiles_lim(res, argodb):
-    """Get the list of profile indices present in argodb that correspond
-       to the list of wmos
-       
-       :rtype: dic"""
+def extract_idx_inside_tile(res, argodb):
+    """Extract from 'argodb' the list of profiles that are inside the tile
+    The tile limits are given by 'res'
+
+       :rtype: dic
+
+    """
     if res['LONMIN_WITH_M'] > res['LONMAX_WITH_M']:
-        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & ((argodb['LONGITUDE'] > res['LONMIN_WITH_M']) | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
+        # special case for tiles extending across the dateline
+        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M'])
+                       & (argodb['LATITUDE'] < res['LATMAX_WITH_M'])
+                       & ((argodb['LONGITUDE'] > res['LONMIN_WITH_M'])
+                          | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
     else:
-        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & (argodb['LONGITUDE'] > res['LONMIN_WITH_M']) & (argodb['LONGITUDE'] < res['LONMAX_WITH_M']))
+        # general case
+        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M'])
+                       & (argodb['LATITUDE'] < res['LATMAX_WITH_M'])
+                       & (argodb['LONGITUDE'] > res['LONMIN_WITH_M'])
+                       & (argodb['LONGITUDE'] < res['LONMAX_WITH_M']))
+
     argo_extract = extract_idx_from_argodb(argodb, idx)
     argo_extract['LATMIN_NO_M'] = res['LATMIN_NO_M']
     argo_extract['LATMAX_NO_M'] = res['LATMAX_NO_M']
@@ -428,7 +486,7 @@ def get_idx_from_tiles_lim(res, argodb):
 def get_idx_from_list_wmo(argodb, wmos):
     """Get the list of profile indices present in argodb that correspond
        to the list of wmos
-       
+
        :rtype: list of int
 
     """
@@ -443,7 +501,7 @@ def get_idx_from_list_wmo(argodb, wmos):
 def extract_idx_from_argodb(argodb, idx):
     """Return a argodb type dictionnary that is a subset of argodb and
        containing only entries given in idx (list)
-       
+
        :rtype: dic
 
     """
@@ -457,7 +515,7 @@ def extract_idx_from_argodb(argodb, idx):
 def extract_idx_from_wmostats(wmostats, idx):
     """Return a wmostats type dictionnary that is a subset of wmostats and
        containing only entries given in idx (list)
-       
+
        :rtype: dic
 
     """
@@ -477,20 +535,22 @@ def extract_idx_from_wmostats(wmostats, idx):
 #  ----------------------------------------------------------------------------
 def conversion_juld_gregd(juld):
     """Method converting julian day into gregorian day
-    
+
     :rtype: list of int"""
     #  lats, lons, juld = self.reading_variables()
     #  2433282.5000000 corresponds to the Argo origin date
     #  gregday = jdcal.jd2jcal(2433282.500000, juld)
     gregday = jdcal.jd2gcal(2433282.5, juld)
-    print('This Julian Day corresponds to {0}/{1}/{2}'.format(gregday[2], gregday[1], gregday[0]))
+    print('This Julian Day corresponds to {0}/{1}/{2}'.format(
+        gregday[2], gregday[1], gregday[0]))
+
     return(gregday)
 
 
 #  ----------------------------------------------------------------------------
 def conversion_gregd_juld(year, month, day):
     """Method converting gregorian day into julian day
-    
+
     :rtype: float"""
     #  Petit décalage possible
     julianday = jdcal.gcal2jd(year, month, day)

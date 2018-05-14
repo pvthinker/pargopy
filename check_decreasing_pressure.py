@@ -11,19 +11,22 @@ import argotools as argotools
 
 
 path_localdata = param.path_to_data
-wmodic = argotools.read_dic('wmodic', path_localdata)
-argodb = argotools.read_dic('argodb', path_localdata)
+# wmodic = argotools.read_dic('wmodic', path_localdata)
+# argodb = argotools.read_dic('argodb', path_localdata)
 
-maskarraytype = np.ma.core.MaskedArray
+# maskarraytype = np.ma.core.MaskedArray
+
 
 def try_to_remove_duplicate_pressure(p):
-    idx = [0]+[l+1 for l, x in enumerate(p[1:]) if p[l]<x]
+    idx = [0]+[l+1 for l, x in enumerate(p[1:]) if p[l] < x]
     return idx
 
-private_list = [1900976]
+
+# private_list = [1900976]
+
 
 def check_pressure(p):
-                
+
     dp = np.diff(p)
     if np.all(dp > 0):
         # print('ok')
@@ -46,7 +49,7 @@ def check_pressure(p):
                 # print(p0, p)
             else:
                 if len(p) > 100:
-                    #print(p)
+                    # print(p)
                     ierr = 1
                     print(': unfixed')
                 else:

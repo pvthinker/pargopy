@@ -12,13 +12,12 @@ import numpy as np
 import time
 import argotools as argotools
 import check_decreasing_pressure as check
-import decorator as decorator
+# import decorator as decorator
 
 
-@decorator.exec_time
 def interpolate_profiles(subargodb, wmodic):
     """Interpolate the profiles in subargodb
-    
+
     :rtype: dic"""
 
     maskarraytype = np.ma.core.MaskedArray
@@ -110,17 +109,16 @@ def interpolate_profiles(subargodb, wmodic):
     return res
 
 
-@decorator.exec_time
 def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref):
     """Interpolate in situ data on zref depths
-    
+
     ierr = 0: no pb
-    
+
     ierr > 0: pb
-    
+
     :rtype: float, float, float, float, float, float, float, int
     """
-    
+
     CT, SA, z = [], [], []
     klist, ierr = remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc)
     if ierr == 0:
@@ -141,21 +139,20 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
     return Ti, Si, Ri, BVF2i, CT, SA, z, ierr
 
 
-@decorator.exec_time
 def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
     """Return the index list of data for which the three qc's are 1
     and the error flag ierr
-    
+
     ierr = 0 : no pb
-    
+
     ierr = 1 : too few data in the profile
-    
+
     :rtype: list, int"""
     maskarraytype = np.ma.core.MaskedArray
     keys = [temp, sal, pres, temp_qc, sal_qc, pres_qc]
     for key in keys:
-                    if key.any == maskarraytype:
-                        key = key.compressed()
+        if key.any == maskarraytype:
+            key = key.compressed()
     klist = [k for k in range(len(pres)) if (temp_qc[k] == '1') and (
         sal_qc[k] == '1') and (pres_qc[k] == '1')]
     ierr = 0
@@ -165,10 +162,9 @@ def remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc):
     return klist, ierr
 
 
-@decorator.exec_time
 def insitu_to_absolute(Tis, SP, p, lon, lat, zref):
     """Transform in situ variables to TEOS10 variables
-    
+
     :rtype: float, float, float"""
     #  SP is in p.s.u.
     SA = gsw.SA_from_SP(SP, p, lon, lat)
@@ -177,7 +173,6 @@ def insitu_to_absolute(Tis, SP, p, lon, lat, zref):
     return(CT, SA, z)
 
 
-@decorator.exec_time
 def interp_at_zref(CT, SA, z, zref):
     """Interpolate CT, SA, dCT/dz and dSA/dz from their native depths z to
     zref
@@ -198,7 +193,7 @@ def interp_at_zref(CT, SA, z, zref):
 
     For the bottom level (zref=2000), we do either extrapolation or
     interpolation if data deeper than 2000 are available.
-    
+
     :rtype: float, float, float, float
 
     """
@@ -266,7 +261,6 @@ def interp_at_zref(CT, SA, z, zref):
     return CTi, SAi, dCTdzi, dSAdzi
 
 
-@decorator.exec_time
 def select_depth(zref, z):
     """Return the number of data points we have between successive zref.
 
@@ -284,7 +278,7 @@ def select_depth(zref, z):
 
 
     with zextra = 2*zref[-1] - zref[-2]
-    
+
     :rtype: int, list
 
     """
@@ -314,7 +308,6 @@ def select_depth(zref, z):
     return nbperintervale, kperint
 
 
-@decorator.exec_time
 def lagrangepoly(x0, xi):
     """Weights for polynomial interpolation at x0 given a list of xi
     return both the weights for function (cs) and its first derivative
@@ -323,7 +316,7 @@ def lagrangepoly(x0, xi):
     Example:
     lagrangepoly(0.25, [0, 1])
     >>> [0.75, 0.25,], [1, -1]
-    
+
     :rtype: float, float
 
     """
@@ -355,4 +348,3 @@ def lagrangepoly(x0, xi):
                         cff *= (x0-xi[k])*denom[i, k]
                 ds[i] += cff*denom[i, j]
     return cs, ds
-

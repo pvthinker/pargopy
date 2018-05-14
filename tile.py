@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import argotools as argotools
 import interpolation_tools as interpolation
 import param as param
-import decorator as deco
+#import decorator as deco
 
 zref = argotools.zref
 path_to_tiles = param.path_to_tiles
@@ -22,52 +22,50 @@ path_to_data = param.path_to_data
 path_to_filter = param.path_to_filter
 
 
+#  ----------------------------------------------------------------------------
+def generate_tile(i):
+    """Interpolate all Argo profiles in tile 'i' onto 'zref' depths. Save
+    the result in the 'tile%003i.pkl' file
+
+    """
+
+    wmodb = argotools.read_dic('wmodic', path_to_data)
+    argodb = argotools.read_dic('argo%003i' % i, path_to_filter)
+    zrefprofiles = interpolation.interpolate_profiles(argodb, wmodb)
+    zrefprofiles['ZREF'] = zref
+
+    argotools.write_dic('tile%003i' % i, zrefprofiles, path_to_tiles)
+
+    # try to reduce memory leakage when processessing all the tiles
+    del(argodb, wmodb)
+
 
 #  ----------------------------------------------------------------------------
-def creating_tiles(i):
-    """Giving values to the variables
-    
-    :rtype: dic"""
-    #  Generation of the dimension of import matplotlib.pyplot as plt
-    wmodic = argotools.read_dic('wmodic', path_to_data)
-    argodic = argotools.read_dic('argodic%003i' % i, path_to_filter)
-    tile = interpolation.interpolate_profiles(argodic, wmodic)
-    del(argodic, wmodic)
-    tile['ZREF'] = zref
+def write_tile(zrefprofiles, i):
+    """Write the list of interpolated profiles 'zrefprofiles' of tile 'i' in a .pkl file
 
-    argotools.write_dic('tile%003i' % i, tile, path_to_tiles)
-
-    return tile
-
-
-#  ----------------------------------------------------------------------------
-def write_tile(tile, i):
-    """Write one tile in a .pkl file
-    
     :rtype: None"""
     with open('%s/tile%003i.pkl' % (path_to_tiles, i), 'w') as f:
-        pickle.dump(tile, f)
+        pickle.dump(zrefprofiles, f)
 
 
 #  ----------------------------------------------------------------------------
 def read_tile(i):
-    """Read one of the tiles
-    
+    """Read the interpolated profiles of tile 'i'
+
     :rtype: dic"""
     print('read tile%003i.pkl' % i)
-    with open('%s/tile%003i.pkl' % (path_to_tiles, i), 'r') as f:
-        tile = pickle.load(f)
-    return tile
+    with open('%s/tile%003i.pkl' % (path_to_tiles, i), 'rb') as f:
+        zrefprofiles = pickle.load(f, encoding='bytes')
+    return zrefprofiles
 
 
 #  ----------------------------------------------------------------------------
-def creating_argodic():
+def generate_argotiles():
+    """Generate the argodb dictionnary for each tile and save it in
+    'argo%003i'
     """
-    Giving values to the variables
-    
-    :rtype: None
-    """
-    #  Generation of the dimension of import matplotlib.pyplot as plt
+
     argodb = argotools.read_dic('argodb', path_to_data)
     lat, lon, nlat, nlon, marginlat, marginlon = argotools.tile_definition()
     k = 0
@@ -96,21 +94,22 @@ def creating_argodic():
                    'MARGINLAT': marginlat[i],
                    'MARGINLON': marginlon}
 
-            argo_extract = argotools.get_idx_from_tiles_lim(res, argodb)
+            argo_extract = argotools.extract_idx_inside_tile(res, argodb)
             argotools.test_tiles(argo_extract, k)
-            argotools.write_dic('argodic%003i' % k, argo_extract, path_to_filter)
+            argotools.write_dic('argo%003i' %
+                                k, argo_extract, path_to_filter)
             k += 1
 
 
 #  ----------------------------------------------------------------------------
 def plot_tile(i):
     """Plots the tiles values (Ti, Si, Ri) with the values non interpolate
-    
+
     :rtype: None"""
     depth = zref
-    argodic = argotools.read_dic('argodic%003i' % i, path_to_filter)
+    argo = argotools.read_dic('argo%003i' % i, path_to_filter)
     tile = argotools.read_dic('tile%003i' % i, path_to_tiles)
-    output = argotools.retrieve_infos_from_tag(argodic, argodic['TAG'])
+    output = argotools.retrieve_infos_from_tag(argo, argo['TAG'])
     print(len(output['IDAC']))
     print(output['IDAC'])
     print(len(output['WMO']))
@@ -119,7 +118,9 @@ def plot_tile(i):
     print(output['IPROF'])
     #  Can't find the path
     for i in range(len(output['WMO'])):
-        dico = argotools.read_profile(output['IDAC'][0], output['WMO'][0], iprof=output['IPROF'][0], data=True)
+        dico = argotools.read_profile(
+            output['IDAC'][0], output['WMO'][0],
+            iprof=output['IPROF'][0], data=True)
     CT = tile['CT'][0]
     temp = dico['TEMP'][0]
     pres = dico['PRES'][0]
@@ -131,21 +132,22 @@ def plot_tile(i):
 
 def main(itile):
     """Main function of tile.py"""
-    creating_tiles(itile)
+    generate_tile(itile)
+
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-#==============================================================================
+# ==============================================================================
 #     main(70)
 #     main(71)
-#==============================================================================
+# ==============================================================================
 #      main(51)
 #      main(50)
 #      main(51)
-    #  tiles = [131, 146, 151, 171, 190, 233, 234, 235, 244, 253, 254, 255, 264, 
+    #  tiles = [131, 146, 151, 171, 190, 233, 234, 235, 244, 253, 254, 255, 264,
     #         265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
-    #for t in tiles:
+    # for t in tiles:
     main(189)
     deco.call_results('interpolation_tools.py')
     tmps2 = time.time() - tmps1
