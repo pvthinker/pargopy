@@ -46,54 +46,43 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice):
     variables = {}
 
     for b in block_choice:
-        if b == 'zmean':
-            # gridded arrays of CT, SA et RI means
-            for i, v in enumerate(var_choice[b]):
-                variables[v] = np.zeros((nz, nlat, nlon))
-#==============================================================================
-#             variables['NBbar'] = np.zeros((nz, nlat, nlon))
-#             variables['CTbar'] = np.zeros((nz, nlat, nlon))
-#             variables['SAbar'] = np.zeros((nz, nlat, nlon))
-#             variables['Ribar'] = np.zeros((nz, nlat, nlon))
-#             variables['BVF2bar'] = np.zeros((nz, nlat, nlon))
-#==============================================================================
+        # gridded arrays of CT, SA et RI means
+        for i, v in enumerate(var_choice['zmean']):
+            variables[v] = np.zeros((nz, nlat, nlon))
 
-            for k in range(nbprof):
-                #  print('%4i/%i' % (k, nbprof))
-                # todo: weigh in time using juld,
-                # e.g. only winter statistics
-                time_weight = 1.
-                xlon_rad = np.deg2rad(lon[k])
-                xlat_rad = np.deg2rad(lat[k])
-                weight = general.compute_weight(lon_rad, lat_rad,
-                                              xlon_rad, xlat_rad,
-                                              reso_rad)
-                weight *= time_weight
+        for k in range(nbprof):
+            #  print('%4i/%i' % (k, nbprof))
+            # todo: weigh in time using juld,
+            # e.g. only winter statistics
+            time_weight = 1.
+            xlon_rad = np.deg2rad(lon[k])
+            xlat_rad = np.deg2rad(lat[k])
+            weight = general.compute_weight(lon_rad, lat_rad,
+                                            xlon_rad, xlat_rad,
+                                            reso_rad)
+            weight *= time_weight
 
-                for l in range(nz):
-                    if np.isnan(CT[k, l]) or np.isnan(SA[k, l]):
-                        pass
-                    else:
-                        variables['NBbar'][l, :, :] += weight
-                        variables['CTbar'][l, :, :] += weight*CT[k, l]
-                        variables['SAbar'][l, :, :] += weight*SA[k, l]
-                        variables['Ribar'][l, :, :] += weight*RI[k, l]
-                        variables['BVF2bar'][l, :, :] += weight*BVF2[k, l]
+            for l in range(nz):
+                if np.isnan(CT[k, l]) or np.isnan(SA[k, l]):
+                    pass
+                else:
+                    variables['NBbar'][l, :, :] += weight
+                    variables['CTbar'][l, :, :] += weight*CT[k, l]
+                    variables['SAbar'][l, :, :] += weight*SA[k, l]
+                    variables['Ribar'][l, :, :] += weight*RI[k, l]
+                    variables['BVF2bar'][l, :, :] += weight*BVF2[k, l]
 
-            # normalize with the number of profiles (fractional
-            # because NBbar is fractionnal)
-            coef = 1./variables['NBbar']
-            coef[variables['NBbar'] < 1] = np.NaN
+        # normalize with the number of profiles (fractional
+        # because NBbar is fractionnal)
+        coef = 1./variables['NBbar']
+        coef[variables['NBbar'] < 1] = np.NaN
 
-            variables['CTbar'] *= coef
-            variables['SAbar'] *= coef
-            variables['Ribar'] *= coef
-            variables['BVF2bar'] *= coef
+        variables['CTbar'] *= coef
+        variables['SAbar'] *= coef
+        variables['Ribar'] *= coef
+        variables['BVF2bar'] *= coef
     
-        elif b =='zstd' or b == 'zdz':
-            #  res = stats.read_stat_file(itile, 'zmean', reso_deg, 'annual', date, mode, var_choice['zmean'])
-            #  print('Variables already calculated are :', res.keys())
-            variables = compute_at_zref(itile, reso_deg, mode, date, ['zmean'])
+        if b =='zstd' or b == 'zdz':
             for i, v in enumerate(var_choice[b]):
                 variables[v] = np.zeros((nz, nlat, nlon))
             variables['NBstd'] = variables['NBbar']
@@ -138,11 +127,9 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice):
             raise ValueError('%s typestat is not known' % b)
     variables['lat'] = lat_deg
     variables['lon'] = lon_deg
-    return variables
 
-# Still the same to do with the std variables
-# double loop on each grid point (instead of a loop on each profile)
+    return variables
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
-    compute_at_zref(52, 0.5, 'D', ['2017', '12', '31'], ['zmean'])
+    compute_at_zref(52, 0.5, 'D', ['2017', '12', '31'], ['zstd'])

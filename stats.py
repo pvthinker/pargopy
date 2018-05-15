@@ -3,6 +3,7 @@ Compute statistics on one tile
 
 """
 
+import os
 import numpy as np
 import gsw as gsw
 import time
@@ -45,6 +46,7 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
     nlat, nlon = np.shape(lon_deg)
 
+    print(filename)
     ncform.netCDF_dim_creation(filename, zref, nlat, nlon, mode, date)
     ncform.netCDF_var_creation(filename, var_choice[typestat])
 
@@ -68,8 +70,15 @@ def write_stat_file(itile, typestat, reso, timeflag, date, mode, stats_mode):
 #==============================================================================
 
     res['zref'] = zref
-    print(res)
     ncform.netCDF_var_writing(filename, var_choice[typestat], res)
+
+    filename_zmean = generate_filename(itile, 'zmean', reso, timeflag, date, mode)
+    if os.path.isfile(filename_zmean):
+        print('File of zmean stats already written')
+    else:
+        print('File of zmean stats not write, let\'s do it...')
+        ncform.netCDF_var_writing(filename_zmean, var_choice['zmean'], res)
+        print('File of zmean stats written')
 
 
 def read_stat_file(itile, typestat, reso, timeflag, date, mode, var_choice):
@@ -95,7 +104,6 @@ def generate_filename(itile, typestat, reso, timeflag, date, mode):
                                                      mode, typestat, 
                                                      typestat, reso, 
                                                      timeflag, itile)
-    print(filename)
     return filename
 
 
@@ -178,14 +186,12 @@ def compute_mean_at_zref(itile, reso_deg, mode, date):
                 SAbar[l, :, :] += weight*SA[k, l]
                 RIbar[l, :, :] += weight*RI[k, l]
                 BVF2bar[l, :, :] += weight*BVF2[k, l]
-    print(CTbar)
     # normalize with the number of profiles (fractional
     # because NBbar is fractionnal)
     coef = 1./NBbar
     coef[NBbar < 1] = np.NaN
 
     #  print(CTbar)
-    exit(0)
     CTbar *= coef
     SAbar *= coef
     RIbar *= coef
@@ -368,6 +374,6 @@ def main(itile, typestat, reso, timeflag, date, mode):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(52, ['zstd'], 0.5, 'annual', ['2017', '12', '31'], 'D')
+    main(52, ['zdz', 'zstd'], 0.5, 'annual', ['2017', '12', '31'], 'D')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

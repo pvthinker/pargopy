@@ -9,7 +9,7 @@ from netCDF4 import Dataset
 import os
 import simplejson as json
 
-typestat = ['general', 'zmean', 'zstd']
+typestat = ['general', 'zmean', 'zstd', 'zdz']
 
 #  ----------------------------------------------------------------------------
 def netCDF_dim_creation(filename, zref, nlat, nlon, mode, date):
@@ -87,6 +87,8 @@ def netCDF_var_writing(filename, var_choice, res):
 
     if (os.path.isfile(filename)):
         print('filename exists')
+        print(filename)
+        print(var_choice)
         f = Dataset(filename, "r+", format="NETCDF4")
 
         data = json.load(open('pargopy_var.json'))
@@ -146,6 +148,8 @@ def netCDF_var_reading(filename, var_choice):
                             res[d['name']] = f.variables[d['name']][:, :, :]
 
         f.close()
+    else:
+        res = {}
 
     return res
 

@@ -14,6 +14,7 @@ from netCDF4  import Dataset
 import numpy as np
 import os
 import argotools as argotools
+import stats as stats
 import param as param
 
 dirstats = param.path_to_stats
@@ -40,7 +41,9 @@ nlat = 15
 if typestat == 'zmean':
     listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar', 'BVF2bar']
 elif typestat == 'zstd':
-    listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'BVF2std', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
+    listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'BVF2std']
+elif typestat == 'zdz':
+    listvar = ['DZmean', 'DZstd', 'DZskew', 'EAPE']
 else:
     raise ValueError('This typestat value does not exists')
 
@@ -79,33 +82,22 @@ def get_glo_grid():
 
     print('global grid has %i x %i points' % (nlon_glo, nlat_glo))
     
-    for j in range(nlat):
-        for i in range(nlon):
-            if (latsize[j]==0) or (lonsize[i]==0):
-                itile = ij2tile(i, j)
-                ncfile = '%s/%s_%03i.nc' % (dirstats, atlas_name, itile)
-                if os.path.isfile(ncfile):
-                    with Dataset(ncfile, 'r') as nc:
-                        lonsize[i] = len(nc.variables['lon'][0, :])
-                        latsize[j]= len(nc.variables['lat'][:, 0])
-
-    j0 = 0
-    for j in range(nlat):
-        j1 = j0+latsize[j]
-        i0 = 0
-        for i in range(nlon):
-            i1 = i0+lonsize[i]
-            
-            itile = ij2tile(i, j)
-            ncfile = '%s/%s_%03i.nc' % (dirstats, atlas_name, itile)
-            if os.path.isfile(ncfile):
-                print(i,j,itile)
-                with Dataset(ncfile, 'r') as nc:
-                    lon[i0:i1] = nc.variables['lon'][0, :]
-                    lat[j0:j1] = nc.variables['lat'][:, 0]
-                    zref = nc.variables['zref'][:]
-            i0 = i1-1
-        j0 = j1
+    i0 = 0
+    for i in nlat:
+        i1 = i0+latsize[i]
+        j0 = 0
+        for j in nlon:
+            j1 = j0+lonsize[j]
+            itile = nlon*i + j
+            print(i, j, itile)
+            grid = stats.grid_coordinate(itile, reso)
+            latsize[i] = len(grid[0])
+            lonsize[j] = len(grid[1])
+            lat[i0:i1] = grid[0]
+            lon[j0:j1] = grid[1]
+            j0 = j1 - 1
+        i0 = i1
+    
     return lonsize, latsize, lon, lat
     
 
