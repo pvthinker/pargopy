@@ -30,7 +30,7 @@ date = [year, month, day]
 # D : Delayed time (Values verified)
 mode = 'D'
 typestat = 'zstd'
-reso = 0.25
+reso = 0.5
 timeflag = 'annual'
 nlon = 20
 nlat = 15
@@ -64,6 +64,7 @@ def gridindex2lonlat(ix, iy):
 
     lon = lonmin_glo + ix*reso
     lat = latmin_glo + iy*reso
+    print('Hey')
     return lon, lat
 
 def get_glo_grid():

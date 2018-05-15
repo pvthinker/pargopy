@@ -117,7 +117,9 @@ fig2 = plt.figure(2 ,figsize=(16,6))
 def onclick(event):
     global ix, iy
     ix, iy = event.xdata, event.ydata
+    print('Before gridindex')
     lon, lat = at.gridindex2lonlat(ix, iy)
+    print('After gridindex')
     itile = retrieve_tile_from_position(lon, lat)
     print('x = %d, y = %d, lon = %d, lat = %d, tile = %i'
           % (ix, iy, lon, lat, itile))
@@ -153,7 +155,7 @@ plt.imshow(EAPE[kz, :,:], origin='lower',
            vmin=0, vmax=10.,
            interpolation='nearest', 
            cmap=plt.get_cmap('RdBu_r'))
-plt.title('EAEPE @ z=%.0fm' % zref[kz])
+plt.title('EAPE @ z=%.0fm' % zref[kz])
 plt.colorbar()
 cid = fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show()
