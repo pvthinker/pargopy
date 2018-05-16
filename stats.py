@@ -62,13 +62,6 @@ def write_stat_file(itile, typestat, reso, timeflag, date, mode, stats_mode):
 
     res = vs.compute_at_zref(itile, reso, mode, date, stats_mode)
 
-#==============================================================================
-#     if typestat[0] == 'zmean':
-#         res = compute_mean_at_zref(itile, reso, mode, date)
-#     elif typestat[0] == 'zstd':
-#         res = compute_std_at_zref(itile, reso, timeflag, mode, date)
-#==============================================================================
-
     res['zref'] = zref
     ncform.netCDF_var_writing(filename, var_choice[typestat], res)
 

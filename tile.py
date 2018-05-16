@@ -8,7 +8,6 @@ File used to generate the different tiles of the atlas
 
 """
 
-import pickle
 import time
 import matplotlib.pyplot as plt
 import argotools as argotools
@@ -38,26 +37,6 @@ def generate_tile(i):
 
     # try to reduce memory leakage when processessing all the tiles
     del(argodb, wmodb)
-
-
-#  ----------------------------------------------------------------------------
-def write_tile(zrefprofiles, i):
-    """Write the list of interpolated profiles 'zrefprofiles' of tile 'i' in a .pkl file
-
-    :rtype: None"""
-    with open('%s/tile%003i.pkl' % (path_to_tiles, i), 'w') as f:
-        pickle.dump(zrefprofiles, f)
-
-
-#  ----------------------------------------------------------------------------
-def read_tile(i):
-    """Read the interpolated profiles of tile 'i'
-
-    :rtype: dic"""
-    print('read tile%003i.pkl' % i)
-    with open('%s/tile%003i.pkl' % (path_to_tiles, i), 'rb') as f:
-        zrefprofiles = pickle.load(f, encoding='bytes')
-    return zrefprofiles
 
 
 #  ----------------------------------------------------------------------------
