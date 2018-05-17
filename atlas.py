@@ -1,14 +1,11 @@
 """
 Created on Mon Mar 12 13:10:24 2018
-
 File creating the atlas of stats
-
 from netCDF4  import Dataset
 import numpy as np
 import os
 import argotools as argotools
 import param as param
-
 """
 from netCDF4  import Dataset
 import numpy as np
@@ -64,7 +61,6 @@ def gridindex2lonlat(ix, iy):
 
     lon = lonmin_glo + ix*reso
     lat = latmin_glo + iy*reso
-    print('Hey')
     return lon, lat
 
 def get_glo_grid():
@@ -83,21 +79,29 @@ def get_glo_grid():
 
     print('global grid has %i x %i points' % (nlon_glo, nlat_glo))
     
-    i0 = 0
-    for i in nlat:
-        i1 = i0+latsize[i]
-        j0 = 0
-        for j in nlon:
-            j1 = j0+lonsize[j]
-            itile = nlon*i + j
-            print(i, j, itile)
+    for j in range(nlat):
+        for i in range(nlon):
+            if (latsize[j]==0) or (lonsize[i]==0):
+                itile = ij2tile(i, j)
+                ncfile = '%s/%s_%03i.nc' % (dirstats, atlas_name, itile)
+                if os.path.isfile(ncfile):
+                    with Dataset(ncfile, 'r') as nc:
+                        lonsize[i] = len(nc.variables['lon'][0, :])
+                        latsize[j]= len(nc.variables['lat'][:, 0])
+    
+    j0 = 0
+    for j in range(nlat):
+        j1 = j0+latsize[j]
+        i0 = 0
+        for i in range(nlon):
+            i1 = i0+lonsize[i]
+            itile = ij2tile(i, j)
+            print(j, i, itile)
             grid = stats.grid_coordinate(itile, reso)
-            latsize[i] = len(grid[0])
-            lonsize[j] = len(grid[1])
-            lat[i0:i1] = grid[0]
-            lon[j0:j1] = grid[1]
-            j0 = j1 - 1
-        i0 = i1
+            lat[j0:j1] = grid[0]
+            lon[i0:i1] = grid[1]
+            i0 = i1 - 1
+        j0 = j1
     
     return lonsize, latsize, lon, lat
     
@@ -161,7 +165,7 @@ def glue_tiles(iloc, jloc,lonsize, latsize, lon, lat, zref):
             if os.path.isfile(fname):
                 with Dataset(fname) as ncf:
                     for v in listvar:
-                        z3d = ncf.variables[v][:, : :]
+                        z3d = ncf.variables[v][:, :, :]
                         for k in range(nz):
                             nc.variables[v][k, j0:j1, i0:i1] = z3d[k, :, :]
             else:

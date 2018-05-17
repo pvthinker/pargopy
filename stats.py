@@ -367,6 +367,6 @@ def main(itile, typestat, reso, timeflag, date, mode):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(52, ['zdz', 'zstd'], 0.5, 'annual', ['2017', '12', '31'], 'D')
+    main(52, ['zmean'], 0.5, 'annual', ['2017', '12', '31'], 'D')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
