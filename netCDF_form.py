@@ -7,113 +7,92 @@ Created on Wed Apr 25 12:20:04 2018
 """
 from netCDF4 import Dataset
 import os
-import simplejson as json
+import json as json
 
 typestat = ['general', 'zmean', 'zstd', 'zdz']
 
 #  ----------------------------------------------------------------------------
 def netCDF_dim_creation(filename, zref, nlat, nlon, mode, date):
 
-    rootgrp = Dataset(filename, "w", format="NETCDF4")
+    with Dataset(filename, "w", format="NETCDF4") as rootgrp:
 
-    rootgrp.createDimension('zref', len(zref))
-    rootgrp.createDimension('lat', nlat)
-    rootgrp.createDimension('lon', nlon)
-    rootgrp.setncattr('data_mode', mode)
-    rootgrp.setncattr('year', date[0])
-    rootgrp.setncattr('month', date[1])
-    rootgrp.setncattr('day', date[2])
-
-    rootgrp.close()
+        rootgrp.createDimension('zref', len(zref))
+        rootgrp.createDimension('lat', nlat)
+        rootgrp.createDimension('lon', nlon)
+        rootgrp.setncattr('data_mode', mode)
+        rootgrp.setncattr('year', date[0])
+        rootgrp.setncattr('month', date[1])
+        rootgrp.setncattr('day', date[2])
 
 
 #  ----------------------------------------------------------------------------
-def netCDF_var_creation(filename, var_choice):
+def netCDF_var_creation(filename, var_list):
     """
-    Function creating the netDCF variables.
-    This function takes its values from a .json file where all the desired
-    values are handly referenced
-    WARNING : You must open and close the ncfile before and after calling
-              this function, the ame is to give the name you want to the ncfile
+    Create the netcdf file 'filename' for the list of variables 'var_list'
+    the dimensions '(zref, lat, lon)' and the attributes of each variable is
+    retrieved from the json file. The dimensions are automatically appended to
+    the list of variables
+
+    Warning 'filename' should be created first
     
     :rtype: None
     """
 
+    var_list += ['zref', 'lon', 'lat']
+
+    var_attributes = json.load(open('var_attributes.json'))
+
     if (os.path.isfile(filename)):
-        print('filename exists')
-        rootgrp = Dataset(filename, "r+", format="NETCDF4")
+        print('%s exists' % filename)
 
-        data = json.load(open('pargopy_var.json'))
-        nc_var = {}
+        with Dataset(filename, "r+", format="NETCDF4") as rootgrp:
 
-        for g in data['general']:
-            if g['name'] in var_choice:
-                pass
-            else:
-                var_choice.append(g['name'])
-            print(var_choice)
+            for var in var_list:
+                att = var_attributes[var]
+                if att['dim'] == 1:
+                    dimension = ('zref', )
+                elif att['dim'] == 2:
+                    dimension = ('lat', 'lon')
+                elif att['dim']== 3:
+                    dimension = ('zref', 'lat', 'lon')
 
-        for v in var_choice:
-            for t in typestat:
-                for d in data[t]:
-                    if v == d['name']:
-                        if d['dim'] == 1:
-                            dimension = ('zref', )
-                        elif d['dim'] == 2:
-                            dimension = ('lat', 'lon')
-                        elif d['dim']== 3:
-                            dimension = ('zref', 'lat', 'lon')
+                ncvar = rootgrp.createVariable(var, att['type'], dimension)
+                ncvar.long_name = att['long_name']
+                ncvar.units = att['unit']
+    else:
+        raise ValueError('%s should be created first' % filename)
 
-                        if d['name'] in nc_var:
-                            pass
-                        else:
-                            nc_var[d['name']] = rootgrp.createVariable(d['name'], d['type'], dimension)
-                            nc_var[d['name']].long_name = d['long_name']
-                            nc_var[d['name']].units = d['unit']
-
-        rootgrp.close()
 
 #  ----------------------------------------------------------------------------
-def netCDF_var_writing(filename, var_choice, res):
+def netCDF_var_writing(filename, var_dic):
     """
-    Function writing the netDCF variables.
-    This function takes its values from a .json file where all the desired
-    values are handly referenced and from res(type = dict)
-    WARNING : You must open and close the ncfile before and after calling
-              this function, the ame is to give the name you want to the ncfile
-    
-    :rtype: None
+    Write the list of variables in the netcdf file 'filename'. Variables are 
+    transfered in the form of a dictionnary 'var_dic', where each entry is a numpy array.
+    The dimensions '(zref, lat, lon)' should be in 'var_dic'.
+
     """
+
+    if set(['zref', 'lon', 'lat']).issubset(set(var_dic.keys())):
+        pass
+    else:
+        raise ValueError('zref, lon and lat should be in var_dic')
 
     if (os.path.isfile(filename)):
-        print('filename exists')
-        print(filename)
-        print(var_choice)
-        f = Dataset(filename, "r+", format="NETCDF4")
+    
+        with Dataset(filename, "r+", format="NETCDF4") as f:
 
-        data = json.load(open('pargopy_var.json'))
+            for var in var_dic.keys():
+                var_data = var_dic[var]
+                ndims = len(var_data.shape)
+                if ndims == 1:
+                    f.variables[var][:] = var_data
+                elif ndims == 2:
+                    f.variables[var][:, :] = var_data
+                elif ndims == 3:
+                    f.variables[var][:, :, :] = var_data
 
-        for g in data['general']:
-            if g['name'] in var_choice:
-                pass
-            else:
-                var_choice.append(g['name'])
-            print(var_choice)
-
-        for v in var_choice:
-            for t in typestat:
-                for d in data[t]:
-                    if v == d['name']:
-                        #  print(d['name'])
-                        if d['dim'] == 1:
-                            f.variables[d['name']][:] = res[d['name']]
-                        elif d['dim'] == 2:
-                            f.variables[d['name']][:, :] = res[d['name']]
-                        elif d['dim']== 3:
-                            f.variables[d['name']][:, :, :] = res[d['name']]
-
-        f.close()
-
+    else:
+        raise ValueError('%s should be created first' % filename)
 
 #  ----------------------------------------------------------------------------
 def netCDF_var_reading(filename, var_choice):

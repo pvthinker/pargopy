@@ -13,6 +13,7 @@ import os
 import argotools as argotools
 import stats as stats
 import param as param
+import netCDF_form as ncform
 
 dirstats = param.path_to_stats
 diratlas = param.path_to_atlas
@@ -37,15 +38,17 @@ nlat = 15
 
 if typestat == 'zmean':
     listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar', 'BVF2bar']
+
 elif typestat == 'zstd':
     listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'BVF2std']
+
 elif typestat == 'zdz':
     listvar = ['DZmean', 'DZstd', 'DZskew', 'EAPE']
+
 else:
     raise ValueError('This typestat value does not exists')
 
 dirstats = '%s/%g/%s/%s/%s' % (dirstats, reso, year, mode, typestat)
-atlas_name = '%s_%g_annual' % (typestat, reso)
 
 zref = argotools.zref
 
@@ -63,105 +66,73 @@ def gridindex2lonlat(ix, iy):
     lat = latmin_glo + iy*reso
     return lon, lat
 
-def get_glo_grid():
-    lonsize = np.zeros((nlon,), dtype=int)
-    latsize = np.zeros((nlat,), dtype=int)
+def get_glo_grid(reso):
+    lonsize = []
+    longlo = []
+    latsize = []
+    latglo = []
+    for i in range(nlon):
+        itile = i
+        lat, lon = stats.grid_coordinate(itile, reso)
+        lonsize.append(len(lon))
+        longlo += list(lon)
 
-    lonmin_glo = -180.
-    lonmax_glo = +180.
-    latmin_glo = -80.
-    latmax_glo = +80
-
-    nlon_glo = int((lonmax_glo-lonmin_glo)/reso)+1
-    nlat_glo = int((latmax_glo-latmin_glo)/reso)+1
-    lon = np.zeros((nlon_glo,))
-    lat = np.zeros((nlat_glo,))
-
-    print('global grid has %i x %i points' % (nlon_glo, nlat_glo))
-    
     for j in range(nlat):
-        for i in range(nlon):
-            if (latsize[j]==0) or (lonsize[i]==0):
-                itile = ij2tile(i, j)
-                ncfile = '%s/%s_%03i.nc' % (dirstats, atlas_name, itile)
-                if os.path.isfile(ncfile):
-                    with Dataset(ncfile, 'r') as nc:
-                        lonsize[i] = len(nc.variables['lon'][0, :])
-                        latsize[j]= len(nc.variables['lat'][:, 0])
-    
-    j0 = 0
-    for j in range(nlat):
-        j1 = j0+latsize[j]
-        i0 = 0
-        for i in range(nlon):
-            i1 = i0+lonsize[i]
-            itile = ij2tile(i, j)
-            print(j, i, itile)
-            grid = stats.grid_coordinate(itile, reso)
-            lat[j0:j1] = grid[0]
-            lon[i0:i1] = grid[1]
-            i0 = i1 - 1
-        j0 = j1
-    
-    return lonsize, latsize, lon, lat
-    
+        itile = j*nlon
+        lat, lon = stats.grid_coordinate(itile, reso)
+        latsize.append(len(lat))
+        latglo += list(lat)
 
-def glue_tiles(iloc, jloc,lonsize, latsize, lon, lat, zref):
-    # lon = []
-    # j = jloc[0]
-    # for i in iloc:
-    #     itile = ij2tile(i, j)
-    #     ncfile = '%s/%s_%03i.nc' % (dirstats, atlas_name, itile)
-    #     with Dataset(ncfile, 'r') as nc:
-    #         lon += list(nc.variables['lon_deg'][0, :])
-
-    # lat = []
-    # i = iloc[0]
-    # for j in jloc:
-    #     itile = ij2tile(i, j)
-    #     ncfile = '%s/%s_%03i.nc' % (dirstats, atlas_name, itile)
-    #     with Dataset(ncfile, 'r') as nc:
-    #         lat += list(nc.variables['lat_deg'][:, 0])
-            
-    # with Dataset(ncfile, 'r') as nc:
-    #     zref = nc.variables['zref'][:]
-
-    print(lon)
-    print(lat)
-    print(zref)
+    lonsize = np.asarray(lonsize)
+    longlo = np.asarray(longlo)
+    latsize = np.asarray(latsize)
+    latglo = np.asarray(latglo)
+    return lonsize, latsize, longlo, latglo
+        
     
+def atlas_filename(diratlas, reso, year, mode , typestat):
+
+    if False: # many subfolders - short name for the atlas
+        atlas_name = '%s_%g_annual' % (typestat, reso)
+        ncfile = '%s/%s/%s/%s/%s/%s.nc' % (diratlas, reso, year, mode , typestat, atlas_name)
+
+    else: # one folder - long name for the atlas
+        ncfile ='%s/%s_%g_%s_%s.nc' % (diratlas, typestat, reso, year, mode)
+
+    return ncfile
+
+
+def glue_tiles(reso):
+    """ Glue the stats tiles together into a global 3D atlas"""
+
+
+    lonsize, latsize, lon, lat = get_glo_grid(reso)
+
+    zref = argotools.zref
     nz = len(zref)
 
-    ncfile = '%s/%s/%s/%s/%s/%s.nc' % (diratlas, reso, year, mode , typestat, atlas_name)
-    nc = Dataset(ncfile, 'w', format='NETCDF4')
-    nc.createDimension('zref', nz)
-    nc.createDimension('lat', len(lat))       
-    nc.createDimension('lon', len(lon))
-    var = nc.createVariable('zref', 'f', ('zref'))
-    var.long_name = 'zref'
-    var = nc.createVariable('lon', 'f', ('lon'))
-    var.long_name = 'lon'
-    var = nc.createVariable('lat', 'f', ('lat'))
-    var.long_name = 'lat'
-    for v in listvar:
-        var = nc.createVariable(v,'f',('zref','lat','lon'))
-        var.long_name = v
-    nc.close()
+    ncfile = atlas_filename(diratlas, reso, year, mode , typestat)
+
+    ncform.netCDF_dim_creation(ncfile, zref, len(lat), len(lon), mode, date)
+    ncform.netCDF_var_creation(ncfile, stats.var_choice[typestat])
+
+    lon2d, lat2d = np.meshgrid(lon, lat)
 
     nc = Dataset(ncfile, 'r+')
     nc.variables['zref'][:] = zref
-    nc.variables['lon'][:] = lon
-    nc.variables['lat'][:] = lat
+    nc.variables['lon'][:, :] = lon2d
+    nc.variables['lat'][:, :] = lat2d
 
     j0 = 0
-    for j in jloc:
+    for j in range(nlat):
         i0 = 0
-        for i in iloc:
+        for i in range(nlon):
             itile = ij2tile(i, j)
-            i1 = i0+lonsize[i]  # len(ncf.dimensions['lon'])
-            j1 = j0+latsize[j]  # len(ncf.dimensions['lat'])
-            print('tile %i : lon=%g - lat=%g' % (itile,lon[i0], lat[j0]))
-            fname = '%s/%s_%03i.nc' % (dirstats, atlas_name, itile)
+            i1 = i0+lonsize[i]
+            j1 = j0+latsize[j]
+            print('glue tile %3i: lon=%7.2f - lat=%7.2f' % (itile, lon[i0], lat[j0]))
+            
+            fname = stats.generate_filename(itile, typestat, reso, timeflag, date, mode)
             if os.path.isfile(fname):
                 with Dataset(fname) as ncf:
                     for v in listvar:
@@ -169,22 +140,18 @@ def glue_tiles(iloc, jloc,lonsize, latsize, lon, lat, zref):
                         for k in range(nz):
                             nc.variables[v][k, j0:j1, i0:i1] = z3d[k, :, :]
             else:
-                pass
-                # for v in listvar:
-                #     for k in range(nz):
-                #         nc.variables[v][k, j0:j1, i0:i1] = 0.
+                for v in listvar:
+                    for k in range(nz):
+                        nc.variables[v][k, j0:j1, i0:i1] = 0.
 
-            i0 = i1-1
+            i0 = i1
         j0 = j1
     nc.close()
+    print('Atlas %s has been generated successfully' % ncfile)
 
-# glue_tiles(np.arange(10,13),np.arange(2,4))
-
-
-# glue_tiles(np.arange(5),np.arange(5),lonsize, latsize, lon, lat, zref)
 
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
-    lonsize, latsize, lon, lat = get_glo_grid()
-    glue_tiles(np.arange(nlon),np.arange(nlat),lonsize, latsize, lon, lat, zref)
+
+    glue_tiles(reso)
