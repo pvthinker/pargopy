@@ -12,7 +12,7 @@ import json as json
 typestat = ['general', 'zmean', 'zstd', 'zdz']
 
 #  ----------------------------------------------------------------------------
-def netCDF_dim_creation(filename, zref, nlat, nlon, mode, date):
+def create_dim(filename, zref, nlat, nlon, mode, date):
 
     with Dataset(filename, "w", format="NETCDF4") as rootgrp:
 
@@ -26,7 +26,7 @@ def netCDF_dim_creation(filename, zref, nlat, nlon, mode, date):
 
 
 #  ----------------------------------------------------------------------------
-def netCDF_var_creation(filename, var_list):
+def create_var(filename, var_list):
     """
     Create the netcdf file 'filename' for the list of variables 'var_list'
     the dimensions '(zref, lat, lon)' and the attributes of each variable is
@@ -38,6 +38,8 @@ def netCDF_var_creation(filename, var_list):
     :rtype: None
     """
 
+    # not sure it's a good idea to impose to create these variables
+    # should be the user's responsibility to create them
     var_list += ['zref', 'lon', 'lat']
 
     var_attributes = json.load(open('var_attributes.json'))
@@ -64,24 +66,29 @@ def netCDF_var_creation(filename, var_list):
 
 
 #  ----------------------------------------------------------------------------
-def netCDF_var_writing(filename, var_dic):
+def write_var(filename, var_list, var_dic):
     """
-    Write the list of variables in the netcdf file 'filename'. Variables are 
+    Write the list of variables 'var_list' in the netcdf file 'filename'. Variables are 
     transfered in the form of a dictionnary 'var_dic', where each entry is a numpy array.
-    The dimensions '(zref, lat, lon)' should be in 'var_dic'.
 
     """
 
-    if set(['zref', 'lon', 'lat']).issubset(set(var_dic.keys())):
+    # The dimensions '(zref, lat, lon)' should be in 'var_dic'.
+    # if set(['zref', 'lon', 'lat']).issubset(set(var_dic.keys())):
+    #     pass
+    # else:
+    #     raise ValueError('zref, lon and lat should be in var_dic')
+
+    if any([var_dic.has_key(v) for v in var_list]):
         pass
     else:
-        raise ValueError('zref, lon and lat should be in var_dic')
+        raise ValueError('some elements in var_list are missing in var_dic')
 
     if (os.path.isfile(filename)):
     
         with Dataset(filename, "r+", format="NETCDF4") as f:
 
-            for var in var_dic.keys():
+            for var in var_list:
                 var_data = var_dic[var]
                 ndims = len(var_data.shape)
                 if ndims == 1:
@@ -95,40 +102,33 @@ def netCDF_var_writing(filename, var_dic):
         raise ValueError('%s should be created first' % filename)
 
 #  ----------------------------------------------------------------------------
-def netCDF_var_reading(filename, var_choice):
+def read_var(filename, var_list):
     """
-    Function reading the netDCF files.
-    This function takes its values from a .json file where all the desired
-    values are handly referenced and from res(type = dict)
-    WARNING : You must open and close the ncfile before and after calling
-              this function, the ame is to give the name you want to the ncfile
-    
+    Read the list of variables 'var_list' from netcdf file 'filename'
+    Return the result as a dictionnary of numpy arrays
+
     :rtype: dict
     """
 
-    if (os.path.isfile(filename)):
-        f = Dataset(filename, "r", format="NETCDF4")
+    var_dic = {}
+    if (os.path.isfile(filename)):        
 
         data = json.load(open('pargopy_var.json'))
-        res = {}
 
-        for g in data['general']:
-            var_choice.append(g['name'])
+        var_attributes = json.load(open('var_attributes.json'))
 
-        for v in var_choice:
-            for t in typestat:
-                for d in data[t]:
-                    if v == d['name']:
-                        if d['dim'] == 1:
-                            res[d['name']] = f.variables[d['name']][:]
-                        elif d['dim'] == 2:
-                            res[d['name']] = f.variables[d['name']][:, :]
-                        elif d['dim']== 3:
-                            res[d['name']] = f.variables[d['name']][:, :, :]
+        with Dataset(filename, "r", format="NETCDF4") as f:
+            for var in var_list:
+                att = var_attributes[var]
+                if att['dim'] == 1:
+                    var_dic[var] = f.variables[var][:]
+                elif att['dim'] == 2:
+                    var_dic[var] = f.variables[var][:, :]
+                elif att['dim']== 3:
+                    var_dic[var] = f.variables[var][:, :, :]
 
-        f.close()
     else:
-        res = {}
+        print('Warning: %s does not exist' % filename)
 
-    return res
+    return var_dic
 

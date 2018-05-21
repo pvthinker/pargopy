@@ -113,8 +113,8 @@ def glue_tiles(reso):
 
     ncfile = atlas_filename(diratlas, reso, year, mode , typestat)
 
-    ncform.netCDF_dim_creation(ncfile, zref, len(lat), len(lon), mode, date)
-    ncform.netCDF_var_creation(ncfile, stats.var_choice[typestat])
+    ncform.create_dim(ncfile, zref, len(lat), len(lon), mode, date)
+    ncform.create_var(ncfile, stats.var_choice[typestat])
 
     lon2d, lat2d = np.meshgrid(lon, lat)
 

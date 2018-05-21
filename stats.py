@@ -46,9 +46,9 @@ def create_stat_file(itile, typestat, reso, timeflag, date, mode):
     lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
     nlat, nlon = np.shape(lon_deg)
 
-    print(filename)
-    ncform.netCDF_dim_creation(filename, zref, nlat, nlon, mode, date)
-    ncform.netCDF_var_creation(filename, var_choice[typestat])
+    print('create stat file %s' % filename)
+    ncform.create_dim(filename, zref, nlat, nlon, mode, date)
+    ncform.create_var(filename, var_choice[typestat])
 
 
 def write_stat_file(itile, typestat, reso, timeflag, date, mode, stats_mode):
@@ -63,14 +63,14 @@ def write_stat_file(itile, typestat, reso, timeflag, date, mode, stats_mode):
     res = vs.compute_at_zref(itile, reso, mode, date, stats_mode)
 
     res['zref'] = zref
-    ncform.netCDF_var_writing(filename, var_choice[typestat], res)
+    ncform.write_var(filename, var_choice[typestat], res)
 
     filename_zmean = generate_filename(itile, 'zmean', reso, timeflag, date, mode)
     if os.path.isfile(filename_zmean):
         print('File of zmean stats already written')
     else:
         print('File of zmean stats not write, let\'s do it...')
-        ncform.netCDF_var_writing(filename_zmean, var_choice['zmean'], res)
+        ncform.write_var(filename_zmean, var_choice['zmean'], res)
         print('File of zmean stats written')
 
 
@@ -82,7 +82,7 @@ def read_stat_file(itile, typestat, reso, timeflag, date, mode, var_choice):
     filename = generate_filename(itile, typestat, reso, timeflag, date, mode)
     print('read stat file : %s' % filename)
 
-    res = ncform.netCDF_var_reading(filename, var_choice)
+    res = ncform.read_var(filename, var_choice)
     return res
 
 
