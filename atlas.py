@@ -30,23 +30,11 @@ mode = 'D'
 typestat = 'zstd'
 reso = 0.5
 timeflag = 'annual'
+
+# number of tiles in lon and lat (should be read from argotools)
 nlon = 20
 nlat = 15
 
-# Will be used in the future to generate just the wanted variables
-#  listvar = stats.var_choice
-
-if typestat == 'zmean':
-    listvar = ['NBbar', 'CTbar', 'SAbar', 'Ribar', 'BVF2bar']
-
-elif typestat == 'zstd':
-    listvar = ['NBstd', 'CTstd', 'SAstd', 'Ristd', 'BVF2std']
-
-elif typestat == 'zdz':
-    listvar = ['DZmean', 'DZstd', 'DZskew', 'EAPE']
-
-else:
-    raise ValueError('This typestat value does not exists')
 
 dirstats = '%s/%g/%s/%s/%s' % (dirstats, reso, year, mode, typestat)
 
@@ -111,10 +99,16 @@ def glue_tiles(reso):
     zref = argotools.zref
     nz = len(zref)
 
+    # get the list of variables of this atlas
+    listvar = stats.var_choice[typestat]
+
+    print('create atlas for variables: '+', '.join(listvar))
+
     ncfile = atlas_filename(diratlas, reso, year, mode , typestat)
 
     ncform.create_dim(ncfile, zref, len(lat), len(lon), mode, date)
-    ncform.create_var(ncfile, stats.var_choice[typestat])
+    ncform.create_var(ncfile, listvar)
+    ncform.create_var(ncfile, ['zref', 'lon', 'lat'])
 
     lon2d, lat2d = np.meshgrid(lon, lat)
 
@@ -122,7 +116,7 @@ def glue_tiles(reso):
     nc.variables['zref'][:] = zref
     nc.variables['lon'][:, :] = lon2d
     nc.variables['lat'][:, :] = lat2d
-
+    
     j0 = 0
     for j in range(nlat):
         i0 = 0
@@ -130,7 +124,8 @@ def glue_tiles(reso):
             itile = ij2tile(i, j)
             i1 = i0+lonsize[i]
             j1 = j0+latsize[j]
-            print('glue tile %3i: lon=%7.2f - lat=%7.2f' % (itile, lon[i0], lat[j0]))
+            if itile % 30 == 0:
+                print('glue tile %3i: lon=%7.2f - lat=%7.2f' % (itile, lon[i0], lat[j0]))
             
             fname = stats.generate_filename(itile, typestat, reso, timeflag, date, mode)
             if os.path.isfile(fname):

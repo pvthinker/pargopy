@@ -18,6 +18,8 @@ def create_dim(filename, zref, nlat, nlon, mode, date):
     creationdate = datetime.date.today()
     argodate = datetime.date(int(date[0]),int(date[1]),int(date[2]))
 
+    print('create netCDF %s' % filename)
+
     with Dataset(filename, "w", format="NETCDF4") as rootgrp:
 
         rootgrp.createDimension('zref', len(zref))
@@ -35,22 +37,16 @@ def create_var(filename, var_list):
     """
     Create the netcdf file 'filename' for the list of variables 'var_list'
     the dimensions '(zref, lat, lon)' and the attributes of each variable is
-    retrieved from the json file. The dimensions are automatically appended to
-    the list of variables
+    retrieved from the json file.
 
     Warning 'filename' should be created first
     
     :rtype: None
     """
 
-    # not sure it's a good idea to impose to create these variables
-    # should be the user's responsibility to create them
-    var_list += ['zref', 'lon', 'lat']
-
     var_attributes = json.load(open('var_attributes.json'))
 
     if (os.path.isfile(filename)):
-        print('%s exists' % filename)
 
         with Dataset(filename, "r+", format="NETCDF4") as rootgrp:
 
@@ -77,12 +73,6 @@ def write_var(filename, var_list, var_dic):
     transfered in the form of a dictionnary 'var_dic', where each entry is a numpy array.
 
     """
-
-    # The dimensions '(zref, lat, lon)' should be in 'var_dic'.
-    # if set(['zref', 'lon', 'lat']).issubset(set(var_dic.keys())):
-    #     pass
-    # else:
-    #     raise ValueError('zref, lon and lat should be in var_dic')
 
     if any([var_dic.has_key(v) for v in var_list]):
         pass
