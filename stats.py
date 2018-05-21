@@ -340,6 +340,9 @@ def retrieve_tile_from_position(lon0, lat0):
 
 
 def compute_stats_at_zref(mode, date, grid_lon, grid_lat, reso_deg):
+    """ compute statistics on a small grid defined at grid_lon x grid_lat
+    the small grid should fit inside one tile """
+
     itiles = [retrieve_tile_from_position(lon0, lat0) for lon0,lat0 in it.product(grid_lon,grid_lat)]
     if len(set(itiles)) == 1:
         itile = itiles[0]
@@ -370,7 +373,21 @@ def compute_stats_at_zref(mode, date, grid_lon, grid_lat, reso_deg):
     DZstd = np.zeros((nz, nlat, nlon))
 
     def average(field):
+        """ weighted average of profiles
+
+        field is a nprofiles x nz array
+        the weight depends on the profile to grid point distance"""
+
         return np.nansum(weight*field, axis=0)
+
+    def bar_std(phi, coef, coef1):
+        """ compute the mean and the std of 'phi', where phi
+        are profiles interpolated at zref of either CT, SA, RI etc."""
+
+        phibar = coef*average(phi)
+        dphi = phi - phibar
+        phistd = np.sqrt(coef1*average(dphi**2))
+        return phibar, phistd
 
     nanidx = np.where(np.isnan(CT) | np.isnan(SA))
 
@@ -382,26 +399,29 @@ def compute_stats_at_zref(mode, date, grid_lon, grid_lat, reso_deg):
             weight = weight[:, np.newaxis] + np.zeros_like(zref)
             weight[nanidx] = 0.
 
-            if (j==nlat//2) and (i==nlon//2):
-                weight0 = weight.copy()
-
             Nb[:, j, i] = average(1.)
             coef = 1./Nb[:, j, i]
             coef[Nb[:, j, i]<2] = np.NaN
             coef1 = 1./(Nb[:, j, i]-1)
             coef1[Nb[:, j, i]<2] = np.NaN
 
-            CTbar[:, j, i] = coef*average(CT)            
-            dCT = CT - CTbar[:, j, i]
-            CTstd[:, j, i] = np.sqrt(coef1*average(dCT**2))
+            CTbar[:, j, i], CTstd[:, j, i] = bar_std(CT, coef, coef1)
+            SAbar[:, j, i], SAstd[:, j, i] = bar_std(SA, coef, coef1)
+            RIbar[:, j, i], RIstd[:, j, i] = bar_std(RI, coef, coef1)
 
-            RIbar[:, j, i] = coef*average(RI)            
-            dRI = RI - RIbar[:, j, i]
-            RIstd[:, j, i] = np.sqrt(coef1*average(dRI**2))
+            # the original piece of code, before defining bar_std()
+            #
+            # CTbar[:, j, i] = coef*average(CT)            
+            # dCT = CT - CTbar[:, j, i]
+            # CTstd[:, j, i] = np.sqrt(coef1*average(dCT**2))
 
-            SAbar[:, j, i] = coef*average(SA)            
-            dSA = SA - SAbar[:, j, i]
-            SAstd[:, j, i] = np.sqrt(coef1*average(dSA**2))
+            # RIbar[:, j, i] = coef*average(RI)            
+            # dRI = RI - RIbar[:, j, i]
+            # RIstd[:, j, i] = np.sqrt(coef1*average(dRI**2))
+
+            # SAbar[:, j, i] = coef*average(SA)            
+            # dSA = SA - SAbar[:, j, i]
+            # SAstd[:, j, i] = np.sqrt(coef1*average(dSA**2))
 
             p = gsw.p_from_z(-zref, grid_lat[j])
             
