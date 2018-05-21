@@ -8,23 +8,28 @@ Created on Wed Apr 25 12:20:04 2018
 from netCDF4 import Dataset
 import os
 import json as json
+import datetime as datetime
 
 typestat = ['general', 'zmean', 'zstd', 'zdz']
 
 #  ----------------------------------------------------------------------------
 def create_dim(filename, zref, nlat, nlon, mode, date):
 
+    creationdate = datetime.date.today()
+    argodate = datetime.date(int(date[0]),int(date[1]),int(date[2]))
+
     with Dataset(filename, "w", format="NETCDF4") as rootgrp:
 
         rootgrp.createDimension('zref', len(zref))
         rootgrp.createDimension('lat', nlat)
         rootgrp.createDimension('lon', nlon)
-        rootgrp.setncattr('data_mode', mode)
-        rootgrp.setncattr('year', date[0])
-        rootgrp.setncattr('month', date[1])
-        rootgrp.setncattr('day', date[2])
 
-
+        rootgrp.setncattr('using Argo profiles in data_mode', mode)
+        rootgrp.setncattr('using Argo profiles up to date', argodate.strftime('%Y-%m-%d'))
+        rootgrp.setncattr('creation date', creationdate.strftime('%Y-%m-%d'))
+        rootgrp.setncattr('author', 'Roullet, Guillaume')
+        rootgrp.setncattr('email', 'roullet@univ-brest.fr')
+        
 #  ----------------------------------------------------------------------------
 def create_var(filename, var_list):
     """
@@ -112,8 +117,6 @@ def read_var(filename, var_list):
 
     var_dic = {}
     if (os.path.isfile(filename)):        
-
-        data = json.load(open('pargopy_var.json'))
 
         var_attributes = json.load(open('var_attributes.json'))
 
