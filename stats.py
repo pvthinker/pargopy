@@ -13,13 +13,16 @@ import argotools as argotools
 import param as param
 import netCDF_form as ncform
 import variable_selector as vs
+import itertools as it
+import atlas as atlas
+import eape as eape
 
 # Put in var_choice list the variables you want in your atlas
 
 #  var_choice = ['NBstd', 'SAstd', 'CTstd', 'Ristd', 'BVF2std', 'DZmean', 'DZstd', 'DZskew', 'EAPE']
-var_choice = {'zmean':['NBbar', 'SAbar', 'CTbar', 'Ribar', 'BVF2bar'],
-              'zstd':['NBstd', 'SAstd', 'CTstd', 'Ristd', 'BVF2std'], 
-              'zdz':['DZmean', 'DZstd', 'DZskew', 'EAPE']}
+var_choice = {'zmean': ['NBbar', 'SAbar', 'CTbar', 'Ribar', 'BVF2bar'],
+              'zstd': ['NBstd', 'SAstd', 'CTstd', 'Ristd', 'BVF2std'], 
+              'zdz': ['DZmean', 'DZstd', 'DZskew', 'EAPE']}
 # var_choice used by stats_read
 # You need to know which variables are existing in the stats_i.nc file to know
 # which variables are available
@@ -324,6 +327,101 @@ def compute_std_at_zref(itile, reso_deg, timeflag, mode, date, verbose=False):
            'lat': res['lat']}
 
     return res
+
+def retrieve_tile_from_position(lon0, lat0):
+    """Return the tile index in which (lon0, lat0) sits
+    
+    :rtype: list"""
+
+    lat, lon, nlat, nlon, marginlat, marginlon = argotools.tile_definition()
+    j = [k for k in range(len(lat)) if lat[k]<lat0][-1]
+    i = [k for k in range(len(lon)) if lon[k]<lon0][-1]
+    return atlas.ij2tile(i, j)
+
+
+def compute_stats_at_zref(mode, date, grid_lon, grid_lat, reso_deg):
+    itiles = [retrieve_tile_from_position(lon0, lat0) for lon0,lat0 in it.product(grid_lon,grid_lat)]
+    if len(set(itiles)) == 1:
+        itile = itiles[0]
+        tile = date_mode_filter(mode, date, itile)
+    else:
+        raise ValueError('the domain does not fit in one tile')
+
+    CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
+    lat, lon = tile['LATITUDE'], tile['LONGITUDE']
+
+    xlon_rad = np.deg2rad(lon)
+    xlat_rad = np.deg2rad(lat)
+    reso_rad = np.deg2rad(reso_deg)
+
+    nlon = len(grid_lon)
+    nlat = len(grid_lat)
+    nz = len(zref)
+
+    Nb = np.zeros((nz, nlat, nlon))
+    CTbar = np.zeros((nz, nlat, nlon))
+    CTstd = np.zeros((nz, nlat, nlon))
+    SAbar = np.zeros((nz, nlat, nlon))
+    SAstd = np.zeros((nz, nlat, nlon))
+    RIbar = np.zeros((nz, nlat, nlon))
+    RIstd = np.zeros((nz, nlat, nlon))
+
+    EAPE = np.zeros((nz, nlat, nlon))
+    DZstd = np.zeros((nz, nlat, nlon))
+
+    def average(field):
+        return np.nansum(weight*field, axis=0)
+
+    nanidx = np.where(np.isnan(CT) | np.isnan(SA))
+
+    for j, lat_rad in enumerate(np.deg2rad(grid_lat)):
+        for i, lon_rad in enumerate(np.deg2rad(grid_lon)):
+            #print('%i/%i - %i/%i' % (i, nlon, j, nlat))
+            weight = tools.compute_weight(lon_rad, lat_rad,
+                                          xlon_rad, xlat_rad, reso_rad)
+            weight = weight[:, np.newaxis] + np.zeros_like(zref)
+            weight[nanidx] = 0.
+
+            if (j==nlat//2) and (i==nlon//2):
+                weight0 = weight.copy()
+
+            Nb[:, j, i] = average(1.)
+            coef = 1./Nb[:, j, i]
+            coef[Nb[:, j, i]<2] = np.NaN
+            coef1 = 1./(Nb[:, j, i]-1)
+            coef1[Nb[:, j, i]<2] = np.NaN
+
+            CTbar[:, j, i] = coef*average(CT)            
+            dCT = CT - CTbar[:, j, i]
+            CTstd[:, j, i] = np.sqrt(coef1*average(dCT**2))
+
+            RIbar[:, j, i] = coef*average(RI)            
+            dRI = RI - RIbar[:, j, i]
+            RIstd[:, j, i] = np.sqrt(coef1*average(dRI**2))
+
+            SAbar[:, j, i] = coef*average(SA)            
+            dSA = SA - SAbar[:, j, i]
+            SAstd[:, j, i] = np.sqrt(coef1*average(dSA**2))
+
+            p = gsw.p_from_z(-zref, grid_lat[j])
+            
+            cs = gsw.sound_speed(SAbar[:, j, i], CTbar[:, j, i], p)
+
+            rho0 = RIbar[:, j, i].copy()
+
+            zr, Eape = eape.compute_eape(zref, rho0, cs, RI)
+
+            dZ = zr-zref
+            DZstd[:, j, i] = np.sqrt(coef1*average(dZ**2))
+            EAPE[:, j, i] = np.sqrt(coef1*average(Eape))
+
+    return {'NB': Nb,
+            'lon': grid_lon, 'lat': grid_lat, 'zref': zref,
+            'CTbar': CTbar, 'CTstd': CTstd,
+            'RIbar': RIbar, 'RIstd': RIstd,
+            'SAbar': SAbar, 'SAstd': SAstd,
+            'DZstd': DZstd, 'EAPE': EAPE}
+
 
 
 def date_mode_filter(mode, date, itile):
