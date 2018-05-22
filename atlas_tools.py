@@ -17,6 +17,8 @@ import tempfile
 import stats
 import itertools as it
 
+import manual_check_tools as mc
+
 diratlas = param.path_to_atlas
 dirtile = param.path_to_tiles
 
@@ -32,7 +34,7 @@ reso=0.5
 timeflag='annual'
 mode='D'
 
-#plt.ion()
+plt.ion()
 
 def lonlatstr(lon, lat):
     if lon > 0:
@@ -98,6 +100,16 @@ def select_profiles_near_point(lon0, lat0):
                 mp = mouse.MouseProfile(li, tag, badprofiles)
                 mp.connect()
                 mps.append(mp)
+                xlat, xlon = mc.retrieve_coords_from_tag(tag)
+                itiles = mc.retrieve_itile_from_coords(xlat, xlon)
+                for itile in itiles:
+                    tile = mc.update_tile(itile, tag)
+                    new_stats = mc.calculate_new_stats(itile, tile, xlat, xlon)
+                    new_var = mc.update_stats(SAstd, 'SAstd', new_stats)
+                im.setData(new_var[kz, :,:], origin='lower',
+                           vmin=0, vmax=10.,
+                           interpolation='nearest', 
+                           cmap=plt.get_cmap('RdBu_r'))
     fig2.canvas.draw()
     return
 
@@ -108,12 +120,12 @@ with Dataset(ncfile, 'r', format='NETCDF4') as nc:
     lon = nc.variables['lon'][:]
     lat = nc.variables['lat'][:]
     # zref = nc.variables['zref'][:]
-    EAPE =  nc.variables['SAstd'][:, :, :]
+    SAstd =  nc.variables['SAstd'][:, :, :]
 
 longrid, latgrid = np.meshgrid(np.deg2rad(lon), np.deg2rad(lat))
 #CT.mask = False
 
-# plt.ion()
+plt.ion()
 
 zref = at.zref
 #fig2 = plt.figure(2)
@@ -187,11 +199,11 @@ fig = plt.figure(1)
 kz = 20
 
 # plt.pcolor(lon, lat, CT[kz, :, :])
-plt.imshow(EAPE[kz, :,:], origin='lower',
+im = plt.imshow(SAstd[kz, :,:], origin='lower',
            vmin=0, vmax=10.,
            interpolation='nearest', 
            cmap=plt.get_cmap('RdBu_r'))
-plt.title('EAPE @ z=%.0fm' % zref[kz])
+plt.title('SAstd @ z=%.0fm' % zref[kz])
 plt.colorbar()
 cid = fig.canvas.mpl_connect('button_press_event', onclick)
-plt.show()
+plt.show(im)

@@ -339,14 +339,17 @@ def retrieve_tile_from_position(lon0, lat0):
     return atlas.ij2tile(i, j)
 
 
-def compute_stats_at_zref(mode, date, grid_lon, grid_lat, reso_deg):
+def compute_stats_at_zref(mode, date, grid_lon, grid_lat, reso_deg, manual_check=False, new_tile=None):
     """ compute statistics on a small grid defined at grid_lon x grid_lat
     the small grid should fit inside one tile """
-
+    tmps1 = time.time()
     itiles = [retrieve_tile_from_position(lon0, lat0) for lon0,lat0 in it.product(grid_lon,grid_lat)]
     if len(set(itiles)) == 1:
         itile = itiles[0]
-        tile = date_mode_filter(mode, date, itile)
+        if manual_check == True:
+            tile = new_tile
+        else:
+            tile = date_mode_filter(mode, date, itile)
     else:
         raise ValueError('the domain does not fit in one tile')
 
@@ -434,6 +437,9 @@ def compute_stats_at_zref(mode, date, grid_lon, grid_lat, reso_deg):
             dZ = zr-zref
             DZstd[:, j, i] = np.sqrt(coef1*average(dZ**2))
             EAPE[:, j, i] = np.sqrt(coef1*average(Eape))
+
+    tmps2 = time.time() - tmps1
+    print("Temps d'execution = %f" % tmps2)
 
     return {'NB': Nb,
             'lon': grid_lon, 'lat': grid_lat, 'zref': zref,

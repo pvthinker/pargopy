@@ -64,7 +64,6 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
                                             xlon_rad, xlat_rad,
                                             reso_rad)
             weight *= time_weight
-
             for l in range(nz):
                 if np.isnan(CT[k, l]) or np.isnan(SA[k, l]):
                     pass
@@ -121,6 +120,7 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
 
                             weight = weight[:, np.newaxis] + np.zeros_like(zref)
                             weight[np.where(np.isnan(dz) | np.isnan(drho))] = 0.
+                            weight[nanidx] = 0.
                             def average(field):
                                return np.nansum(weight*field, axis=0)
                             if b == 'zstd':
