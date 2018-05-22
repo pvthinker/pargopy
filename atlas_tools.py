@@ -14,16 +14,23 @@ import param as param
 import argotools as argotools
 import mouseprofile as mouse
 import tempfile
+import stats
+import itertools as it
 
 diratlas = param.path_to_atlas
 dirtile = param.path_to_tiles
 
-atlas_name = at.atlas_name
-listvar = at.listvar
+#atlas_name = at.atlas_name
+#listvar = at.listvar
 
 reso = 0.5
 nlon = 20
 nlat = 15
+
+date=['2017', '12', '31']
+reso=0.5
+timeflag='annual'
+mode='D'
 
 #plt.ion()
 
@@ -101,7 +108,7 @@ with Dataset(ncfile, 'r', format='NETCDF4') as nc:
     lon = nc.variables['lon'][:]
     lat = nc.variables['lat'][:]
     # zref = nc.variables['zref'][:]
-    EAPE =  nc.variables['EAPE'][:, :, :]
+    EAPE =  nc.variables['SAstd'][:, :, :]
 
 longrid, latgrid = np.meshgrid(np.deg2rad(lon), np.deg2rad(lat))
 #CT.mask = False
@@ -111,6 +118,33 @@ longrid, latgrid = np.meshgrid(np.deg2rad(lon), np.deg2rad(lat))
 zref = at.zref
 #fig2 = plt.figure(2)
 fig2 = plt.figure(2 ,figsize=(16,6))
+
+
+def compute_stats_near_point(lon0, lat0):
+    lons = lon0+np.arange(-1,2.,1.)
+    lats = lat0+np.arange(-1,2.,1.)
+
+    nlons=len(lons)
+    nlats=len(lats)
+
+    res=stats.compute_stats_at_zref(mode, date, lons, lats, 0.5)
+
+    plt.figure(3)
+    plt.clf()
+    for k, v in enumerate(['CTbar', 'SAbar', 'CTstd', 'SAstd']):
+        plt.subplot(141+k)
+        for j, i in it.product(range(nlats),range(nlons)):
+            plt.plot(res[v][:, j, i],-zref)
+        plt.title(v)
+
+    plt.figure(4)
+    plt.clf()
+    for k, v in enumerate(['DZstd', 'EAPE']):
+        plt.subplot(121+k)
+        for j, i in it.product(range(nlats),range(nlons)):
+            plt.plot(res[v][:, j, i],-zref)
+        plt.title(v)
+
 
 
 # Simple mouse click function to store coordinates
@@ -127,6 +161,8 @@ def onclick(event):
 
     select_profiles_near_point(lon, lat)
     
+    compute_stats_near_point(lon, lat)
+
     # assign global variable to access outside of function
 
     coords.append((ix, iy))
