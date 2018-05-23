@@ -101,7 +101,20 @@ def select_profiles_near_point(lon0, lat0):
                 mp = mouse.MouseProfile(li, tag, badprofiles, SAstd, kz, im, fig)
                 mp.connect()
                 mps.append(mp)
+<<<<<<< HEAD
 
+=======
+                xlat, xlon = mc.retrieve_coords_from_tag(tag)
+                itiles = mc.retrieve_itile_from_coords(xlat, xlon)
+                for itile in itiles:
+                    tile = mc.update_tile(itile, tag)
+                    new_stats = mc.calculate_new_stats(itile, tile, xlat, xlon)
+                    new_var = mc.update_stats(SAstd, 'SAstd', new_stats)
+                im.setData(new_var[kz, :,:], origin='lower',
+                           vmin=0, vmax=10.,
+                           interpolation='nearest', 
+                           cmap=plt.get_cmap('RdBu_r'))
+>>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
     fig2.canvas.draw()
     return
 
@@ -203,12 +216,19 @@ plt.title('Depth @ z=%.0fm' % zref[int(kz)])
 #  kz = 20
 
 # plt.pcolor(lon, lat, CT[kz, :, :])
+<<<<<<< HEAD
 fig = plt.figure(1)
+=======
+>>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
 im = plt.imshow(SAstd[kz, :,:], origin='lower',
            vmin=0, vmax=10.,
            interpolation='nearest', 
            cmap=plt.get_cmap('RdBu_r'))
+<<<<<<< HEAD
 plt.title('SAstd')
+=======
+plt.title('SAstd @ z=%.0fm' % zref[kz])
+>>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
 plt.colorbar()
 cid = fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show(im)

@@ -130,7 +130,11 @@ def calculate_new_stats(itile, tile, xlat, xlon):
 
 
 #  ----------------------------------------------------------------------------
+<<<<<<< HEAD
 def update_stats(var, var_name, new_stats, itile):
+=======
+def update_stats(var, var_name, new_stats):
+>>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
     """Returns the given variable updated without the value which has the 
     tag checked as wrong
 
@@ -138,6 +142,10 @@ def update_stats(var, var_name, new_stats, itile):
 
     """
     reso = 0.5
+<<<<<<< HEAD
+=======
+    itile = 1
+>>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
     idx_j = []
     idx_i = []
     grid_lat, grid_lon = stats.grid_coordinate(itile, reso)
@@ -176,7 +184,11 @@ if __name__ == '__main__':
     for itile in itiles:
         tile = update_tile(itile, tag)
         new_stats = calculate_new_stats(itile, tile, xlat, xlon)
+<<<<<<< HEAD
         new_var = update_stats(var, 'SAstd', new_stats, itile)
+=======
+        new_var = update_stats(var, 'SAstd', new_stats)
+>>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
     

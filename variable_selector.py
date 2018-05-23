@@ -121,7 +121,11 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
                             dSA = SA - variables['SAbar'][:, j, i]
 
                             weight = weight[:, np.newaxis] + np.zeros_like(zref)
+<<<<<<< HEAD
                             weight[np.where(np.isnan(dz) | np.isnan(drho) | np.isnan(dCT) | np.isnan(dSA))] = 0.
+=======
+                            weight[np.where(np.isnan(dz) | np.isnan(drho))] = 0.
+>>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
                             weight[nanidx] = 0.
                             def average(field):
                                 return np.nansum(weight*field, axis=0)
