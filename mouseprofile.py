@@ -1,12 +1,17 @@
 # coding: utf-8
 import numpy as np
 import matplotlib.pyplot as plt
+import manual_check_tools as mc
 
 
 class MouseProfile(object):
-    def __init__(self, line, tag, filename):
+    def __init__(self, line, tag, filename, var, kz, im, fig):
         self.line = line
         self.tag = tag
+        self.var = var
+        self.kz = kz
+        self.im = im
+        self.fig = fig
         #print(tag)
         self.click = None
         self.line.set_lw(1)
@@ -20,6 +25,15 @@ class MouseProfile(object):
         #print('mouse pressed')
         if self.pressed:
             print('TAG= %i / confirmed' % self.tag)
+            xlat, xlon = mc.retrieve_coords_from_tag(self.tag)
+            itiles = mc.retrieve_itile_from_coords(xlat, xlon)
+            for itile in itiles:
+                tile = mc.update_tile(itile, self.tag)
+                new_stats = mc.calculate_new_stats(itile, tile, xlat, xlon)
+                new_var = mc.update_stats(self.var, 'SAstd', new_stats, itile)
+                self.im.set_data(new_var[self.kz, :,:])
+                self.fig.canvas.draw()
+                self.fig.canvas.flush_events()
             # in practice: do something on argodb = flag the profile
             # or store the action in a temporary file
             # and propagate the action in argodb with another routine

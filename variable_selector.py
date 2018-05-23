@@ -9,6 +9,7 @@ Created on Wed May  9 12:57:38 2018
 # File used to know how to calculate each variable of stats
 
 import numpy as np
+from math import sqrt
 import gsw as gsw
 from scipy import interpolate as ip
 import argotools as tools
@@ -31,6 +32,7 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
     else:
         tile = stats.date_mode_filter(mode, date, itile)
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
+    nanidx = np.where(np.isnan(CT) | np.isnan(SA))
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
     grid_lat, grid_lon = stats.grid_coordinate(itile, reso_deg)
     lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
@@ -64,7 +66,6 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
                                             xlon_rad, xlat_rad,
                                             reso_rad)
             weight *= time_weight
-
             for l in range(nz):
                 if np.isnan(CT[k, l]) or np.isnan(SA[k, l]):
                     pass
@@ -120,15 +121,23 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
                             dSA = SA - variables['SAbar'][:, j, i]
 
                             weight = weight[:, np.newaxis] + np.zeros_like(zref)
-                            weight[np.where(np.isnan(dz) | np.isnan(drho))] = 0.
+                            weight[np.where(np.isnan(dz) | np.isnan(drho) | np.isnan(dCT) | np.isnan(dSA))] = 0.
+                            weight[nanidx] = 0.
                             def average(field):
-                               return np.nansum(weight*field, axis=0)
+                                return np.nansum(weight*field, axis=0)
                             if b == 'zstd':
+                                variables['CTstd'][:, j, i] = average(dCT**2)
+                                variables['SAstd'][:, j, i] = average(dSA**2)
+                                variables['BVF2std'][:, j, i] = average(dbvf2**2)
+                                variables['Ristd'][:, j, i] = average(drho**2)
+                               
+                                coef = 1./(variables['NBstd']-1)
+                                coef[variables['NBstd'] < 2] = np.nan
 
-                               variables['CTstd'][:, j, i] = np.nanmean(dCT**2)
-                               variables['SAstd'][:, j, i] = average(dSA**2)
-                               variables['BVF2std'][:, j, i] = average(dbvf2**2)
-                               variables['Ristd'][:, j, i] = average(drho**2)
+                                variables['CTstd'] = np.sqrt(coef*variables['CTstd'])
+                                variables['SAstd'] = np.sqrt(coef*variables['SAstd'])
+                                variables['Ristd'] = np.sqrt(coef*variables['Ristd'])
+                                variables['BVF2std'] = np.sqrt(coef*variables['BVF2std'])
 
                             if b == 'zdz':
             
@@ -136,11 +145,18 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
                                 variables['DZstd'][:, j, i] = average(dz**2)
                                 variables['DZskew'][:, j, i] = average(dz**3)
                                 variables['EAPE'][:, j, i] = average(dz*drho)
+                                
+                                variables['DZmean'] *= coef
+                                variables['DZstd'] = np.sqrt(coef*variables['DZstd'])
+                                # skew = E( ((X-mu)/sigma)**3 )
+                                variables['DZskew'] *= coef/variables['DZstd']**3
+                                variables['EAPE'] *= 0.5*coef
     variables['lat'] = lat_deg
     variables['lon'] = lon_deg
-    variables['TAG'] = tile['TAG']
     print(variables['CTstd'].min())
     print(variables['CTstd'].max())
+    print(variables['SAstd'].min())
+    print(variables['SAstd'].max())
 
     return variables
 

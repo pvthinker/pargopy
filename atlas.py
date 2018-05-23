@@ -83,9 +83,11 @@ def atlas_filename(diratlas, reso, year, mode , typestat):
     if False: # many subfolders - short name for the atlas
         atlas_name = '%s_%g_annual' % (typestat, reso)
         ncfile = '%s/%s/%s/%s/%s/%s.nc' % (diratlas, reso, year, mode , typestat, atlas_name)
+        print(ncfile)
 
     else: # one folder - long name for the atlas
         ncfile ='%s/%s_%g_%s_%s.nc' % (diratlas, typestat, reso, year, mode)
+        print(ncfile)
 
     return ncfile
 

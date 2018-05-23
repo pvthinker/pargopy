@@ -7,10 +7,12 @@ Created on Wed May 16 07:30:13 2018
 """
 import time
 import numpy as np
+from netCDF4  import Dataset
 
 import argotools as tools
 import param as param
 import interpolation_tools as interpolation
+import stats as stats
 import variable_selector as vs
 
 path_to_data = param.path_to_data
@@ -87,31 +89,96 @@ def update_tile(itile, tag):
 
 
 #  ----------------------------------------------------------------------------
-def update_stats(itile, tile):
-    """Returns the stats without the profile checked as wrong
-
+def calculate_new_stats(itile, tile, xlat, xlon):
+    """This function returns a dictionnary of all the stats calculated on only
+    9 points around the xlat, xlon given in parameters.
+    Its ame is to calculate the bew stats without the given bad profile known
+    with his coordinates (xlat, xlon).
+    X     X     X
+    
+        +
+    X     X     X
+    
+    
+    X     X     X
+    
+    + : the given coordinate which we found the bad profile
+    X : the points that will be calculated after deleting the bad profile
     :rtype: dict
 
     """
     reso = 0.5
     mode = 'D'
     date = ['2017', '12', '31']
-    stats_mode = ['zmean']
-    new_stats = vs.compute_at_zref(itile, reso, mode, date, stats_mode, tile_dict=tile)
+    #  stats_mode = ['zmean']
+    #  new_stats = vs.compute_at_zref(itile, reso, mode, date, stats_mode, tile_dict=tile)
+    grid_lat, grid_lon = stats.grid_coordinate(itile, reso)
+    ilat = int(xlat/reso)*reso
+    ilon = int(xlon/reso)*reso
+    idx_lat = np.where(grid_lat == ilat)
+    idx_lon = np.where(grid_lon == ilon)
+    near_lats = []
+    near_lons = []
+    nb = [-1, 0, 1]
+    for i in nb:
+        near_lats.append(grid_lat[idx_lat[0][0]+i])
+        near_lons.append(grid_lon[idx_lon[0][0]+i])
+    print(near_lats, near_lons)
+    new_stats = stats.compute_stats_at_zref(mode, date, near_lons, near_lats, reso, manual_check=True, new_tile=tile)
     print('new stats generated')
-
     return new_stats
 
 
 #  ----------------------------------------------------------------------------
+def update_stats(var, var_name, new_stats, itile):
+    """Returns the given variable updated without the value which has the 
+    tag checked as wrong
+
+    :rtype: dict
+
+    """
+    reso = 0.5
+    idx_j = []
+    idx_i = []
+    grid_lat, grid_lon = stats.grid_coordinate(itile, reso)
+    lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
+    nlat, nlon = np.shape(lon_deg)
+    for k in range(len(new_stats['lat'])):
+        idx_lat = np.where(lat_deg == new_stats['lat'][k])
+        idx_lon = np.where(lon_deg[0] == new_stats['lon'][k])
+        idx_j.append(idx_lat[0][0])
+        idx_i.append(idx_lon[0][0])
+    
+    for j, idxj in enumerate(idx_j):
+        for i, idxi in enumerate(idx_i):
+            print(var[:, idxj, idxi])
+            var[:, idxj, idxi] = new_stats[var_name][:, j, i]
+            print('New stats :')
+            print(var[:, idxj, idxi])
+
+    return var
+    
+#  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
+    
+    ncfile = '/home2/datawork/therry/tmp/atlas/0.5/2017/D/zstd/zstd_0.5_annual.nc'
+
+    with Dataset(ncfile, 'r', format='NETCDF4') as nc:
+        lon = nc.variables['lon'][:]
+        lat = nc.variables['lat'][:]
+        # zref = nc.variables['zref'][:]
+        var =  nc.variables['SAstd'][:, :, :]
+    
     tag = 5904180099
     xlat, xlon = retrieve_coords_from_tag(tag)
     itiles = retrieve_itile_from_coords(xlat, xlon)
     for itile in itiles:
         tile = update_tile(itile, tag)
-        stats = update_stats(itile, tile)
+        new_stats = calculate_new_stats(itile, tile, xlat, xlon)
+        new_var = update_stats(var, 'SAstd', new_stats, itile)
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
+    
+
         

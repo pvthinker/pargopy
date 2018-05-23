@@ -6,6 +6,7 @@ File used to create the on-click tools for the atlas
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.widgets as wid
 from netCDF4  import Dataset
 import research_tools as res
 import atlas as at
@@ -16,6 +17,8 @@ import mouseprofile as mouse
 import tempfile
 import stats
 import itertools as it
+
+import manual_check_tools as mc
 
 diratlas = param.path_to_atlas
 dirtile = param.path_to_tiles
@@ -32,7 +35,7 @@ reso=0.5
 timeflag='annual'
 mode='D'
 
-#plt.ion()
+plt.ion()
 
 def lonlatstr(lon, lat):
     if lon > 0:
@@ -95,25 +98,26 @@ def select_profiles_near_point(lon0, lat0):
                       (lonlatstr(lon0, lat0), itile))
             if v == 'SA':
                 tag = subargo['TAG'][k]
-                mp = mouse.MouseProfile(li, tag, badprofiles)
+                mp = mouse.MouseProfile(li, tag, badprofiles, SAstd, kz, im, fig)
                 mp.connect()
                 mps.append(mp)
+
     fig2.canvas.draw()
     return
 
 # ncfile = '%s/%s.nc' % (diratlas, atlas_name)
-ncfile = '/home2/datawork/therry/tmp/atlas/0.5/2017/D/zstd/zstd_0.5_annual.nc'
+ncfile = '/home2/datawork/therry/tmp/atlas/zstd_0.5_2017_D.nc'
 
 with Dataset(ncfile, 'r', format='NETCDF4') as nc:
     lon = nc.variables['lon'][:]
     lat = nc.variables['lat'][:]
     # zref = nc.variables['zref'][:]
-    EAPE =  nc.variables['SAstd'][:, :, :]
+    SAstd =  nc.variables['SAstd'][:, :, :]
 
 longrid, latgrid = np.meshgrid(np.deg2rad(lon), np.deg2rad(lat))
 #CT.mask = False
 
-# plt.ion()
+plt.ion()
 
 zref = at.zref
 #fig2 = plt.figure(2)
@@ -183,15 +187,28 @@ spoiled_profiles=[]
 
 badprofiles = 'badprofiles.txt'
 
-fig = plt.figure(1)
-kz = 20
+plt.figure(5)
+a0 = 0
+axamp  = plt.axes([0.25, 0.15, 0.65, 0.03])
+samp = wid.Slider(axamp, 'kz', 0, 62, valinit=a0)
+
+def update(val):
+    kz = int(samp.val)
+    im.set_data(SAstd[kz, :,:])
+    plt.title('Depth @ z=%.0fm' % zref[int(kz)])
+    fig.canvas.draw_idle()
+    return(kz)
+kz = int(samp.on_changed(update))
+plt.title('Depth @ z=%.0fm' % zref[int(kz)])
+#  kz = 20
 
 # plt.pcolor(lon, lat, CT[kz, :, :])
-plt.imshow(EAPE[kz, :,:], origin='lower',
+fig = plt.figure(1)
+im = plt.imshow(SAstd[kz, :,:], origin='lower',
            vmin=0, vmax=10.,
            interpolation='nearest', 
            cmap=plt.get_cmap('RdBu_r'))
-plt.title('EAPE @ z=%.0fm' % zref[kz])
+plt.title('SAstd')
 plt.colorbar()
 cid = fig.canvas.mpl_connect('button_press_event', onclick)
-plt.show()
+plt.show(im)
