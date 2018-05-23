@@ -1,0 +1,7 @@
+argodb module
+=============
+
+.. automodule:: argodb
+    :members:
+    :undoc-members:
+    :show-inheritance:

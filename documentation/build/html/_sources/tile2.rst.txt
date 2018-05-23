@@ -1,0 +1,7 @@
+tile2 module
+============
+
+.. automodule:: tile2
+    :members:
+    :undoc-members:
+    :show-inheritance:

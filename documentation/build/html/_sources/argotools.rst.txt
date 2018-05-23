@@ -1,0 +1,7 @@
+argotools module
+================
+
+.. automodule:: argotools
+    :members:
+    :undoc-members:
+    :show-inheritance:

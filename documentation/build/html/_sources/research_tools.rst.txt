@@ -1,0 +1,7 @@
+research_tools module
+=====================
+
+.. automodule:: research_tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
