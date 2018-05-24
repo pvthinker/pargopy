@@ -130,11 +130,7 @@ def calculate_new_stats(itile, tile, xlat, xlon):
 
 
 #  ----------------------------------------------------------------------------
-<<<<<<< HEAD
 def update_stats(var, var_name, new_stats, itile):
-=======
-def update_stats(var, var_name, new_stats):
->>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
     """Returns the given variable updated without the value which has the 
     tag checked as wrong
 
@@ -142,10 +138,6 @@ def update_stats(var, var_name, new_stats):
 
     """
     reso = 0.5
-<<<<<<< HEAD
-=======
-    itile = 1
->>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
     idx_j = []
     idx_i = []
     grid_lat, grid_lon = stats.grid_coordinate(itile, reso)
@@ -170,7 +162,7 @@ def update_stats(var, var_name, new_stats):
 if __name__ == '__main__':
     tmps1 = time.time()
     
-    ncfile = '/home2/datawork/therry/tmp/atlas/0.5/2017/D/zstd/zstd_0.5_annual.nc'
+    ncfile = '/home2/datawork/therry/tmp/atlas/zstd_0.5_2017_D.nc'
 
     with Dataset(ncfile, 'r', format='NETCDF4') as nc:
         lon = nc.variables['lon'][:]
@@ -184,11 +176,7 @@ if __name__ == '__main__':
     for itile in itiles:
         tile = update_tile(itile, tag)
         new_stats = calculate_new_stats(itile, tile, xlat, xlon)
-<<<<<<< HEAD
         new_var = update_stats(var, 'SAstd', new_stats, itile)
-=======
-        new_var = update_stats(var, 'SAstd', new_stats)
->>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)
     

@@ -121,11 +121,7 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
                             dSA = SA - variables['SAbar'][:, j, i]
 
                             weight = weight[:, np.newaxis] + np.zeros_like(zref)
-<<<<<<< HEAD
                             weight[np.where(np.isnan(dz) | np.isnan(drho) | np.isnan(dCT) | np.isnan(dSA))] = 0.
-=======
-                            weight[np.where(np.isnan(dz) | np.isnan(drho))] = 0.
->>>>>>> 51fbf25befaeb70324bf209587c1d6ec0774431b
                             weight[nanidx] = 0.
                             def average(field):
                                 return np.nansum(weight*field, axis=0)
@@ -138,10 +134,7 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
                                 coef = 1./(variables['NBstd']-1)
                                 coef[variables['NBstd'] < 2] = np.nan
 
-                                variables['CTstd'] = np.sqrt(coef*variables['CTstd'])
-                                variables['SAstd'] = np.sqrt(coef*variables['SAstd'])
-                                variables['Ristd'] = np.sqrt(coef*variables['Ristd'])
-                                variables['BVF2std'] = np.sqrt(coef*variables['BVF2std'])
+                                
 
                             if b == 'zdz':
             
@@ -150,11 +143,20 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
                                 variables['DZskew'][:, j, i] = average(dz**3)
                                 variables['EAPE'][:, j, i] = average(dz*drho)
                                 
-                                variables['DZmean'] *= coef
-                                variables['DZstd'] = np.sqrt(coef*variables['DZstd'])
-                                # skew = E( ((X-mu)/sigma)**3 )
-                                variables['DZskew'] *= coef/variables['DZstd']**3
-                                variables['EAPE'] *= 0.5*coef
+                                
+        if b == 'zstd':
+            variables['CTstd'] = np.sqrt(coef*variables['CTstd'])
+            variables['SAstd'] = np.sqrt(coef*variables['SAstd'])
+            variables['Ristd'] = np.sqrt(coef*variables['Ristd'])
+            variables['BVF2std'] = np.sqrt(coef*variables['BVF2std'])
+            
+        elif b == 'zdz':
+            variables['DZmean'] *= coef
+            variables['DZstd'] = np.sqrt(coef*variables['DZstd'])
+            variables['DZskew'] *= coef/variables['DZstd']**3
+            variables['EAPE'] *= 0.5*coef
+
+
     variables['lat'] = lat_deg
     variables['lon'] = lon_deg
     print(variables['CTstd'].min())

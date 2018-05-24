@@ -19,7 +19,7 @@ if location == 'DATARMOR_TMP':
     # path_to_argo = '/home/oo26/coriolis/co05/co0508/dac'
     path_to_argo = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
 
-    path_to_pargopy = '/home2/datahome/therry/pargopy/'
+    path_to_pargopy = '/home2/datahome/therry/pargopy/pargopy_v0/'
 
     path_to_data = '/home2/datawork/therry/data'
 
@@ -35,7 +35,7 @@ if location == 'DATARMOR_FINAL':
     # path_to_argo = '/home/oo26/coriolis/co05/co0508/dac'
     path_to_argo = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
 
-    path_to_pargopy = '/home2/datahome/therry/pargopy/'
+    path_to_pargopy = '/home2/datahome/therry/pargopy/pargopy_v0/'
 
     path_to_data = '/home2/datawork/therry/data'
 
@@ -50,7 +50,7 @@ if location == 'DATARMOR_FINAL':
 elif location == 'HERRY':
     path_to_argo = '/net/alpha/exports/sciences/data/ARGO/ARGO/201602-ArgoData'
 
-    path_to_pargopy = '/home/herry/Documents/pargopy/'
+    path_to_pargopy = '/home/herry/Documents/pargopy/pargopy_v0/'
 
     path_to_data = '/local/tmp/1/herry/pargopy/data'
 
