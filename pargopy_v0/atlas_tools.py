@@ -114,7 +114,7 @@ with Dataset(ncfile, 'r', format='NETCDF4') as nc:
     # zref = nc.variables['zref'][:]
     SAstd =  nc.variables['SAstd'][:, :, :]
 
-longrid, latgrid = np.meshgrid(np.deg2rad(lon), np.deg2rad(lat))
+lonsize, latsize, longrid, latgrid = at.get_glo_grid(reso)
 #CT.mask = False
 
 plt.ion()
@@ -205,7 +205,7 @@ plt.title('Depth @ z=%.0fm' % zref[int(kz)])
 # plt.pcolor(lon, lat, CT[kz, :, :])
 fig = plt.figure(1)
 im = plt.imshow(SAstd[kz, :,:], origin='lower',
-           vmin=0, vmax=10.,
+           vmin=0, vmax=0.5,
            interpolation='nearest', 
            cmap=plt.get_cmap('RdBu_r'))
 plt.title('SAstd')
