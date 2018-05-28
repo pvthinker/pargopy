@@ -5,7 +5,7 @@ Created on Thu May 24 07:11:16 2018
 
 @author: therry
 
-Module contenant la série d'outil pour les tâches maitre/esclaves telles que :
+Module contenant la série d'outils pour les tâches maitre/esclaves telles que :
     - Génération d'atlas
         -> Interpolation à l'aide des outils d'interpolation (interpolation_tools.py)
         -> Génération des statistiques (zmean, zstd, zdz, ...)
@@ -39,9 +39,9 @@ def interpolation_on_tiles(itile):
     """
     return interp_profiles
 
-def compute_stats_at_zref(atlas_info, itile=None, coord=None):
+def compute_stats_at_zref(atlas_infos, itile=None, coord=None):
     """
-    :param atlas_info: Dictionnaire contenant les champs suivants : (mode, date, reso, timeflag, typestat)
+    :param atlas_infos: Dictionnaire contenant les champs suivants : (mode, date, reso, timeflag, typestat)
                       permettant de connaitre les informations sur les statistiques à calculer
     :param itile: Numéro de la dalle sur laquelle on calcule les statistiques
     :param coord: Dictionnaire contenant les champs suivants : ((lon, lat), deltalon, deltalat)

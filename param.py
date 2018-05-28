@@ -25,3 +25,30 @@ Module contenant tout les paramètres utiles au fonctionnement du programme :
         -> ...
 """
 
+def atlas_filename(diratlas, atlas_infos):
+    """
+    :param diratlas: Chemin vers le répertoire contenant les atlas
+    :param atlas_infos: Dictionnaire contenant les champs suivants : (mode, date, reso, timeflag, typestat)
+                      permettant de connaitre les informations sur les statistiques à calculer
+    
+    Fonction permettant de générer le nom d'un fichier atlas en fonction de ses
+    paramètres contenus dans atlas_infos.
+    
+    :rtype: String
+    """
+
+    if False: # many subfolders - short name for the atlas
+        atlas_name = '%s_%g_annual' % (atlas_infos['TYPESTAT'], atlas_infos['RESO'])
+        ncfile = '%s/%s/%s/%s/%s/%s.nc' % (diratlas, atlas_infos['RESO'],
+                                           atlas_infos['YEAR'], atlas_infos['MODE'],
+                                           atlas_infos['TYPESTAT'], atlas_name)
+        print(ncfile)
+
+    else: # one folder - long name for the atlas
+        ncfile ='%s/%s_%g_%s_%s.nc' % (diratlas, atlas_infos['TYPESTAT'], 
+                                       atlas_infos['RESO'], atlas_infos['YEAR'], 
+                                       atlas_infos['MODE'])
+        print(ncfile)
+
+    return ncfile
+

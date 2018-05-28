@@ -12,3 +12,131 @@ Module contenant les outils utilisés dans la plupart des modules:
 
 """
 
+import jdcal
+
+def get_tag(kdac, wmo, kprof):
+    """
+    :param kdac: Index of the dac (aoml = 1, bodc = 2, coriolis = 3, ...)
+    :param wmo: WMO number
+    :param kprof: Index of the profile
+    
+    Compute the tag number of a profile
+
+    The inverse of get_tag() is retrieve_infos_from_tag()
+
+    :rtype: int
+    """
+    if kprof > 1000:
+        raise ValueError("kprof > 1000, the tag may be wrong")
+
+    return (kdac*10000000+wmo)*1000+kprof
+
+
+def retrieve_infos_from_tag(tag):
+    """
+    :param tag: tag on which you are looking for informations
+
+    Retrieve idac, wmo and iprof from tag (array of int)
+
+    It is the inverse of get_tag()
+
+    :rtype: dic
+    """
+
+    iprof = tag % 1000
+    tag = (tag-iprof) // 1000
+    wmo = tag % 10000000
+    tag = (tag-wmo) // 10000000
+    idac = tag
+    tag_infos = {'IDAC': idac, 'WMO': wmo, 'IPROF': iprof}
+    return tag_infos
+
+
+def tile_definition():
+    """
+    Define the tiles coordinates, in the form of a vector of lon and
+    lat + their margins
+
+    The tile indexing is
+
+    \|-----+-----+-----+-----+-----|
+    \| 280 | 281 | 282 | ... | 299 |
+    \|-----+-----+-----+-----+-----|
+    \| ... | ... | ... | ... | ... |
+    \|-----+-----+-----+-----+-----|
+    \|  20 |  21 |  22 | ... |  39 |
+    \|-----+-----+-----+-----+-----|
+    \|   0 |   1 |   2 | ... |  19 |
+    \|-----+-----+-----+-----+-----|
+
+    The dictionnary returned is :
+        -> lat (vector 1D)
+        -> lon (vector 1D)
+        -> nlat ( Quantity of latitude in the tile)
+        -> nlon ( Quantity of longitude in the tile)
+        -> marginlat (vector 1D)
+        -> marginlon (int)
+
+    :rtype: dict
+
+    """
+
+
+def ij2tile(i, j):
+    """
+    :param i: Longitude du point étudié
+    :param j: Latitude du point étudié
+    
+    Fonction retournant le numéro de la dalle à laquelle appartient un point
+    dont les coordonnées sont i et j (longitude, latitude)
+    TO DO: Changer le 20 par une valeur (nlat) pour rendre le code plus flexible
+    
+    :rtype: int
+    """
+
+    return i + j*20
+
+
+def get_profile_file_path(dac, wmo):
+    """
+    :param dac: DAC du profil recherché
+    :param wmo: WMO du profil recherché
+    
+    Fonction utilisée pour générer le chemin pour accéder au profil appartenant
+    à la dac et au wmo donné en argument
+
+    :rtype: string
+    """
+
+    return filename
+
+
+#  ----------------------------------------------------------------------------
+def conversion_juld_gregd(juld):
+    """
+    :param juld: Date en calendrier julien à convertir
+    
+    Fonction convertissant un julian day en gregorian day
+
+    :rtype: list of int"""
+
+    gregday = jdcal.jd2gcal(2433282.5, juld)
+    print('This Julian Day corresponds to {0}/{1}/{2}'.format(
+        gregday[2], gregday[1], gregday[0]))
+
+    return(gregday)
+
+
+#  ----------------------------------------------------------------------------
+def conversion_gregd_juld(year, month, day):
+    """
+    :param date: Dictionnaire (année, mois, jour) contenant une date en calendrier
+                 grégorien
+    
+    Fonction convertissant une date du calendrier grégorien en un julian day
+
+    :rtype: float"""
+
+    julianday = jdcal.gcal2jd(year, month, day)
+    juliandayf = julianday[0] + julianday[1]
+    return juliandayf - 2433282.5

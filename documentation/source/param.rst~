@@ -1,0 +1,7 @@
+param module
+============
+
+.. automodule:: pargopy.param
+    :members:
+    :undoc-members:
+    :show-inheritance:
