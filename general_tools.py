@@ -70,12 +70,12 @@ def tile_definition():
     \|-----+-----+-----+-----+-----|
 
     The dictionnary returned is :
-        -> lat (vector 1D)
-        -> lon (vector 1D)
-        -> nlat ( Quantity of latitude in the tile)
-        -> nlon ( Quantity of longitude in the tile)
-        -> marginlat (vector 1D)
-        -> marginlon (int)
+        - lat (vector 1D)
+        - lon (vector 1D)
+        - nlat ( Quantity of latitude in the tile)
+        - nlon ( Quantity of longitude in the tile)
+        - marginlat (vector 1D)
+        - marginlon (int)
 
     :rtype: dict
 
@@ -128,15 +128,15 @@ def conversion_juld_gregd(juld):
 
 
 #  ----------------------------------------------------------------------------
-def conversion_gregd_juld(year, month, day):
+def conversion_gregd_juld(date):
     """
-    :param date: Dictionnaire (année, mois, jour) contenant une date en calendrier
+    :param date: Liste (année, mois, jour) contenant une date en calendrier
                  grégorien
     
     Fonction convertissant une date du calendrier grégorien en un julian day
 
     :rtype: float"""
 
-    julianday = jdcal.gcal2jd(year, month, day)
+    julianday = jdcal.gcal2jd(date[0], date[1], date[2])
     juliandayf = julianday[0] + julianday[1]
     return juliandayf - 2433282.5

@@ -7,10 +7,10 @@ Created on Thu May 24 07:11:16 2018
 
 Module contenant la série d'outils pour les tâches maitre/esclaves telles que :
     - Génération d'atlas
-        -> Interpolation à l'aide des outils d'interpolation (interpolation_tools.py)
-        -> Génération des statistiques (zmean, zstd, zdz, ...)
-        -> Propagation inverse des flag après traitement des données Argo
-        -> Collage des "dalles" de l'atlas
+        - Interpolation à l'aide des outils d'interpolation (interpolation_tools.py)
+        - Génération des statistiques (zmean, zstd, zdz, ...)
+        - Propagation inverse des flag après traitement des données Argo
+        - Collage des "dalles" de l'atlas
 
 Ce module contient également les outils permettant la génération d'atlas sur
 un domaine restreint :

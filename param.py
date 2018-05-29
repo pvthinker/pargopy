@@ -7,25 +7,107 @@ Created on Thu May 24 08:04:37 2018
 
 Module contenant tout les paramètres utiles au fonctionnement du programme :
     - Chemins vers les différents répertoires utilisés
-        -> Vers la base de données ARGO
-        -> Vers le répertoire du projet
-        -> Vers les fichiers de statistique
-        -> Vers les fichiers d'atlas
-        -> ...
+        - Vers la base de données ARGO
+        - Vers le répertoire du projet
+        - Vers les fichiers de statistique
+        - Vers les fichiers d'atlas
+        - ...
     - Variables définissant la/les tâche(s) à réaliser
-        -> Type de statistique (zmean, zstd, zdz, ...)
-        -> Domaine d'étude (atlas global, dalles, coordonnées, régions géographiques)
-        -> Précision de la grille (reso_deg)
-        -> Date du snapchot choisi pour étudier ARGO
-        -> Statut des données que l'on souhaite traiter (R, A, D)
-        -> Filtre (saisonnier, mensuel, ...) sur les données traitées
+        - Type de statistique (zmean, zstd, zdz, ...)
+        - Domaine d'étude (atlas global, dalles, coordonnées, régions géographiques)
+        - Précision de la grille (reso_deg)
+        - Date du snapchot choisi pour étudier ARGO
+        - Statut des données que l'on souhaite traiter (R, A, D)
+        - Filtre (saisonnier, mensuel, ...) sur les données traitées
     - Variables utilisées par tout les modules
-        -> zref
-        -> filename
-        -> ...
+        - zref
+        - filename (atlas, stats)
+        - ...
 """
 
-def atlas_filename(diratlas, atlas_infos):
+import numpy as np
+
+#  location is used to know where you are working
+#  if you're working on datarmor, location takes the value 'DATARMOR'
+#  if you're working on herry-s local, location takes the value 'HERRY'
+
+#  location = 'roullet_lops'
+location = 'DATARMOR_TMP'
+#  location = 'DATARMOR_FINAL'
+
+def get_atlas_infos():
+    """
+    Fonction définissant les paramètres de l'atlas que l'on souhaite générer.
+    Sa valeur de retour est un dictionnaire contenant les informations suivantes :
+        - TYPESTAT
+        - RESO
+        - DATE
+        - MODE
+        - TIMEFLAG
+    
+    :rtype: dict
+    """
+    atlas_infos = {}
+    atlas_infos['TYPESTAT'] = 'zmean'
+    atlas_infos['RESO'] = 0.5
+    atlas_infos['DATE'] = [2017, 12, 31]
+    atlas_infos['MODE'] = 'D'
+    atlas_infos['TIMEFLAG'] = 'annual'
+
+    return atlas_infos
+
+
+zref = np.array([0., 10., 20., 30., 40., 50., 60., 70., 80., 90.,
+                 100., 110., 120., 130., 140., 150., 160., 170.,
+                 180., 190., 200., 220., 240., 260., 280, 300.,
+                 320., 340., 360., 380., 400., 450., 500., 550.,
+                 600., 650., 700., 750., 800., 850., 900., 950.,
+                 1000., 1050., 1100., 1150., 1200., 1250., 1300.,
+                 1350., 1400., 1450., 1500., 1550., 1600., 1650.,
+                 1700., 1750., 1800., 1850., 1900., 1950.,
+                 2000.])
+
+
+def get_paths(wanted_path):
+    """
+    :param wanted_path: Chemin auquel on souhaite accéder
+    
+    Fonction retournant le chemin auquel on souhaite accéder en fonction du 
+    choix défini par 'location' et du 'wanted_path'
+    
+    :rtype: String
+    """
+    
+    pathes = {}
+    
+    if location == 'DATARMOR_TMP':
+        workdir = '/home2/datawork/therry/tmp/'
+    elif location == 'DATARMOR_FINAL':
+        workdir = '/home2/datawork/therry/final/
+    else:
+        raise ValueError('This location is not referenced : %s' % location)
+
+    pathes['path_to_argo'] = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
+
+    pathes['path_to_pargopy'] = '/home2/datahome/therry/pargopy/'
+
+    pathes['path_to_data'] = '/home2/datawork/therry/data'
+
+    pathes['path_to_filter'] = '/home2/datawork/therry/filter'
+
+    pathes['path_to_stats'] = '%s/stats' % workdir
+
+    pathes['path_to_tiles'] = '%s/tiles' % workdir
+
+    pathes['path_to_atlas'] = '%s/atlas' % workdir
+
+    if wanted_path in pathes:
+        return pathes[wanted_path]
+    else:
+        raise ValueError('This path is not referenced : %s' % wanted_path)
+
+
+def get_atlas_filename():
     """
     :param diratlas: Chemin vers le répertoire contenant les atlas
     :param atlas_infos: Dictionnaire contenant les champs suivants : (mode, date, reso, timeflag, typestat)
@@ -37,18 +119,19 @@ def atlas_filename(diratlas, atlas_infos):
     :rtype: String
     """
 
+    atlas_infos = get_atlas_infos()
+
     if False: # many subfolders - short name for the atlas
         atlas_name = '%s_%g_annual' % (atlas_infos['TYPESTAT'], atlas_infos['RESO'])
-        ncfile = '%s/%s/%s/%s/%s/%s.nc' % (diratlas, atlas_infos['RESO'],
+        ncfile = '%s/%s/%s/%s/%s/%s.nc' % (path_to_atlas, atlas_infos['RESO'],
                                            atlas_infos['YEAR'], atlas_infos['MODE'],
                                            atlas_infos['TYPESTAT'], atlas_name)
         print(ncfile)
 
     else: # one folder - long name for the atlas
-        ncfile ='%s/%s_%g_%s_%s.nc' % (diratlas, atlas_infos['TYPESTAT'], 
+        ncfile ='%s/%s_%g_%s_%s.nc' % (path_to_atlas, atlas_infos['TYPESTAT'], 
                                        atlas_infos['RESO'], atlas_infos['YEAR'], 
                                        atlas_infos['MODE'])
         print(ncfile)
 
     return ncfile
-

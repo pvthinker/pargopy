@@ -10,6 +10,9 @@ Tools to generate and maintains the processed database
 they are high-level routines that rely on smaller modules
 """
 
+import pandas as pd
+
+import param as param
 
 header_keys = ['DATA_MODE', 'LONGITUDE', 'LATITUDE', 'JULD', 'FLAG', 'STATUS']
 
