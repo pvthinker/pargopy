@@ -9,7 +9,8 @@ Module contenant la batterie de tests unitaires pour vérifier le fonctionnement
 des fonctions d'atlas_generation.py
 
 """
-
+import sys
+sys.path[:0] = ['../']
 import atlas_generation as at_gen
  
 def test_get():

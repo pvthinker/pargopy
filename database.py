@@ -10,7 +10,9 @@ Tools to generate and maintains the processed database
 they are high-level routines that rely on smaller modules
 """
 
+import os
 import pandas as pd
+from netCDF4 import Dataset
 
 import param as param
 
@@ -65,3 +67,11 @@ def read_profile(dac, wmo, iprof=None,
 
     :rtype: DataFrame
     """
+
+    filename = param.get_profiles_filename(dac, wmo)
+
+    if (os.path.isfile(filename)):
+        with Dataset(filename, "r", format="NETCDF4") as f:
+            pass
+
+

@@ -13,6 +13,7 @@ Module contenant les outils utilisés dans la plupart des modules:
 """
 
 import jdcal
+import numpy as np
 
 def get_tag(kdac, wmo, kprof):
     """
@@ -52,36 +53,6 @@ def retrieve_infos_from_tag(tag):
     return tag_infos
 
 
-def tile_definition():
-    """
-    Define the tiles coordinates, in the form of a vector of lon and
-    lat + their margins
-
-    The tile indexing is
-
-    \|-----+-----+-----+-----+-----|
-    \| 280 | 281 | 282 | ... | 299 |
-    \|-----+-----+-----+-----+-----|
-    \| ... | ... | ... | ... | ... |
-    \|-----+-----+-----+-----+-----|
-    \|  20 |  21 |  22 | ... |  39 |
-    \|-----+-----+-----+-----+-----|
-    \|   0 |   1 |   2 | ... |  19 |
-    \|-----+-----+-----+-----+-----|
-
-    The dictionnary returned is :
-        - lat (vector 1D)
-        - lon (vector 1D)
-        - nlat ( Quantity of latitude in the tile)
-        - nlon ( Quantity of longitude in the tile)
-        - marginlat (vector 1D)
-        - marginlon (int)
-
-    :rtype: dict
-
-    """
-
-
 def ij2tile(i, j):
     """
     :param i: Longitude du point étudié
@@ -95,20 +66,6 @@ def ij2tile(i, j):
     """
 
     return i + j*20
-
-
-def get_profile_file_path(dac, wmo):
-    """
-    :param dac: DAC du profil recherché
-    :param wmo: WMO du profil recherché
-    
-    Fonction utilisée pour générer le chemin pour accéder au profil appartenant
-    à la dac et au wmo donné en argument
-
-    :rtype: string
-    """
-
-    return filename
 
 
 #  ----------------------------------------------------------------------------

@@ -23,6 +23,7 @@ un domaine restreint :
 """
 
 import param as param
+import tile as tile
 
 # Interpolation
 
@@ -57,4 +58,24 @@ def compute_stats_at_zref(atlas_infos, itile=None, coord=None):
     
     :rtype: dict
     """
+    stats = {}
+    if type(itile) == int and 0 <= itile < 300:
+        grid_lat, grid_lon = tile.grid_coordinate(atlas_infos['RESO'], itile = itile)
+
+    elif len(coord) == 3 and len(coord[0]) == 2:
+        # on définit les bornes de notre domaine d'étude
+        # avec deux latitudes et longitudes (min et max)
+        lat = [coord[0][1], (coord[0][1] + coord[2])]
+        lon = [coord[0][0], (coord[0][0] + coord[1])]
+        points = [lat, lon]
+        grid_lat, grid_lon = tile.grid_coordinate(atlas_infos['RESO'], points = points)
+    else:
+        if itile == None and coord == None:
+            itile = 269
+            print('No param given (itile or coord)')
+            print('Default choice for the evaluation : itile = %i' % itile)
+            grid_lat, grid_lon = tile.grid_coordinate(atlas_infos['RESO'], itile)
+        else:
+            raise TypeError('Bad definition of itile or coord, please refer to the docstring to know how to define them')
+
     return stats

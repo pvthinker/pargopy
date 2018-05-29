@@ -67,8 +67,11 @@ zref = np.array([0., 10., 20., 30., 40., 50., 60., 70., 80., 90.,
                  1700., 1750., 1800., 1850., 1900., 1950.,
                  2000.])
 
+daclist = ['aoml', 'bodc', 'coriolis', 'csio',
+           'csiro', 'incois', 'jma', 'kma',
+           'kordi', 'meds', 'nmdis']
 
-def get_paths(wanted_path):
+def get_path(wanted_path):
     """
     :param wanted_path: Chemin auquel on souhaite accéder
     
@@ -78,41 +81,37 @@ def get_paths(wanted_path):
     :rtype: String
     """
     
-    pathes = {}
+    paths = {}
     
     if location == 'DATARMOR_TMP':
         workdir = '/home2/datawork/therry/tmp/'
     elif location == 'DATARMOR_FINAL':
-        workdir = '/home2/datawork/therry/final/
+        workdir = '/home2/datawork/therry/final/'
     else:
         raise ValueError('This location is not referenced : %s' % location)
 
-    pathes['path_to_argo'] = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
+    paths['argo'] = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
 
-    pathes['path_to_pargopy'] = '/home2/datahome/therry/pargopy/'
+    paths['pargopy'] = '/home2/datahome/therry/pargopy/'
 
-    pathes['path_to_data'] = '/home2/datawork/therry/data'
+    paths['data'] = '/home2/datawork/therry/data'
 
-    pathes['path_to_filter'] = '/home2/datawork/therry/filter'
+    paths['filter'] = '/home2/datawork/therry/filter'
 
-    pathes['path_to_stats'] = '%s/stats' % workdir
+    paths['stats'] = '%s/stats' % workdir
 
-    pathes['path_to_tiles'] = '%s/tiles' % workdir
+    paths['tiles'] = '%s/tiles' % workdir
 
-    pathes['path_to_atlas'] = '%s/atlas' % workdir
+    paths['atlas'] = '%s/atlas' % workdir
 
-    if wanted_path in pathes:
-        return pathes[wanted_path]
+    if wanted_path in paths:
+        return paths[wanted_path]
     else:
         raise ValueError('This path is not referenced : %s' % wanted_path)
 
 
 def get_atlas_filename():
     """
-    :param diratlas: Chemin vers le répertoire contenant les atlas
-    :param atlas_infos: Dictionnaire contenant les champs suivants : (mode, date, reso, timeflag, typestat)
-                      permettant de connaitre les informations sur les statistiques à calculer
-    
     Fonction permettant de générer le nom d'un fichier atlas en fonction de ses
     paramètres contenus dans atlas_infos.
     
@@ -123,15 +122,33 @@ def get_atlas_filename():
 
     if False: # many subfolders - short name for the atlas
         atlas_name = '%s_%g_annual' % (atlas_infos['TYPESTAT'], atlas_infos['RESO'])
-        ncfile = '%s/%s/%s/%s/%s/%s.nc' % (path_to_atlas, atlas_infos['RESO'],
+        ncfile = '%s/%s/%s/%s/%s/%s.nc' % (get_path('atlas'), atlas_infos['RESO'],
                                            atlas_infos['YEAR'], atlas_infos['MODE'],
                                            atlas_infos['TYPESTAT'], atlas_name)
         print(ncfile)
 
     else: # one folder - long name for the atlas
-        ncfile ='%s/%s_%g_%s_%s.nc' % (path_to_atlas, atlas_infos['TYPESTAT'], 
+        ncfile ='%s/%s_%g_%s_%s.nc' % (get_path('atlas'), atlas_infos['TYPESTAT'], 
                                        atlas_infos['RESO'], atlas_infos['YEAR'], 
                                        atlas_infos['MODE'])
         print(ncfile)
 
     return ncfile
+
+
+def get_argo_filename(dac, wmo):
+    """
+    :param dac: DAC du profil recherché
+    :param wmo: WMO du profil recherché
+    
+    Fonction permettant de générer le nom d'un fichier de profiles contenu dans
+    ARGO.
+    
+    :rtype: String
+    """
+    if type(dac) is int:
+        dac = daclist[dac]
+
+    profile_filename = '%s/%s/%i/%i_prof.nc' % (get_path('argo'), dac, wmo, wmo)
+    
+    return profile_filename
