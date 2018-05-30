@@ -96,4 +96,4 @@ def conversion_gregd_juld(date):
 
     julianday = jdcal.gcal2jd(date[0], date[1], date[2])
     juliandayf = julianday[0] + julianday[1]
-    return juliandayf - 2433282.5
+    return juliandayf - 2433282

@@ -16,16 +16,18 @@ import tile as tile
 
 def test_tile_definition():
     tiles = tile.tile_definition()
-    assert len(tiles['LATITUDE']) == tiles['NLAT']
-    assert len(tiles['LONGITUDE']) == tiles['NLON']
+    assert len(tiles['LATITUDE']) == tiles['NLAT'] + 1
+    assert len(tiles['LONGITUDE']) == tiles['NLON'] + 1
 
 
-def test_grid_coordinate_with_itile():
-    grid_lat, grid_lon = tile.grid_coordinate(0.5, itile=269)
-    nb_lat = 0 # a renseigner !!!
-    nb_lon = 0 # a renseigner !!!
-    assert len(grid_lat) == nb_lat
-    assert len(grid_lon) == nb_lon
+#==============================================================================
+# def test_grid_coordinate_with_itile():
+#     grid_lat, grid_lon = tile.grid_coordinate(0.5, itile=269)
+#     nb_lat = 0 # a renseigner !!!
+#     nb_lon = 0 # a renseigner !!!
+#     assert len(grid_lat) == nb_lat
+#     assert len(grid_lon) == nb_lon
+#==============================================================================
 
 
 def test_grid_coordinate_with_points():
@@ -34,6 +36,7 @@ def test_grid_coordinate_with_points():
     reso = 0.5
     grid_lat, grid_lon = tile.grid_coordinate(reso, points=[lat, lon])
     nb_lat = (lat[1] - lat[0])/reso + 1
-    nb_lon = (lon[1] - lon[0])/reso + 1
+    # grid_coordinate() remove the last point of grid_lon (cf tile.py)
+    nb_lon = (lon[1] - lon[0])/reso
     assert len(grid_lat) == nb_lat
     assert len(grid_lon) == nb_lon
