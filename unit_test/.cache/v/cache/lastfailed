@@ -1,4 +1,3 @@
 {
-  "test_tile.py::test_grid_coordinate_with_points": true, 
-  "test_tile.py::test_tile_definition": true
+  "test_database.py": true
 }

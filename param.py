@@ -71,38 +71,44 @@ daclist = ['aoml', 'bodc', 'coriolis', 'csio',
            'csiro', 'incois', 'jma', 'kma',
            'kordi', 'meds', 'nmdis']
 
-def get_path(wanted_path):
+def get_path(wanted_path, reso = 0):
     """
     :param wanted_path: Chemin auquel on souhaite accéder
     
     Fonction retournant le chemin auquel on souhaite accéder en fonction du 
     choix défini par 'location' et du 'wanted_path'
+    Si on souhaite accéder au répertoire contenant les atlas pour un reso donné,
+    on passe la valeur du reso en argument de la fonction en plus du nom 'reso'
     
     :rtype: String
     """
     
     paths = {}
-    
+
     if location == 'DATARMOR_TMP':
-        workdir = '/home2/datawork/therry/tmp/'
+        workdir = '/home2/datawork/therry'
     elif location == 'DATARMOR_FINAL':
         workdir = '/home2/datawork/therry/final/'
     else:
         raise ValueError('This location is not referenced : %s' % location)
 
+    paths['pargopy_output'] = '%s/pargopy_output' % workdir
+
     paths['argo'] = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
 
     paths['pargopy'] = '/home2/datahome/therry/pargopy/'
 
-    paths['data'] = '/home2/datawork/therry/data'
+    paths['database'] = '%s/database' % paths['pargopy_output']
 
-    paths['filter'] = '/home2/datawork/therry/filter'
+    paths['parallel'] = '%s/parallel' % paths['database']
 
-    paths['stats'] = '%s/stats' % workdir
+    paths['stats'] = '%s/stats_work' % paths['pargopy_output']
 
-    paths['tiles'] = '%s/tiles' % workdir
+    paths['zref_profiles'] = '%s/zref_profiles' % paths['pargopy_output']
 
-    paths['atlas'] = '%s/atlas' % workdir
+    paths['atlas'] = '%s/atlas' % paths['pargopy_output']
+
+    paths['reso'] = '%s/reso_%.2f' % (paths['atlas'], reso)
 
     if wanted_path in paths:
         return paths[wanted_path]

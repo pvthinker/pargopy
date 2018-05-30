@@ -13,14 +13,13 @@ import pytest
 import sys
 sys.path[:0] = ['../']
 import database as db
-import general_tools as tools
 
 @pytest.fixture()
 def parameters_definer():
     idac = 0
     wmo = 1900060
     iprof= 0
-    argo_profile_dic = tools.read_profile(idac, wmo, data = True, header = True)
+    argo_profile_dic = db.read_profile(idac, wmo, data = True, header = True)
     return (idac, wmo, iprof, argo_profile_dic)
 
 
