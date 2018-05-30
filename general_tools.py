@@ -12,8 +12,112 @@ Module contenant les outils utilisés dans la plupart des modules:
 
 """
 
+import os
 import jdcal
+from netCDF4 import Dataset
 import numpy as np
+
+import param as param
+
+
+def read_profile(dac, wmo, iprof=None,
+                 header=False, data=False,
+                 headerqc=False, dataqc=False,
+                 verbose=True):
+    """
+    :param dac: DAC du profil recherché
+    :param wmo: WMO du profil recherché
+    :param iprof: Numéro du profil recherché
+    :param header: Sélectionne seulement LATITUDE, LONGITUDE et JULD
+    :param headerqc: Sélectionne seulement POSITION_QC et JULD_QC
+    :param data: Sélectionne TEMP, PSAL et PRES
+    :param dataqc: Sélectionne TEMP_QC, PSAL_QC et PRES_QC
+    :param verbose: ???
+    
+    Les valeurs sélectionnée grâce aux arguments passés à la fonction définissent
+    la DataFrame que retournera celle-ci.
+    
+    Basic driver to read the \*_prof.nc data file
+
+    The output is a dictionnary of vectors
+    - read one or all profiles read the header (lat, lon, juld) or not
+    - read the data or not always return IDAC, WMO, N_PROF, N_LEVELS
+    - and DATA_UPDATE (all 5 are int)
+
+    :rtype: dict
+    """
+
+    key_header = ['LATITUDE', 'LONGITUDE', 'JULD']
+    key_headerqc = ['POSITION_QC', 'JULD_QC']
+    key_data = ['TEMP', 'PSAL', 'PRES']
+    key_dataqc = ['TEMP_QC', 'PSAL_QC', 'PRES_QC']
+
+    if type(dac) is int:
+        dac = param.daclist[dac]
+
+    filename = param.get_argo_filename(dac, wmo)
+
+    if verbose:
+        print('/'.join(filename.split('/')[-3:]))
+
+    argo_profile_dic = {}
+
+    required_keys = set(['TEMP', 'PSAL', 'PRES'])
+
+    if (os.path.isfile(filename)):
+        with Dataset(filename, "r", format="NETCDF4") as f:
+            argo_profile_dic['DACID'] = param.daclist.index(dac)
+            argo_profile_dic['WMO'] = wmo
+            argo_profile_dic['N_PROF'] = len(f.dimensions['N_PROF'])
+            argo_profile_dic['N_LEVELS'] = len(f.dimensions['N_LEVELS'])
+            # DATE_UPDATE is an array of 14 characters in the *_prof.nc
+            # we transform it into an int
+            # YYYYMMDDhhmmss
+            argo_profile_dic['DATE_UPDATE'] = ''.join(f.variables['DATE_UPDATE'][:])
+
+            keyvar = set(f.variables.keys())
+
+            if required_keys.issubset(keyvar):
+                argo_profile_dic['TSP_QC'] = '1'
+            else:
+                argo_profile_dic['TSP_QC'] = '2'
+
+            if header or headerqc or data or dataqc:
+                if iprof is None:
+                    idx = range(argo_profile_dic['N_PROF'])
+                    argo_profile_dic['IPROF'] = np.arange(argo_profile_dic['N_PROF'])
+                else:
+                    idx = iprof
+                    argo_profile_dic['IPROF'] = iprof
+
+            if header:
+                for key in key_header:
+                    argo_profile_dic[key] = f.variables[key][idx]
+                    argo_profile_dic['DATA_MODE'] = np.asarray(
+                        [c for c in f.variables['DATA_MODE'][idx]])
+
+            if headerqc:
+                for key in key_headerqc:
+                    argo_profile_dic[key] = f.variables[key][idx]
+
+            if data:
+                for key in key_data:
+                    if argo_profile_dic['TSP_QC'] == '1':
+                        argo_profile_dic[key] = f.variables[key][idx, :]
+                    else:
+                        argo_profile_dic[key] = np.NaN+np.zeros(
+                            (argo_profile_dic['N_PROF'], argo_profile_dic['N_LEVELS']))
+
+            if dataqc:
+                for key in key_dataqc:
+                    if argo_profile_dic['TSP_QC'] == '1':
+                        argo_profile_dic[key] = f.variables[key][idx]
+                    else:
+                        argo_profile_dic[key] = np.zeros(
+                            (argo_profile_dic['N_PROF'], argo_profile_dic['N_LEVELS']), dtype=str)
+
+    return argo_profile_dic
+
 
 def get_tag(kdac, wmo, kprof):
     """

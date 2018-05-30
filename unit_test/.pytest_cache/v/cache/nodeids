@@ -1,3 +1,4 @@
 [
-  "test_general_tools.py::test_conversion_gregd_juld"
+  "test_database.py::test_get_prof", 
+  "test_database.py::test_argo_profile_dic_to_dataframe"
 ]

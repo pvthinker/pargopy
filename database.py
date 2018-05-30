@@ -10,11 +10,9 @@ Tools to generate and maintains the processed database
 they are high-level routines that rely on smaller modules
 """
 
-import os
 import pandas as pd
-from netCDF4 import Dataset
 
-import param as param
+import general_tools as tools
 
 header_keys = ['DATA_MODE', 'LONGITUDE', 'LATITUDE', 'JULD', 'FLAG', 'STATUS']
 
@@ -39,39 +37,71 @@ def synchronize_headers():
         # otherwise merge will complain. In that case, it means that
         # we do someting wrong
     tools.write_header_global(header_global)
-   
 
-def read_profile(dac, wmo, iprof=None,
-                 header=False, data=False,
-                 headerqc=False, dataqc=False,
-                 verbose=True):
+
+def argo_profile_dic_to_dataframe(idac, wmo):
     """
-    :param dac: DAC du profil recherché
-    :param wmo: WMO du profil recherché
-    :param iprof: Numéro du profil recherché
-    :param header: Sélectionne seulement LATITUDE, LONGITUDE et JULD
-    :param headerqc: Sélectionne seulement POSITION_QC et JULD_QC
-    :param data: Sélectionne TEMP, PSAL et PRES
-    :param dataqc: Sélectionne TEMP_QC, PSAL_QC et PRES_QC
-    :param verbose: ???
-    
-    Les valeurs sélectionnée grâce aux arguments passés à la fonction définissent
-    la DataFrame que retournera celle-ci.
-    
-    Basic driver to read the \*_prof.nc data file
-
-    The output is a DataFrame of vectors
-    - read one or all profiles read the header (lat, lon, juld) or not
-    - read the data or not always return IDAC, WMO, N_PROF, N_LEVELS
-    - and DATA_UPDATE (all 5 are int)
+    :param kdac: Index of the dac (aoml = 1, bodc = 2, coriolis = 3, ...)
+    :param wmo: WMO number
+    Fonction retournant les profiles argo sous forme de DataFrame.
+    Le TAG associé au profile est passé en index des colonnes suivantes :
+        - DATA_MODE
+        - LONGITUDE
+        - LATITUDE
+        - JULD
+        - DATE_UPDATE
+        - PROFILE_DATA
+        - FLAG
+    La pression (PRES) est passée en index des colonnes suivantes :
+        - TEMP
+        - PSAL
+    TEMP et PSAL font partie d'un DataFrame contenu dans PROFILE_DATA.
 
     :rtype: DataFrame
     """
+    argo_profile_dic = tools.read_profile(idac, wmo, data = True, header = True)
+    keys = ['DATA_MODE', 'LONGITUDE', 'LATITUDE', 'JULD', 'DATE_UPDATE']
+    
+    argo_profile_dic_V2 = {}
+    # assign a tag to each profile
+    tag = [tools.get_tag(idac, wmo, iprof) for iprof in range(argo_profile_dic['N_PROF'])]
+    # set flag to 0 by default, 0 = good profile
+    argo_profile_dic_V2['FLAG'] = [0 for iprof in range(argo_profile_dic['N_PROF'])]
+    # the date of last update is the same for all the profiles of a wmo
+    argo_profile_dic_V2['DATE_UPDATE'] = [argo_profile_dic['DATE_UPDATE'] for iprof in range(argo_profile_dic['N_PROF'])]
 
-    filename = param.get_profiles_filename(dac, wmo)
+    for k in keys:
+        argo_profile_dic_V2[k] = argo_profile_dic[k]
 
-    if (os.path.isfile(filename)):
-        with Dataset(filename, "r", format="NETCDF4") as f:
-            pass
+    # si on veut aussi retourner les 'data' = les profils
+    # 1 profile (T,S,p) = 1 DataFrame
+    argo_profile_dic_V2['PROFILE_DATA'] = [get_prof(iprof, argo_profile_dic) for iprof in range(argo_profile_dic['N_PROF'])]
+
+    argo_profile_dataframe = pd.DataFrame(argo_profile_dic_V2, index = tag)
+
+    return argo_profile_dataframe
 
 
+def get_prof(iprof, argo_profile_dic):
+    """
+    :param iprof: Index of the profile
+    :param argo_profile_dic: Dictionnary containing the Argo profiles
+
+    Transform profile 'iprof' stored in 'res' into a DataFrame
+    whose index is 'PRES' and the two columns are 'TEMP' and 'PSAL'
+    also removes all NaN
+    
+    :rtype: DataFrame
+    """
+    mskT = argo_profile_dic['TEMP'][iprof, :].mask 
+    mskS = argo_profile_dic['PSAL'][iprof, :].mask 
+    mskP = argo_profile_dic['PRES'][iprof, :].mask 
+    # mskT == True means the data should be omitted
+    # msk = True means T, S and P are ok
+    msk = ~(mskT | mskS | mskP)
+
+    profile_data = pd.DataFrame({'TEMP': argo_profile_dic['TEMP'][iprof][msk],
+                         'PSAL': argo_profile_dic['PSAL'][iprof][msk]},
+                        index=argo_profile_dic['PRES'][iprof][msk])
+
+    return profile_data
