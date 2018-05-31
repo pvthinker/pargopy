@@ -1,4 +1,0 @@
-[
-  "test_database.py::test_get_prof", 
-  "test_database.py::test_argo_profile_dic_to_dataframe"
-]

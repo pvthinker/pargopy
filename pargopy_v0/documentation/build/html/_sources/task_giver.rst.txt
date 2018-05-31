@@ -1,7 +1,0 @@
-task_giver module
-=================
-
-.. automodule:: task_giver
-    :members:
-    :undoc-members:
-    :show-inheritance:

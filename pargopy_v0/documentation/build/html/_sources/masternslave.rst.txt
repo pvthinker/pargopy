@@ -1,7 +1,0 @@
-masternslave module
-===================
-
-.. automodule:: masternslave
-    :members:
-    :undoc-members:
-    :show-inheritance:

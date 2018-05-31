@@ -1,7 +1,0 @@
-test_list module
-================
-
-.. automodule:: test_list
-    :members:
-    :undoc-members:
-    :show-inheritance:

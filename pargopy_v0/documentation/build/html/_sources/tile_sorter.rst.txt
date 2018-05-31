@@ -1,7 +1,0 @@
-tile_sorter module
-==================
-
-.. automodule:: tile_sorter
-    :members:
-    :undoc-members:
-    :show-inheritance:

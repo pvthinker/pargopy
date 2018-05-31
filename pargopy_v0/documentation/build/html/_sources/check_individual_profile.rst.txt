@@ -1,7 +1,0 @@
-check_individual_profile module
-===============================
-
-.. automodule:: check_individual_profile
-    :members:
-    :undoc-members:
-    :show-inheritance:

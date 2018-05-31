@@ -6,7 +6,8 @@ Created on Thu May 24 08:04:37 2018
 @author: therry
 
 Module contenant tout les paramètres utiles au fonctionnement du programme :
-    - Chemins vers les différents répertoires utilisés
+    - Chemins vers les différents répertoires utilisés :
+
         - Vers la base de données ARGO
         - Vers le répertoire du projet
         - Vers les fichiers de statistique
@@ -39,6 +40,7 @@ def get_atlas_infos():
     """
     Fonction définissant les paramètres de l'atlas que l'on souhaite générer.
     Sa valeur de retour est un dictionnaire contenant les informations suivantes :
+
         - TYPESTAT
         - RESO
         - DATE

@@ -1,7 +1,0 @@
-research_tools_2 module
-=======================
-
-.. automodule:: research_tools_2
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -155,9 +155,11 @@ def argo_profile_dic_to_dataframe(idac, wmo):
         - DATE_UPDATE
         - PROFILE_DATA
         - FLAG
+    
     La pression (PRES) est passée en index des colonnes suivantes :
         - TEMP
         - PSAL
+    
     TEMP et PSAL font partie d'un DataFrame contenu dans PROFILE_DATA.
 
     :rtype: DataFrame
@@ -278,3 +280,12 @@ def create_workdir():
         else:
             os.mkdir(param.get_path(path))
             print('File created : %s' % param.get_path(path))
+
+
+def update_argo_global():
+    """
+    Fonction utilisée pour mettre à jour argo_global
+    """
+
+
+

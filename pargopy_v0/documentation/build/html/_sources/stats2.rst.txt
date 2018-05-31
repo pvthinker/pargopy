@@ -1,7 +1,0 @@
-stats2 module
-=============
-
-.. automodule:: stats2
-    :members:
-    :undoc-members:
-    :show-inheritance:
