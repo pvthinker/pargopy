@@ -391,6 +391,8 @@ def create_wmodic():
     for idac, dac in enumerate(param.daclist):
         prfiles = glob.glob('{}/{}/*/*_prof.nc'.format(param.get_path('argo'), dac))
         wmodic[dac] = [int(f.split('/')[-2]) for f in prfiles]
+       
+    return wmodic
 
 
 def update_argo_global():
