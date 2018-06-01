@@ -416,6 +416,7 @@ def update_argo_global():
     create_wmos_infos(wmodic)
     wmos_infos = read_wmos_infos()
     for i, wmo in enumerate(wmos_infos['WMO']):
+        idac = wmos_infos.loc[i, 'DACID']
         argo_profile_df = argo_profile_dic_to_dataframe(idac, wmo)
         if wmo not in copy_wmos_infos['WMO']:
             # Copier argo_profile_df dans argo_global sur une nouvelle ligne
