@@ -11,9 +11,11 @@ they are high-level routines that rely on smaller modules
 """
 
 import os
+import glob
 import pandas as pd
 from netCDF4 import Dataset
 import numpy as np
+import time as time
 
 import param as param
 import general_tools as tools
@@ -198,18 +200,31 @@ def get_prof(iprof, argo_profile_dic):
     
     :rtype: DataFrame
     """
-    mskT = argo_profile_dic['TEMP'][iprof, :].mask 
-    mskS = argo_profile_dic['PSAL'][iprof, :].mask 
-    mskP = argo_profile_dic['PRES'][iprof, :].mask 
+    if (type(argo_profile_dic['TEMP'][iprof, :]) == np.ma.core.MaskedArray and 
+        type(argo_profile_dic['PSAL'][iprof, :]) == np.ma.core.MaskedArray and 
+        type(argo_profile_dic['PRES'][iprof, :]) == np.ma.core.MaskedArray):
+        mskT = argo_profile_dic['TEMP'][iprof, :].mask 
+        mskS = argo_profile_dic['PSAL'][iprof, :].mask 
+        mskP = argo_profile_dic['PRES'][iprof, :].mask 
     # mskT == True means the data should be omitted
     # msk = True means T, S and P are ok
+    else:
+        mskT = False
+        mskS = False 
+        mskP = False
+
     msk = ~(mskT | mskS | mskP)
 
-    profile_data = pd.DataFrame({'TEMP': argo_profile_dic['TEMP'][iprof][msk],
-                         'PSAL': argo_profile_dic['PSAL'][iprof][msk]},
-                        index=argo_profile_dic['PRES'][iprof][msk])
+    if type(msk) != np.ndarray:
+        pass
+    elif len(msk) <= 5:
+        pass
+    else:
+        profile_data = pd.DataFrame({'TEMP': argo_profile_dic['TEMP'][iprof][msk],
+                                     'PSAL': argo_profile_dic['PSAL'][iprof][msk]},
+                                    index=argo_profile_dic['PRES'][iprof][msk])
 
-    return profile_data
+        return profile_data
 
 
 def create_database():
@@ -282,10 +297,160 @@ def create_workdir():
             print('File created : %s' % param.get_path(path))
 
 
-def update_argo_global():
+def write_argo_global(argo_global):
     """
-    Fonction utilisée pour mettre à jour argo_global
+    :param argo_global: DataFrame à écrire au sein du fichier pickle
+
+    Fonction utilisée pour écrire notre DataFrame argo_global au sein d'un fichier
+    pickle portant le nom de : argo_global.pkl.
+
+    :rtype: None
+    """
+    argo_global.to_pickle('%s/argo_global.pkl' % param.get_path('database'))
+
+
+def read_argo_global():
+    """
+    Fonction utilisée pour récupérer la DataFrame 'argo_global' du fichier pickle
+    dans lequel elle a été préalablement sauvegardé.
+
+    :rtype: DataFrame
+    """
+    argo_global = pd.read_pickle('%s/argo_global.pkl' % param.get_path('database'))
+
+    return argo_global
+
+
+#  ----------------------------------------------------------------------------
+def create_wmos_infos(wmodic):
+    """
+    :param wmodic: Dictionnary contenant la liste des dacs et leurs wmos associés
+
+    Fonction permettant de créer un fichier pickle contenant un DataFrame 
+    composé des champs suivants :
+        - DACID
+        - WMO
+        - DATE_UPDATE
+    
+    :rtype: DataFrame
     """
 
+    tmps1 = time.time()
+
+    n_wmo = 0
+    for dac in param.daclist:
+        n_wmo += len(wmodic[dac])
+
+    wmostats = {}
+
+    keys = ['DACID', 'WMO', 'DATE_UPDATE']
+
+    for k in keys:
+        wmostats[k] = np.zeros((n_wmo, ), dtype=int)
+
+    iwmo = 0
+    for dac in param.daclist:
+        for w in wmodic[dac]:
+            output = read_profile(dac, w, header=True, verbose=False)
+            print('{:5,}/{:,} : {} - {}'.format(iwmo, n_wmo, dac, w))
+            for k in keys:
+                wmostats[k][iwmo] = output[k]
+            iwmo += 1
+
+    wmos_infos = pd.DataFrame(wmostats)
+
+    wmos_infos.to_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
+    
+    tmps2 = time.time() - tmps1
+    print("Temps d'execution = %f" % tmps2)
+
+    return wmos_infos
+
+
+def read_wmos_infos():
+    """
+    Fonction utilisée pour récupérer la DataFrame 'wmos_infos' du fichier pickle
+    dans lequel elle a été préalablement sauvegardé.
+
+    :rtype: DataFrame
+    """
+    wmos_infos = pd.read_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
+
+    return wmos_infos
+
+
+#  ----------------------------------------------------------------------------
+def create_wmodic():
+    """
+    Fonction permettant de créer un dictionnaire contenant la liste des dac et
+    des wmos
+    
+    :rtype: dict
+    """
+    wmodic = {}
+    for idac, dac in enumerate(param.daclist):
+        prfiles = glob.glob('{}/{}/*/*_prof.nc'.format(param.get_path('argo'), dac))
+        wmodic[dac] = [int(f.split('/')[-2]) for f in prfiles]
+
+
+def update_argo_global():
+    """
+    Fonction utilisée pour mettre à jour argo_global avec la base de donnée Argo
+    évolutive.
+    La mise à jour a lieu si :
+        - l'attribut DATE_UPDATE contient une date plus récente que celle contenue
+          dans argo_global
+        - le TAG obtenu en manipulant le dac, wmo, iprof d'un profile est inconnu
+          dans argo_global
+
+    :rtype: DataFrame
+    """
+    argo_global = read_argo_global()
+    wmodic = create_wmodic()
+    if os.path.exists('%s/wmos_infos.pkl' % param.get_path('database')):
+        copy_wmos_infos = read_wmos_infos()
+    else:
+        copy_wmos_infos = pd.DataFrame(columns = ['DACID', 'WMO', 'DATE_UPDATE'])
+    create_wmos_infos(wmodic)
+    wmos_infos = read_wmos_infos()
+    for i, wmo in enumerate(wmos_infos['WMO']):
+        argo_profile_df = argo_profile_dic_to_dataframe(idac, wmo)
+        if wmo not in copy_wmos_infos['WMO']:
+            # Copier argo_profile_df dans argo_global sur une nouvelle ligne
+            idac = wmos_infos.loc[i, 'DACID']
+            argo_global.append(argo_profile_df)
+            pass
+        else:
+            # si le wmo existe, on regarde la date d'update associée
+            if wmos_infos['DATE_UPDATE'][wmos_infos['WMO'] == wmo] != copy_wmos_infos['DATE_UPDATE'][copy_wmos_infos['WMO'] == wmo]:
+                # Copier argo_profile_df dans argo_global sur la ligne associée
+                pass
+            else:
+                # Ne rien faire
+                pass
+    
+    
+#==============================================================================
+#     for i, wmos in enumerate(wmos_infos['WMO']):
+#         idac = wmos_infos.loc[i, 'DACID']
+#         #  for wmo_glob in argo_global[']
+#     for idac, dac in enumerate(param.daclist):
+#         for wmo in wmodic[dac]:
+#             argo_profile_df = argo_profile_dic_to_dataframe(idac, wmo)
+#             if not wmo in argo_global['WMO']:
+#                 argo_global.append(argo_profile_df)
+#             else:
+#                 for idx in argo_profile_df.index:
+#                     for idx_global in argo_global.index:
+#                         if argo_global[idx, 'DATE_UPDATE'] != argo_profile_df[idx, 'DATE_UPDATE']:
+#                             argo_global[idx] = argo_profile_df[idx]
+#                         else:
+#                             # ajouter la ligne correspondant au TAG manquant
+#                             print('Ecriture du nouveau profile correspondant au tag : %i' % idx)
+#                             argo_global.append(argo_profile_df.loc[idx])
+#==============================================================================
+
+    write_argo_global(argo_global)
+    
 
 
