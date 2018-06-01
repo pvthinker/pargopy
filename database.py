@@ -418,13 +418,17 @@ def update_argo_global():
         if wmo not in copy_wmos_infos['WMO']:
             # Copier argo_profile_df dans argo_global sur une nouvelle ligne
             idac = wmos_infos.loc[i, 'DACID']
-            argo_global.append(argo_profile_df)
+            argo_global = argo_global.append(argo_profile_df)
             pass
         else:
             # si le wmo existe, on regarde la date d'update associée
             if wmos_infos['DATE_UPDATE'][wmos_infos['WMO'] == wmo] != copy_wmos_infos['DATE_UPDATE'][copy_wmos_infos['WMO'] == wmo]:
                 # Copier argo_profile_df dans argo_global sur la ligne associée
-                pass
+                for idx in argo_profile_df.index:
+                    if idx in argo_global.index:
+                       argo_global[argo_global.index == idx] =  argo_profile_df[argo_profile_df.index == idx]
+                    else:
+                       argo_global = argo_global.append(argo_profile_df[argo_profile_df.index == idx]) 
             else:
                 # Ne rien faire
                 pass
