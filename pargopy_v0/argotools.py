@@ -85,23 +85,27 @@ def count_profiles_in_database(wmostats):
     return nbprofiles
 
 
-def get_profile_file_path(dac, wmo):
+def get_profile_file_path(dac, wmo, path=None):
     """
     Return the file path to the \*_prof.nc data file
 
     :rtype: string
     """
 
+    if path is None:
+        path = path_argo
+
     if type(dac) is int:
         dac = daclist[dac]
-    filename = '%s/%s/%i/%i_prof.nc' % (path_argo, dac, wmo, wmo)
+    filename = '%s/%s/%i/%i_prof.nc' % (path, dac, wmo, wmo)
     return filename
 
 
 def read_profile(dac, wmo, iprof=None,
                  header=False, data=False,
                  headerqc=False, dataqc=False,
-                 verbose=True):
+                 shortheader=False,
+                 verbose=True, path=None):
     """Basic driver to read the \*_prof.nc data file
 
     The output is a dictionnary of vectors
@@ -114,10 +118,10 @@ def read_profile(dac, wmo, iprof=None,
     if type(dac) is int:
         dac = daclist[dac]
 
-    filename = get_profile_file_path(dac, wmo)
+    filename = get_profile_file_path(dac, wmo, path=path)
 
     if verbose:
-        print('/'.join(filename.split('/')[-3:]))
+        print('/'.join(filename.split('/')[:]))
 
     output = {}
 
@@ -133,47 +137,50 @@ def read_profile(dac, wmo, iprof=None,
             # we transform it into an int
             # YYYYMMDDhhmmss
             output['DATE_UPDATE'] = ''.join(f.variables['DATE_UPDATE'][:])
-
-            keyvar = set(f.variables.keys())
-
-            if required_keys.issubset(keyvar):
-                output['TSP_QC'] = '1'
+            if shortheader:
+                pass
             else:
-                output['TSP_QC'] = '2'
+                keyvar = set(f.variables.keys())
 
-            if header or headerqc or data or dataqc:
-                if iprof is None:
-                    idx = range(output['N_PROF'])
-                    output['IPROF'] = np.arange(output['N_PROF'])
+                if required_keys.issubset(keyvar):
+                    output['TSP_QC'] = '1'
                 else:
-                    idx = iprof
-                    output['IPROF'] = iprof
+                    output['TSP_QC'] = '2'
 
-            if header:
-                for key in key_header:
-                    output[key] = f.variables[key][idx]
-                    output['DATA_MODE'] = np.asarray(
-                        [c for c in f.variables['DATA_MODE'][idx]])
-
-            if headerqc:
-                for key in key_headerqc:
-                    output[key] = f.variables[key][idx]
-
-            if data:
-                for key in key_data:
-                    if output['TSP_QC'] == '1':
-                        output[key] = f.variables[key][idx, :]
+                if header or headerqc or data or dataqc:
+                    if iprof is None:
+                        idx = range(output['N_PROF'])
+                        output['IPROF'] = np.arange(output['N_PROF'])
                     else:
-                        output[key] = np.NaN+np.zeros(
-                            (output['N_PROF'], output['N_LEVELS']))
+                        idx = iprof
+                        output['IPROF'] = iprof
 
-            if dataqc:
-                for key in key_dataqc:
-                    if output['TSP_QC'] == '1':
+                if header:
+                    for key in key_header:
                         output[key] = f.variables[key][idx]
-                    else:
-                        output[key] = np.zeros(
-                            (output['N_PROF'], output['N_LEVELS']), dtype=str)
+                        output['DATA_MODE'] = np.asarray(
+                            [c for c in f.variables['DATA_MODE'][idx]])
+
+                if headerqc:
+                    for key in key_headerqc:
+                        output[key] = f.variables[key][idx]
+
+                if data:
+                    for key in key_data:
+                        if output['TSP_QC'] == '1':
+                            output[key] = f.variables[key][idx, :]
+                        else:
+                            output[key] = np.NaN+np.zeros(
+                                (output['N_PROF'], output['N_LEVELS']))
+
+                if dataqc:
+                    for key in key_dataqc:
+                        if output['TSP_QC'] == '1':
+                            output[key] = f.variables[key][idx]
+                        else:
+                            output[key] = np.zeros((output['N_PROF'],
+                                                    output['N_LEVELS']),
+                                                   dtype=str)
 
     return output
 
