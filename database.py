@@ -32,17 +32,18 @@ def synchronize_headers():
     # pour crÃ©er un empty DataFrame avec les bonnes clefs:
     header_global = pd.DataFrame(columns=header_keys+['TAG'])
     header_global = header_global.set_index('TAG')
-    
+
     for itile in range(ntiles):
         header_tile = tile.read_header(itile)
-        header_global =header_global.merge(header_tile,
-                                           left_index=True, right_index=True,
-                                           how='outer', on=header_keys)
+        header_global = header_global.merge(header_tile,
+                                            left_index=True, right_index=True,
+                                            how='outer', on=header_keys)
         # warning: because of the overlapping of tiles, some tags
         # appear in several tiles, they need to be exactly identical
         # otherwise merge will complain. In that case, it means that
         # we do someting wrong
     tools.write_header_global(header_global)
+
 
 def read_profile(dac, wmo, iprof=None,
                  header=False, data=False,
@@ -58,10 +59,10 @@ def read_profile(dac, wmo, iprof=None,
     :param data: Sélectionne TEMP, PSAL et PRES
     :param dataqc: Sélectionne TEMP_QC, PSAL_QC et PRES_QC
     :param verbose: ???
-    
+
     Les valeurs sélectionnée grâce aux arguments passés à la fonction définissent
     la DataFrame que retournera celle-ci.
-    
+
     Basic driver to read the \*_prof.nc data file
 
     The output is a dictionnary of vectors
@@ -160,7 +161,8 @@ def get_new_wmos_argo_global(wmos_infos):
     :rtype: DataFrame
     """
     keys = ['LONGITUDE', 'LATITUDE', 'JULD', 'DATA_MODE']
-    keys_final = ['FLAG', 'LONGITUDE', 'LATITUDE', 'JULD', 'DATA_MODE', 'STATUS']
+    keys_final = ['FLAG', 'LONGITUDE',
+                  'LATITUDE', 'JULD', 'DATA_MODE', 'STATUS']
     key_int = ['TAG', 'FLAG', 'N_PROF']
     key_float = ['LONGITUDE', 'LATITUDE', 'JULD']
     key_char = ['DATA_MODE']
@@ -183,7 +185,7 @@ def get_new_wmos_argo_global(wmos_infos):
 
     for idx in wmos_infos.index:
         kdac = wmos_infos.loc[idx, 'DACID']
-        wmo = idx # wmos are index of wmos_infos
+        wmo = idx  # wmos are index of wmos_infos
         dac = param.daclist[kdac]
         output = read_profile(dac, wmo, header=True, verbose=False)
         n_prof = output['N_PROF']
@@ -200,7 +202,7 @@ def get_new_wmos_argo_global(wmos_infos):
     for k in keys_final:
         argo_wanted[k] = argodb[k]
 
-    argo_new_wmos = pd.DataFrame(argo_wanted, index = argodb['TAG'])
+    argo_new_wmos = pd.DataFrame(argo_wanted, index=argodb['TAG'])
 
     return argo_new_wmos
 
@@ -213,20 +215,20 @@ def get_prof(iprof, argo_profile_dic):
     Transform profile 'iprof' stored in 'res' into a DataFrame
     whose index is 'PRES' and the two columns are 'TEMP' and 'PSAL'
     also removes all NaN
-    
+
     :rtype: DataFrame
     """
-    if (type(argo_profile_dic['TEMP'][iprof, :]) == np.ma.core.MaskedArray and 
-        type(argo_profile_dic['PSAL'][iprof, :]) == np.ma.core.MaskedArray and 
-        type(argo_profile_dic['PRES'][iprof, :]) == np.ma.core.MaskedArray):
-        mskT = argo_profile_dic['TEMP'][iprof, :].mask 
-        mskS = argo_profile_dic['PSAL'][iprof, :].mask 
-        mskP = argo_profile_dic['PRES'][iprof, :].mask 
+    if (type(argo_profile_dic['TEMP'][iprof, :]) == np.ma.core.MaskedArray and
+        type(argo_profile_dic['PSAL'][iprof, :]) == np.ma.core.MaskedArray and
+            type(argo_profile_dic['PRES'][iprof, :]) == np.ma.core.MaskedArray):
+        mskT = argo_profile_dic['TEMP'][iprof, :].mask
+        mskS = argo_profile_dic['PSAL'][iprof, :].mask
+        mskP = argo_profile_dic['PRES'][iprof, :].mask
     # mskT == True means the data should be omitted
     # msk = True means T, S and P are ok
     else:
         mskT = False
-        mskS = False 
+        mskS = False
         mskP = False
 
     msk = ~(mskT | mskS | mskP)
@@ -256,14 +258,14 @@ def create_database():
         - STATUS
         - FLAG
     Ce DataFrame sera ensuite sauvegardé au sein d'un fichier pickle nommé argodb.pkl
-    
+
     :rtype: None
     """
     keys = ['DATA_MODE', 'LONGITUDE', 'LATITUDE', 'JULD', 'STATUS', 'FLAG']
-    argodb = pd.DataFrame(columns = keys)
+    argodb = pd.DataFrame(columns=keys)
     argodb.to_pickle('%s/argo_global.pkl' % param.get_path('database'))
     for i in range(300):
-            argodb.to_pickle('%s/argo_%003i.pkl' % (param.get_path('parallel'), i))
+        argodb.to_pickle('%s/argo_%003i.pkl' % (param.get_path('parallel'), i))
 
 
 def create_workspace():
@@ -277,11 +279,12 @@ def create_workspace():
           create_argodb génère un fichier destiné à contenir un snapchot d'Argo global, ainsi
           que 300 fichiers pickle destinés à diviser cette base de donnée en 300 dalles
           utilisées ultérieurement pour le calcul parallèle
-    
+
     :rtype: None
     """
     create_workdir()
     create_database()
+
 
 def create_workdir():
     """
@@ -296,10 +299,11 @@ def create_workdir():
                 - reso_1.0/
                 - reso_0.5/
                 - reso_0.25/
-    
+
     :rtype: None
     """
-    paths_list = ['pargopy_output', 'database', 'parallel', 'zref_profiles', 'stats', 'atlas', 'reso']
+    paths_list = ['pargopy_output', 'database', 'parallel',
+                  'zref_profiles', 'stats', 'atlas', 'reso']
     reso_list = [0.25, 0.5, 1.0]
 
     for path in paths_list:
@@ -331,7 +335,8 @@ def read_argo_global():
 
     :rtype: DataFrame
     """
-    argo_global = pd.read_pickle('%s/argo_global.pkl' % param.get_path('database'))
+    argo_global = pd.read_pickle(
+        '%s/argo_global.pkl' % param.get_path('database'))
 
     return argo_global
 
@@ -346,13 +351,14 @@ def get_wmo_infos(path_gdac):
         wmos = [int(f.split('/')[-2]) for f in prfiles]
         for wmo in wmos:
             output = read_profile(dac, wmo, shortheader=True, verbose=True,
-                                     path=path_gdac)
+                                  path=path_gdac)
             w += [wmo]
             d += [param.daclist.index(dac)]
             n += [output['N_PROF']]
             u += [output['DATE_UPDATE']]
 
-    wmos_infos = pd.DataFrame({'DACID': d, 'N_PROF': n, 'DATE_UPDATE': u}, index=w)
+    wmos_infos = pd.DataFrame(
+        {'DACID': d, 'N_PROF': n, 'DATE_UPDATE': u}, index=w)
 
     wmos_infos.to_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
 
@@ -364,7 +370,8 @@ def read_wmos_infos():
 
     :rtype: DataFrame
     """
-    wmos_infos = pd.read_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
+    wmos_infos = pd.read_pickle('%s/wmos_infos.pkl' %
+                                param.get_path('database'))
 
     return wmos_infos
 
@@ -374,14 +381,15 @@ def create_wmodic():
     """
     Fonction permettant de créer un dictionnaire contenant la liste des dac et
     des wmos
-    
+
     :rtype: dict
     """
     wmodic = {}
     for idac, dac in enumerate(param.daclist):
-        prfiles = glob.glob('{}/{}/*/*_prof.nc'.format(param.get_path('argo'), dac))
+        prfiles = glob.glob(
+            '{}/{}/*/*_prof.nc'.format(param.get_path('argo'), dac))
         wmodic[dac] = [int(f.split('/')[-2]) for f in prfiles]
-       
+
     return wmodic
 
 
@@ -400,10 +408,11 @@ def update_argo_global():
     argo_global = read_argo_global()
 
     if os.path.exists('%s/wmos_infos.pkl' % param.get_path('database')):
-        old_wmos_infos = pd.read_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
+        old_wmos_infos = pd.read_pickle(
+            '%s/wmos_infos.pkl' % param.get_path('database'))
     else:
-        old_wmos_infos = pd.DataFrame(columns = ['DACID', 'DATE_UPDATE'])
-    
+        old_wmos_infos = pd.DataFrame(columns=['DACID', 'DATE_UPDATE'])
+
     get_wmo_infos(param.get_path('argo'))
     wmos_infos = read_wmos_infos()
 
@@ -411,19 +420,25 @@ def update_argo_global():
 
     idx = wmos_infos.index.difference(old_wmos_infos.index)
 
+    # >>>> BLOCK a simplifier! c'est pas comme ça qu'on compte
     counter = 0
     for wmo in idx:
         for kprof in range(wmos_infos.loc[wmo, 'N_PROF']):
             counter += 1
-            
-            new_tags_list = [0 for i in range(counter)]
+
+    # l'indentation n'allait pas => tu refaisais len(idx) fois la meme chose
+    new_tags_list = [0 for i in range(counter)]
+    # <<<<
+
+    # pb, le 'i' n'est pas mis à jour
+    # là encore, cette double boucle est lourdingue
+    # il faut penser à vectoriser la function get_tag = qu'elle accepte des listes
     for wmo in idx:
         for kprof in range(wmos_infos.loc[wmo, 'N_PROF']):
             tag = tools.get_tag(wmos_infos.loc[wmo, 'DACID'], wmo, kprof)
             new_tags_list[i] = tag
 
     new_wmos_argo = get_new_wmos_argo_global(wmos_infos.loc[idx])
-
 
     modified_tag_list = []
     nb_new_prof_list = []
@@ -435,16 +450,19 @@ def update_argo_global():
             if changed:
                 if wmos_infos.loc[wmo, 'N_PROF'] == old_wmos_infos.loc[wmo, 'N_PROF']:
                     for kprof in range(wmos_infos.loc[wmo, 'N_PROF']):
-                        tag = tools.get_tag(wmos_infos.loc[wmo, 'DACID'], wmo, kprof)
+                        tag = tools.get_tag(
+                            wmos_infos.loc[wmo, 'DACID'], wmo, kprof)
                         modified_tag_list.append(tag)
-                
+
                 else:
-                    nb_new_prof_list.append(wmos_infos.loc[wmo, 'N_PROF'] - old_wmos_infos.loc[wmo, 'N_PROF'])
+                    nb_new_prof_list.append(
+                        wmos_infos.loc[wmo, 'N_PROF'] - old_wmos_infos.loc[wmo, 'N_PROF'])
                     idx_new_prof.append(wmo)
 
             else:
                 for kprof in range(wmos_infos.loc[wmo, 'N_PROF']):
-                    tag = tools.get_tag(wmos_infos.loc[wmo, 'DACID'], wmo, kprof)
+                    tag = tools.get_tag(
+                        wmos_infos.loc[wmo, 'DACID'], wmo, kprof)
                     idx_unchanged_prof.append(tag)
         else:
             pass
@@ -457,6 +475,8 @@ def update_argo_global():
     new_idx = new_prof_argo.index.difference(argo_global.index)
 
     idx_old_prof = [k for k in new_prof_argo.index if k not in new_idx]
+
+    # idem = boucle lourdingue, travailler sur tous les indices d'un coup
     new_prof_idx = []
     for i in idx_old_prof:
         if new_prof_argo.loc[i, 'DATA_MODE'] == argo_global.loc[i, 'DATA_MODE']:
@@ -469,11 +489,14 @@ def update_argo_global():
     unchanged_prof_argo = argo_global.loc[idx_unchanged_prof]
 
     # Assemblage des sous ensembles
-    argo_global_update = pd.concat([new_wmos_argo, modified_prof_argo, new_prof_argo, unchanged_prof_argo])
+    argo_global_update = pd.concat(
+        [new_wmos_argo, modified_prof_argo, new_prof_argo, unchanged_prof_argo])
     write_argo_global(argo_global_update)
     print('Quantity of modified tag : %i' % len(modified_tag_list))
-    print('Quantity of unchanged profiles in wmos with new prof : %i' % len(new_prof_idx))
-    print('Quantity of unchanged profiles in unchanged wmos : %i' % len(idx_unchanged_prof))
+    print('Quantity of unchanged profiles in wmos with new prof : %i' %
+          len(new_prof_idx))
+    print('Quantity of unchanged profiles in unchanged wmos : %i' %
+          len(idx_unchanged_prof))
     z = 0
     for i in nb_new_prof_list:
         z += i
