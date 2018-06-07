@@ -19,7 +19,6 @@ import time as time
 
 import param as param
 import general_tools as tools
-import tile as ti
 
 header_keys = ['DATA_MODE', 'LONGITUDE', 'LATITUDE', 'JULD', 'FLAG', 'STATUS']
 
@@ -356,50 +355,6 @@ def get_wmo_infos(path_gdac):
     wmos_infos = pd.DataFrame({'DACID': d, 'N_PROF': n, 'DATE_UPDATE': u}, index=w)
 
     wmos_infos.to_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
-
-#  ----------------------------------------------------------------------------
-def create_wmos_infos(wmodic):
-    """
-    :param wmodic: Dictionnary contenant la liste des dacs et leurs wmos associés
-
-    Fonction permettant de créer un fichier pickle contenant un DataFrame 
-    composé des champs suivants :
-        - DACID
-        - WMO
-        - DATE_UPDATE
-    
-    :rtype: DataFrame
-    """
-
-    tmps1 = time.time()
-
-    n_wmo = 0
-    for dac in param.daclist:
-        n_wmo += len(wmodic[dac])
-
-    wmostats = {}
-
-    keys = ['DACID', 'WMO', 'DATE_UPDATE', 'N_PROF']
-
-    for k in keys:
-        wmostats[k] = np.zeros((n_wmo, ), dtype=int)
-
-    iwmo = 0
-    for i, dac in enumerate(param.daclist):
-        for w in wmodic[dac]:
-            output = read_profile(dac, w, header=True, verbose=False)
-            print('{:5,}/{:,} : {} - {}'.format(iwmo, n_wmo, dac, w))
-            for k in keys:
-                wmostats[k][iwmo] = output[k]
-            iwmo += 1
-
-    wmos_infos = pd.DataFrame(wmostats)
-    wmos_infos = wmos_infos.set_index('WMO')
-
-    wmos_infos.to_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
-    
-    tmps2 = time.time() - tmps1
-    print("Temps d'execution = %f" % tmps2)
 
 
 def read_wmos_infos():

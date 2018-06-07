@@ -12,6 +12,10 @@ Module contenant la série d'outils utilisé pour le découpage de l'atlas en da
 """
 
 import numpy as np
+import pandas as pd
+
+import param as param
+import database as db
 
 def tile_definition():
     """
@@ -74,6 +78,36 @@ def tile_definition():
     return tiles
 
 
+def retrieve_tile_limits(tiles, itile):
+    """
+    :param tiles: Dictionnaire contenant les informations relatives à toutes les tiles
+    :param itile: Numéro de la tile dont on souhaite connaitre les limites
+    
+    Fonction retournant les informations pour une tile donnée :
+        - lon (min et max)
+        - lat (min et max)
+        - marginlon
+        - marginlat
+
+    :rtype: dict
+    """
+
+    j = itile // tiles['NLON']
+    i = itile % tiles['NLON']
+
+    lon = [tiles['LONGITUDE'][i], tiles['LONGITUDE'][i+1]]
+    lat = [tiles['LATITUDE'][j], tiles['LATITUDE'][j+1]]
+    marginlat = tiles['MARGINLAT'][j]
+    marginlon = tiles['MARGINLON']
+
+    limits = {'LON_LIM' : lon,
+              'LAT_LIM' : lat,
+              'MARGINLAT' : marginlat,
+              'MARGINLON' : marginlon}
+
+    return limits
+
+
 def grid_coordinate(reso, itile=None, points=None):
     """ 
     Returns the coordinates of each point of the grid for a given tile or points
@@ -107,3 +141,80 @@ def grid_coordinate(reso, itile=None, points=None):
     grid_lon = np.arange(lonmin, (lonmax+reso), reso)
 
     return(grid_lat, grid_lon)
+
+
+def read_argo_tile(itile):
+    """
+    Fonction utilisée pour récupérer la DataFrame 'argo_global' du fichier pickle
+    dans lequel elle a été préalablement sauvegardé.
+
+    :rtype: DataFrame
+    """
+    argo_tile = pd.read_pickle('%s/argo_%003i.pkl' % (param.get_path('parallel'), itile))
+
+    return argo_tile
+
+
+def write_argo_tile(itile, argo_tile):
+    """
+    :param itile: Numéro de la tile que l'on veut sauvegarder
+    :param argo_tile: Tile à sauvegarder
+
+    Fonction utilisée pour écrire notre DataFrame argo_tile au sein d'un fichier
+    pickle portant le nom de : argo_%003i.pkl.
+
+    :rtype: None
+    """
+    argo_tile.to_pickle('%s/argo_%003i.pkl' % (param.get_path('parallel'), itile))
+
+
+def synchronize_argo_tile(itile, argo_tile, argo_global=False, interpolation=False):
+    """
+    Fonction utilisée pour mettre à jour les argo_%3i avec les nouveaux profiles de la base Argo,
+    mais également pour le retour d'information après l'interpolation des profiles
+
+    :rtype: DataFrame
+    """
+    if argo_global == False & interpolation == False:
+        print('Nothing to do with argo_%3i, all of those are up-to-date')
+
+    idx_modified_status = []
+
+    tiles = tile_definition()
+    limits = retrieve_tile_limits(tiles, itile)
+    lat_min = limits['LAT_LIM'][0] - limits['MARGINLAT']
+    lat_max = limits['LAT_LIM'][1] + limits['MARGINLAT']
+    lon_min = limits['LON_LIM'][0] - limits['MARGINLON']
+    lon_max = limits['LON_LIM'][1] + limits['MARGINLON']
+
+    if argo_global == True:
+        argo_global = db.read_argo_global()
+        # Mettre à jour les argo_%3i avec argo_global
+        part_of_argo = argo_global[(lat_min <= argo_global['LATITUDE']) &
+                                   (argo_global['LATITUDE'] <= lat_max) & 
+                                   (lon_min <= argo_global['LONGITUDE']) &
+                                   (argo_global['LONGITUDE'] <= lon_max)]
+        idx_new_prof = part_of_argo.index.difference(argo_tile.index)
+        for tag in argo_tile.index:
+            if argo_tile.loc[tag, 'STATUS'] != part_of_argo.loc[tag, 'STATUS']:
+                idx_modified_status.append(tag)
+
+        argo_tile.loc[idx_modified_status] = part_of_argo.loc[idx_modified_status]
+
+        if len(idx_new_prof) != 0:
+            argo_tile = pd.concat([argo_tile, part_of_argo.loc[idx_new_prof]])
+
+    if interpolation == True:
+        # Mettre à jour les informations en provenance de l'interpolation
+        pass
+
+    write_argo_tile(itile, argo_tile)
+    print('Tile %003i synchronized' % itile)
+
+
+#  ----------------------------------------------------------------------------
+if __name__ == '__main__':
+    
+    for i in range(300):
+        argo_tile = read_argo_tile(i)
+        synchronize_argo_tile(i, argo_tile, argo_global=True)
