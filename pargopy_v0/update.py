@@ -1,3 +1,6 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
 # import pickle
 import argotools as at
 import glob
@@ -60,28 +63,54 @@ nnew = 0
 pchanged = 0
 pidentical = 0
 pnew = 0
+
+list_modified_tags = []
+list_new_tags = []
+
 print('Compare the two gdac repositories')
+# On parcourt les TAG (index) de notre nouveau wmos_infos (new)
 for w in new.index:
+    kdac = daclist.index(new.loc[w, 'DAC'])
+    # On verifie pour chaque wmo si il est inclu dans l'ancien wmos_infos
     if w in old.index:
+        # si le wmo est dans old, on regarde si la valeur d'une des valeurs de la ligne associée à change
         changed = any(new.loc[w, :] != old.loc[w, :])
         if changed:
+            # Si une valeur a change, on incrémente nchanged
             nchanged += 1
+            # On teste ensuite si le nombre de profile contenu dans le _prof.nc à change
             if new.loc[w, 'N_PROF'] == old.loc[w, 'N_PROF']:
                 if verbose:
                     print('%i has been updated' % w)
+                # Si il n'y a pas de profile en plus, 
+                # on incremente le pchanged avec le nombre de profiles
+                # Cela signifie que les datas ont ete retravaillees
                 pchanged += new.loc[w, 'N_PROF']
             else:
                 if verbose:
                     print('%i has more profiles : %i => %i' %
                           (w, old.loc[w, 'N_PROF'], new.loc[w, 'N_PROF']))
+                # Si le nombre de profiles a change,
+                # On incrémente pnew (nombre de profiles nouveaux)
+                # On incrémente aussi pidentical qui représente le nombre de profiles
+                # qui n'ont pas été touchés
                 pnew += new.loc[w, 'N_PROF']-old.loc[w, 'N_PROF']
                 pidentical += old.loc[w, 'N_PROF']
         else:
+            # Si aucune des valeurs de new n'a changé par rapport à old
+            # On incrémente nidentical
+            # On incrémente pidentical
             nidentical += 1
             pidentical += new.loc[w, 'N_PROF']
     else:
         if verbose:
             print('%i is new' % w)
+        # Si le wmo est inconnu dans old
+        # On incrémente nnew
+        # On incrémente pnew
+        for kprof in range(new.loc[w, 'N_PROF']):
+            new_tags = at.get_tag(kdac, w, kprof)
+            list_new_tags.append(new_tags)
         nnew += 1
         pnew += new.loc[w, 'N_PROF']
 

@@ -96,7 +96,9 @@ def get_path(wanted_path, reso = 0):
 
     paths['pargopy_output'] = '%s/pargopy_output' % workdir
 
-    paths['argo'] = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
+    #  paths['argo'] = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
+
+    paths['argo'] = '/home/ref-argo/gdac/dac'
 
     paths['pargopy'] = '/home2/datahome/therry/pargopy/'
 
@@ -156,7 +158,6 @@ def get_argo_filename(dac, wmo):
     """
     if type(dac) is int:
         dac = daclist[dac]
-
     profile_filename = '%s/%s/%i/%i_prof.nc' % (get_path('argo'), dac, wmo, wmo)
     
     return profile_filename

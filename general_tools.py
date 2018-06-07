@@ -68,6 +68,19 @@ def ij2tile(i, j):
     return i + j*20
 
 
+def count_profiles_in_database(wmostats):
+    """
+    Count the total number of profiles in database
+    :rtype: int
+    """
+
+    nbprofiles = 0
+    for nbpr in wmostats['N_PROF']:
+        nbprofiles += nbpr
+    print('number of new profiles in Argo database: %i' % nbprofiles)
+    return nbprofiles
+
+
 #  ----------------------------------------------------------------------------
 def conversion_juld_gregd(juld):
     """
