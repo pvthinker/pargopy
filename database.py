@@ -357,6 +357,46 @@ def get_wmo_infos(path_gdac):
     wmos_infos.to_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
 
 
+def flag_argodb(argo_global, wmodic):
+    """
+    Add the flag to argodb
+
+    :rtype: dic
+    """
+
+    tag = argo_global.index[argo_global['FLAG'] == 0]
+        
+
+    infos = tools.retrieve_infos_from_tag(tag)
+    wmos = set(infos['WMO'])
+    idx = []
+    tag_101 = []
+    tag_102 = []
+    tag_103 = []
+    for w in wmos:
+        print('add flag to wmo %i' % w)
+        idx = np.where(infos['WMO'] == w)[0]
+        iprof = infos['IPROF'][idx]
+        dac = tools.dac_from_wmo(wmodic, w)
+        res = read_profile(dac, w, headerqc=True)
+        # print('-'*80)
+        # print(res['TEMP_QC'].data)
+        # print(res['POSITION_QC'].data)
+        for k in iprof:
+            if res['POSITION_QC'][k] != '1':
+                 tag_101.append(tools.get_tag(param.daclist.index(dac), w, k))
+            if res['JULD_QC'][k] != '1':
+                tag_102.append(tools.get_tag(param.daclist.index(dac), w, k))
+            if res['TSP_QC'] != '1':
+                tag_103.append(tools.get_tag(param.daclist.index(dac), w, k))
+    
+    argo_global.loc[tag_101, 'FLAG'] = 101
+    argo_global.loc[tag_102, 'FLAG'] = 102
+    argo_global.loc[tag_103, 'FLAG'] = 103
+                   
+    return argo_global
+
+
 def read_wmos_infos():
     """
     Fonction utilisée pour récupérer la DataFrame 'wmos_infos' du fichier pickle
@@ -397,10 +437,11 @@ def update_argo_global():
 
     :rtype: DataFrame
     """
+    wmodic = create_wmodic()
     argo_global = read_argo_global()
 
     if os.path.exists('%s/wmos_infos.pkl' % param.get_path('database')):
-        old_wmos_infos = pd.read_pickle('%s/wmos_infos.pkl' % param.get_path('database'))
+        old_wmos_infos = pd.read_pickle('%s/wmos_infos_2017.pkl' % param.get_path('database'))
     else:
         old_wmos_infos = pd.DataFrame(columns = ['DACID', 'DATE_UPDATE'])
     
@@ -470,6 +511,7 @@ def update_argo_global():
 
     # Assemblage des sous ensembles
     argo_global_update = pd.concat([new_wmos_argo, modified_prof_argo, new_prof_argo, unchanged_prof_argo])
+    argo_global_update = flag_argodb(argo_global_update, wmodic)
     write_argo_global(argo_global_update)
     print('Quantity of modified tag : %i' % len(modified_tag_list))
     print('Quantity of unchanged profiles in wmos with new prof : %i' % len(new_prof_idx))

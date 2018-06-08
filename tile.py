@@ -13,9 +13,11 @@ Module contenant la série d'outils utilisé pour le découpage de l'atlas en da
 
 import numpy as np
 import pandas as pd
+import pickle as pickle
 
 import param as param
 import database as db
+import interpolation_tools as interp
 
 def tile_definition():
     """
@@ -168,15 +170,47 @@ def write_argo_tile(itile, argo_tile):
     argo_tile.to_pickle('%s/argo_%003i.pkl' % (param.get_path('parallel'), itile))
 
 
-def synchronize_argo_tile(itile, argo_tile, argo_global=False, interpolation=False):
+def write_zref_profiles(itile, zref_profiles):
     """
+    :param itile: Numéro de la tile que l'on veut sauvegarder
+    :param zref_profiles: Dictionnaire contenant les profiles interpolés
+
+    Fonction utilisée pour écrire nos profiles interpolés dans un fichier pickle
+
+    :rtype: None
+    """
+    with open('%s/zref_profiles_%003i.pkl' % (param.get_path('zref_profiles'), itile), 'w') as f:
+        pickle.dump(zref_profiles, f)
+
+
+def generate_zref_profiles(itile):
+    """Interpolate all Argo profiles in tile 'i' onto 'zref' depths. Save
+    the result in the 'tile%003i.pkl' file
+
+    """
+
+    wmodic = db.create_wmodic()
+    argo_tile = read_argo_tile(itile)
+    zref_profiles = interp.interpolate_profiles(argo_tile, wmodic)
+    zref_profiles['ZREF'] = param.zref
+
+    write_zref_profiles(itile, zref_profiles)
+    # Mise à jour et sauvegarde d'interp_result dans argo_tile
+    interp_result = argo_tile.loc['STATUS'] = True
+    synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result)
+    # try to reduce memory leakage when processessing all the tiles
+    del(zref_profiles, wmodic)
+
+
+def synchronize_argo_tile_from_global(itile, argo_tile):
+    """
+    :param itile: Numéro de la tile que l'on souhaite générer
+    :param argo_tile: Version antérieure de l'argo_%3i à synchroniser avec la nouvelle
     Fonction utilisée pour mettre à jour les argo_%3i avec les nouveaux profiles de la base Argo,
     mais également pour le retour d'information après l'interpolation des profiles
 
     :rtype: DataFrame
     """
-    if argo_global == False & interpolation == False:
-        print('Nothing to do with argo_%3i, all of those are up-to-date')
 
     idx_modified_status = []
 
@@ -187,29 +221,43 @@ def synchronize_argo_tile(itile, argo_tile, argo_global=False, interpolation=Fal
     lon_min = limits['LON_LIM'][0] - limits['MARGINLON']
     lon_max = limits['LON_LIM'][1] + limits['MARGINLON']
 
-    if argo_global == True:
-        argo_global = db.read_argo_global()
-        # Mettre à jour les argo_%3i avec argo_global
-        part_of_argo = argo_global[(lat_min <= argo_global['LATITUDE']) &
-                                   (argo_global['LATITUDE'] <= lat_max) & 
-                                   (lon_min <= argo_global['LONGITUDE']) &
-                                   (argo_global['LONGITUDE'] <= lon_max)]
-        idx_new_prof = part_of_argo.index.difference(argo_tile.index)
-        for tag in argo_tile.index:
-            if argo_tile.loc[tag, 'STATUS'] != part_of_argo.loc[tag, 'STATUS']:
-                idx_modified_status.append(tag)
+    argo_global = db.read_argo_global()
+    # Mettre à jour les argo_%3i avec argo_global
+    part_of_argo = argo_global[(lat_min <= argo_global['LATITUDE']) &
+                               (argo_global['LATITUDE'] <= lat_max) & 
+                               (lon_min <= argo_global['LONGITUDE']) &
+                               (argo_global['LONGITUDE'] <= lon_max)]
+    idx_new_prof = part_of_argo.index.difference(argo_tile.index)
+    for tag in argo_tile.index:
+        if argo_tile.loc[tag, 'STATUS'] != part_of_argo.loc[tag, 'STATUS']:
+            idx_modified_status.append(tag)
+    argo_tile.loc[idx_modified_status] = part_of_argo.loc[idx_modified_status]
 
-        argo_tile.loc[idx_modified_status] = part_of_argo.loc[idx_modified_status]
-
-        if len(idx_new_prof) != 0:
-            argo_tile = pd.concat([argo_tile, part_of_argo.loc[idx_new_prof]])
-
-    if interpolation == True:
-        # Mettre à jour les informations en provenance de l'interpolation
-        pass
+    if len(idx_new_prof) != 0:
+        argo_tile = pd.concat([argo_tile, part_of_argo.loc[idx_new_prof]])
 
     write_argo_tile(itile, argo_tile)
-    print('Tile %003i synchronized' % itile)
+    print('Tile %003i synchronized from argo_global' % itile)
+
+
+def synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result):
+    """
+    :param itile: Numéro de la tile que l'on souhaite générer
+    :param argo_tile: Version antérieure de l'argo_%3i à synchroniser avec la nouvelle
+    :param interp_result: Version mise à jour d'argo_tile avec compte rendu interpolation
+    Fonction utilisée pour mettre à jour les argo_%3i avec les nouveaux profiles de la base Argo,
+    mais également pour le retour d'information après l'interpolation des profiles
+
+    :rtype: DataFrame
+    """
+
+    for tag in argo_tile.index:
+        if argo_tile.loc[tag, 'FLAG'] != interp_result.loc[tag, 'FLAG']:
+            print('Flag of tag %i changed from %i to %i' % (tag, argo_tile.loc[tag, 'FLAG'], interp_result.loc[tag, 'FLAG']))
+            argo_tile.loc[tag] = interp_result.loc[tag]
+    
+    write_argo_tile(itile, argo_tile)
+    print('Tile %003i synchronized after interpolation' % itile)
 
 
 #  ----------------------------------------------------------------------------

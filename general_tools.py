@@ -14,6 +14,8 @@ Module contenant les outils utilisés dans la plupart des modules:
 
 import jdcal
 
+import param as param
+
 
 def get_tag(kdac, wmo, kprof):
     """
@@ -51,6 +53,19 @@ def retrieve_infos_from_tag(tag):
     idac = tag
     tag_infos = {'IDAC': idac, 'WMO': wmo, 'IPROF': iprof}
     return tag_infos
+
+
+def dac_from_wmo(wmodic, wmo):
+    """
+    Retrieve the dac of a wmo
+    :rtype: list of dac
+    """
+
+    dac = ''
+    for d in param.daclist:
+        if wmo in wmodic[d]:
+            dac = d
+    return dac
 
 
 def ij2tile(i, j):
