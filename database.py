@@ -458,11 +458,7 @@ def update_argo_global():
 
     idx = wmos_infos.index.difference(old_wmos_infos.index)
 
-    # TO DO: >>>> BLOCK a simplifier! c'est pas comme ça qu'on compte
-    counter = 0
-    for wmo in idx:
-        for kprof in range(wmos_infos.loc[wmo, 'N_PROF']):
-            counter += 1
+    counter = tools.count_profiles_in_database(wmos_infos.loc[idx])
 
     new_tags_list = [0 for i in range(counter)]
 

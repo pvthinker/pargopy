@@ -183,23 +183,35 @@ def write_zref_profiles(itile, zref_profiles):
         pickle.dump(zref_profiles, f)
 
 
+def read_zref_profiles(itile):
+    """
+    :param itile: Numéro de la tile que l'on veut sauvegarder
+    :param zref_profiles: Dictionnaire contenant les profiles interpolés
+
+    Fonction utilisée pour écrire nos profiles interpolés dans un fichier pickle
+
+    :rtype: None
+    """
+    with open('%s/zref_profiles_%003i.pkl' % (param.get_path('zref_profiles'), itile), 'r') as f:
+        dic = pickle.load(f)
+    return dic
+
+
 def generate_zref_profiles(itile):
     """Interpolate all Argo profiles in tile 'i' onto 'zref' depths. Save
     the result in the 'tile%003i.pkl' file
 
     """
 
-    wmodic = db.create_wmodic()
     argo_tile = read_argo_tile(itile)
-    zref_profiles = interp.interpolate_profiles(argo_tile, wmodic)
+    zref_profiles, interp_result = interp.interpolate_profiles(argo_tile)
     zref_profiles['ZREF'] = param.zref
 
     write_zref_profiles(itile, zref_profiles)
     # Mise à jour et sauvegarde d'interp_result dans argo_tile
-    interp_result = argo_tile.loc['STATUS'] = True
     synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result)
     # try to reduce memory leakage when processessing all the tiles
-    del(zref_profiles, wmodic)
+    del(zref_profiles)
 
 
 def synchronize_argo_tile_from_global(itile, argo_tile):
@@ -262,7 +274,11 @@ def synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result):
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
-    
-    for i in range(300):
-        argo_tile = read_argo_tile(i)
-        synchronize_argo_tile(i, argo_tile, argo_global=True)
+
+    itile = 52
+    generate_zref_profiles(itile)
+#==============================================================================
+#     for i in range(300):
+#         argo_tile = read_argo_tile(i)
+#         synchronize_argo_tile_from_global(i, argo_tile)
+#==============================================================================

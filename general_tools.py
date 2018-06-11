@@ -13,26 +13,36 @@ Module contenant les outils utilisés dans la plupart des modules:
 """
 
 import jdcal
+import numpy as np
 
 import param as param
 
 
 def get_tag(kdac, wmo, kprof):
-    """
-    :param kdac: Index of the dac (aoml = 1, bodc = 2, coriolis = 3, ...)
-    :param wmo: WMO number
-    :param kprof: Index of the profile
-    
-    Compute the tag number of a profile
+    """Compute the tag number of a profile
 
     The inverse of get_tag() is retrieve_infos_from_tag()
 
     :rtype: int
     """
-    if kprof > 1000:
-        raise ValueError("kprof > 1000, the tag may be wrong")
+    if type(kprof) == int:
+        kprof = [kprof]
 
-    return (kdac*10000000+wmo)*1000+kprof
+    elif hasattr(kprof, '__iter__'):
+        pass
+
+    else:
+        raise ValueError('kprof must an int, a float or be iterable')
+
+    if max(kprof) > 1000:
+        raise ValueError("kprof > 1000, tags are no longer unique")
+
+    tag = [(kdac*10000000+wmo)*1000+k for k in kprof]
+
+    if len(kprof) == 1:
+        tag = tag[0]
+
+    return tag
 
 
 def retrieve_infos_from_tag(tag):
@@ -94,6 +104,19 @@ def count_profiles_in_database(wmostats):
         nbprofiles += nbpr
     print('number of new profiles in Argo database: %i' % nbprofiles)
     return nbprofiles
+
+
+def compute_weight(x, y, lon, lat, reso):
+    """Compute the weight between points (x, y) and point (lon, lat) with
+    a gaussian filter """
+    dist = dist_sphe(x, y, lon, lat)
+    weight = np.exp(-0.5*(dist/reso)**2)
+    return weight
+
+
+def dist_sphe(x, y, lon, lat):
+    """Compute the spherical arc between two points on the unit sphere"""
+    return np.arccos(np.sin(lat)*np.sin(y)+np.cos(lat)*np.cos(y)*np.cos(lon-x))
 
 
 #  ----------------------------------------------------------------------------

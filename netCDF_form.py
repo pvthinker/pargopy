@@ -16,6 +16,7 @@ Module contenant la série d'outil permettant la gestion d'un fichier netCDF :
 import os
 import json as json
 import datetime as datetime
+from netCDF4 import Dataset
 
 #  ----------------------------------------------------------------------------
 def create_dim(filename, zref, nlat, nlon, atlas_infos):
