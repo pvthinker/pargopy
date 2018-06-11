@@ -23,7 +23,7 @@ def interpolate_profiles(subargodb, wmodic):
     maskarraytype = np.ma.core.MaskedArray
     key = ['TEMP', 'PSAL', 'PRES', 'TEMP_QC', 'PSAL_QC', 'PRES_QC']
 
-    infos = argotools.retrieve_infos_from_tag(subargodb, subargodb['TAG'])
+    infos = argotools.retrieve_infos_from_tag(subargodb['TAG'])
     zref = argotools.zref
     n_zref = len(zref)
     n_profiles = len(np.where(subargodb['FLAG'][:] == 0)[0])

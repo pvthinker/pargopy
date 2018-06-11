@@ -88,7 +88,7 @@ def plot_tile(i):
     depth = zref
     argo = argotools.read_dic('argo%003i' % i, path_to_filter)
     tile = argotools.read_dic('tile%003i' % i, path_to_tiles)
-    output = argotools.retrieve_infos_from_tag(argo, argo['TAG'])
+    output = argotools.retrieve_infos_from_tag(argo['TAG'])
     print(len(output['IDAC']))
     print(output['IDAC'])
     print(len(output['WMO']))

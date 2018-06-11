@@ -13,7 +13,7 @@ import os
 
 # tag = a['TAG']
 
-# infos = at.retrieve_infos_from_tag(a, tag)
+# infos = at.retrieve_infos_from_tag(tag)
 # wmos = infos['WMO']
 
 path_argo = "/home/ref-argo/gdac/dac"
@@ -82,7 +82,7 @@ for w in new.index:
             if new.loc[w, 'N_PROF'] == old.loc[w, 'N_PROF']:
                 if verbose:
                     print('%i has been updated' % w)
-                # Si il n'y a pas de profile en plus, 
+                # Si il n'y a pas de profile en plus,
                 # on incremente le pchanged avec le nombre de profiles
                 # Cela signifie que les datas ont ete retravaillees
                 pchanged += new.loc[w, 'N_PROF']

@@ -10,12 +10,16 @@ Tools used by all the python files to generate the atlas
 
 from __future__ import with_statement
 import jdcal
+import datetime
 import os
 import numpy as np
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import pickle as pickle
 import param as param
+from numba import jit
+
+calendar_start = 2433295.5  # January 1st 1950
 
 path_argo = param.path_to_argo
 path_filter = param.path_to_filter
@@ -192,7 +196,7 @@ def flag_argodb(argodb, wmodic):
     :rtype: dic
     """
 
-    infos = retrieve_infos_from_tag(argodb, argodb['TAG'])
+    infos = retrieve_infos_from_tag(argodb['TAG'])
     wmos = set(infos['WMO'])
     n_profiles = len(argodb['JULD'])
     argodb['FLAG'] = np.zeros((n_profiles,), dtype=int)
@@ -239,13 +243,27 @@ def get_tag(kdac, wmo, kprof):
 
     :rtype: int
     """
-    if kprof > 1000:
-        raise ValueError("kprof > 1000, the tag may be wrong")
+    if len(kprof) == 1:
+        kprof = [kprof]
 
-    return (kdac*10000000+wmo)*1000+kprof
+    elif hasattr(kprof, '__iter__'):
+        pass
+
+    else:
+        raise ValueError('kprof must an int, a float or be iterable')
+
+    if max(kprof) > 1000:
+        raise ValueError("kprof > 1000, tags are no longer unique")
+
+    tag = [(kdac*10000000+wmo)*1000+k for k in kprof]
+
+    if len(kprof) == 1:
+        tag = tag[0]
+
+    return tag
 
 
-def retrieve_infos_from_tag(argodb, tag):
+def retrieve_infos_from_tag(tag):
     """Retrieve idac, wmo and iprof from tag (array of int)
 
     It is the inverse of get_tag()
@@ -497,7 +515,7 @@ def get_idx_from_list_wmo(argodb, wmos):
        :rtype: list of int
 
     """
-    infos = retrieve_infos_from_tag(argodb, argodb['TAG'])
+    infos = retrieve_infos_from_tag(argodb['TAG'])
     idx = []
     for w in wmos:
         idx += list(np.where(infos['WMO'] == w)[0])
@@ -554,7 +572,39 @@ def conversion_juld_gregd(juld):
     return(gregday)
 
 
+def today_juld():
+    d = datetime.date.today()
+    t0, t1 = jdcal.jcal2jd(d.year, d.month, d.day)
+    return t0+t1-calendar_start
+
+
+@jit
+def juld2date(juld):
+    if len(juld) == 1:
+        juld = [juld]
+    elif hasattr(juld, '__iter__'):
+        pass
+    else:
+        raise ValueError('juld must be an int, a float or be iterable')
+
+    ndays = len(juld)
+    year = np.zeros((ndays,), dtype=int)
+    month = np.zeros((ndays,), dtype=int)
+    day = np.zeros((ndays,), dtype=int)
+    dayfrac = np.zeros((ndays,))
+
+    for k, jd in enumerate(juld):
+        year[k], month[k], day[k], dayfrac[k] = jdcal.jd2jcal(
+            calendar_start, jd)
+
+    if len(juld) == 1:
+        year, month, day, dayfrac = year[0], month[0], day[0], dayfrac[0]
+
+    return {'YEAR': year, 'MONTH': month, 'DAY': day, 'DAYFRAC': dayfrac}
+
 #  ----------------------------------------------------------------------------
+
+
 def conversion_gregd_juld(year, month, day):
     """Method converting gregorian day into julian day
 

@@ -11,7 +11,7 @@ itile = 50
 wmodic = argotools.read_wmodic()
 subargodb = argotools.read_argo_filter(itile)
 
-infos = argotools.retrieve_infos_from_tag(subargodb, subargodb['TAG'])
+infos = argotools.retrieve_infos_from_tag(subargodb['TAG'])
 wmos = list(set(infos['WMO']))
 
 zref = argotools.zref
@@ -40,17 +40,16 @@ for kwmo in iwmo[:5]:
         lon = data['LONGITUDE'][k]
         lat = data['LATITUDE'][k]
 
-
         Ti, Si, Ri, BVF2, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
-                                                            temp_qc, psal_qc, pres_qc,
-                                                            lon, lat, zref)
+                                                                  temp_qc, psal_qc, pres_qc,
+                                                                  lon, lat, zref)
 
         if ierr == 0:
             plt.subplot(121)
             #plt.plot(temp, -pres, '.')
             plt.plot(Ti, -zref)
             # plt.plot(zCT.data, -pres.data)
-            ax=plt.gca()
+            ax = plt.gca()
             ax.set_ylim([-2050, 0])
 
             plt.subplot(122)

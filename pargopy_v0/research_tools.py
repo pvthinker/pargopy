@@ -22,7 +22,7 @@ path_to_data = param.path_to_data
 def creating_tiles():
     """
     Giving values to the variables
-    
+
     :rtype: None
     """
     #  Generation of the dimension of import matplotlib.pyplot as plt
@@ -56,7 +56,8 @@ def creating_tiles():
 
             argo_extract = get_idx_from_tiles_lim(res, argodb)
             test_tiles(argo_extract, k)
-            argotools.write_dic('argodic%003i' % k, argo_extract, path_to_filter)
+            argotools.write_dic('argodic%003i' %
+                                k, argo_extract, path_to_filter)
             k += 1
 
 
@@ -64,26 +65,33 @@ def creating_tiles():
 def test_tiles(argo_extract, i):
     """ Test to know if the tiles are correctly done with the lat and lon 
     limits
-    
+
     :rtype: None"""
-    idx1 = np.where(argo_extract['LATITUDE'] > argo_extract['LATMAX_NO_M'] + argo_extract['MARGINLAT'])
-    idx2 = np.where(argo_extract['LATITUDE'] < argo_extract['LATMIN_NO_M'] - argo_extract['MARGINLAT'])
-    idx3 = np.where(argo_extract['LONGITUDE'] > argo_extract['LONMAX_NO_M'] + argo_extract['MARGINLON'])
-    idx4 = np.where(argo_extract['LONGITUDE'] < argo_extract['LONMIN_NO_M'] - argo_extract['MARGINLON'])
+    idx1 = np.where(
+        argo_extract['LATITUDE'] > argo_extract['LATMAX_NO_M'] + argo_extract['MARGINLAT'])
+    idx2 = np.where(
+        argo_extract['LATITUDE'] < argo_extract['LATMIN_NO_M'] - argo_extract['MARGINLAT'])
+    idx3 = np.where(argo_extract['LONGITUDE'] >
+                    argo_extract['LONMAX_NO_M'] + argo_extract['MARGINLON'])
+    idx4 = np.where(argo_extract['LONGITUDE'] <
+                    argo_extract['LONMIN_NO_M'] - argo_extract['MARGINLON'])
     if (idx1[0] != []) | (idx2[0] != []) | (idx3[0] != []) | (idx4[0] != []):
-        raise ValueError('There is an error with the dimensions of the tile number %i' % i)
+        raise ValueError(
+            'There is an error with the dimensions of the tile number %i' % i)
 
 
 #  ----------------------------------------------------------------------------
 def get_idx_from_tiles_lim(res, argodb):
     """Get the list of profile indices present in argodb that correspond
        to the list of wmos
-       
+
        :rtype: dic"""
     if res['LONMIN_WITH_M'] > res['LONMAX_WITH_M']:
-        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & ((argodb['LONGITUDE'] > res['LONMIN_WITH_M']) | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
+        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & (
+            (argodb['LONGITUDE'] > res['LONMIN_WITH_M']) | (argodb['LONGITUDE'] < res['LONMAX_WITH_M'])))
     else:
-        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & (argodb['LONGITUDE'] > res['LONMIN_WITH_M']) & (argodb['LONGITUDE'] < res['LONMAX_WITH_M']))
+        idx = np.where((argodb['LATITUDE'] > res['LATMIN_WITH_M']) & (argodb['LATITUDE'] < res['LATMAX_WITH_M']) & (
+            argodb['LONGITUDE'] > res['LONMIN_WITH_M']) & (argodb['LONGITUDE'] < res['LONMAX_WITH_M']))
     argo_extract = extract_idx_from_argodb(argodb, idx)
     argo_extract['LATMIN_NO_M'] = res['LATMIN_NO_M']
     argo_extract['LATMAX_NO_M'] = res['LATMAX_NO_M']
@@ -99,11 +107,11 @@ def get_idx_from_tiles_lim(res, argodb):
 def get_idx_from_list_wmo(argodb, wmos):
     """Get the list of profile indices present in argodb that correspond
        to the list of wmos
-       
+
        :rtype: list of int
 
     """
-    infos = argotools.retrieve_infos_from_tag(argodb, argodb['TAG'])
+    infos = argotools.retrieve_infos_from_tag(argodb['TAG'])
     idx = []
     for w in wmos:
         idx += list(np.where(infos['WMO'] == w)[0])
@@ -114,7 +122,7 @@ def get_idx_from_list_wmo(argodb, wmos):
 def extract_idx_from_argodb(argodb, idx):
     """Return a argodb type dictionnary that is a subset of argodb and
        containing only entries given in idx (list)
-       
+
        :rtype: dic
 
     """
@@ -128,7 +136,7 @@ def extract_idx_from_argodb(argodb, idx):
 def extract_idx_from_wmostats(wmostats, idx):
     """Return a wmostats type dictionnary that is a subset of wmostats and
        containing only entries given in idx (list)
-       
+
        :rtype: dic
 
     """
@@ -152,6 +160,7 @@ def main():
 
 # ----------------------------------------
 # Plot the tiles on map
+
 
 def mbox(x1, x2, y1, y2, dlat, dlon, col, itile, m):
     m.plot([x1-dlon, x1-dlon, x2+dlon, x2+dlon, x1-dlon],
