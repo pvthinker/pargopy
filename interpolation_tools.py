@@ -24,7 +24,9 @@ def interpolate_profiles(subargodb):
 
     :rtype: dic"""
 
-    infos = tools.retrieve_infos_from_tag(subargodb.index)
+    wmodic = db.create_wmodic()
+    tags = subargodb.index[subargodb['FLAG'] == 0]
+    infos = tools.retrieve_infos_from_tag(tags)
     zref = param.zref
     n_zref = len(zref)
     n_profiles = len(subargodb[subargodb['FLAG'] == 0])
@@ -42,58 +44,55 @@ def interpolate_profiles(subargodb):
     kprof = 0
 
     wmos = set(infos['WMO'])
-
     for w in wmos:
         idx = np.where(infos['WMO'] == w)[0]
-        int_idx = idx.astype(int)
         iprof = infos['IPROF'][idx]
-        dac = param.daclist[infos['IDAC'][int_idx][0]]
-        data = db.read_profile(
-            dac, w, header=True, data=True, dataqc=True)
+        dac = tools.dac_from_wmo(wmodic, w)
+        data = db.read_profile(dac, w, header=True, data=True, dataqc=True)
         for l, k in enumerate(iprof):
-            if subargodb['FLAG'].iloc[l] == 0:
-                temp = data['TEMP'][k, :]
-                psal = data['PSAL'][k, :]
-                pres = data['PRES'][k, :]
-                temp_qc = data['TEMP_QC'][k, :]
-                psal_qc = data['PSAL_QC'][k, :]
-                pres_qc = data['PRES_QC'][k, :]
-                lon = data['LONGITUDE'][k]
-                lat = data['LATITUDE'][k]
-                Ti, Si, Ri, BVF2i, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
-                                                                           temp_qc, psal_qc, pres_qc,
-                                                                           lon, lat, zref)
+            tag = tools.get_tag(param.daclist.index(dac), w, k)
+            temp = data['TEMP'][k, :]
+            psal = data['PSAL'][k, :]
+            pres = data['PRES'][k, :]
+            temp_qc = data['TEMP_QC'][k, :]
+            psal_qc = data['PSAL_QC'][k, :]
+            pres_qc = data['PRES_QC'][k, :]
+            lon = data['LONGITUDE'][k]
+            lat = data['LATITUDE'][k]
+            Ti, Si, Ri, BVF2i, zCT, zSA, zz, ierr = raw_to_interpolate(temp, psal, pres,
+                                                                       temp_qc, psal_qc, pres_qc,
+                                                                       lon, lat, zref)
 
-                del(temp, psal, pres, temp_qc, psal_qc, pres_qc, lon, lat)
+            del(temp, psal, pres, temp_qc, psal_qc, pres_qc, lon, lat)
 
+            ierr = 0
+            if len(Ti) == 0:
+                ierr = 1
+            # Checking if Ti, Si, Ri are full of NaN
+            checker = []
+            checker2 = []
+            for i, T in enumerate(Ti):
+                checker.append(np.isnan(T))
+                checker2.append(np.isnan(Si[i]))
+            if (False in checker) and (False in checker2):
                 ierr = 0
-                if len(Ti) == 0:
-                    ierr = 1
-                # Checking if Ti, Si, Ri are full of NaN
-                checker = []
-                checker2 = []
-                for i, T in enumerate(Ti):
-                    checker.append(np.isnan(T))
-                    checker2.append(np.isnan(Si[i]))
-                if (False in checker) and (False in checker2):
-                    ierr = 0
-                else:
-                    ierr = 2
-                if ierr == 0:
-                    CT[kprof, :] = Ti
-                    SA[kprof, :] = Si
-                    RHO[kprof, :] = Ri
-                    BVF2[kprof, :] = BVF2i
-                    TAG[kprof] = subargodb.index[l]
-                    LON[kprof] = subargodb['LONGITUDE'].iloc[l]
-                    LAT[kprof] = subargodb['LATITUDE'].iloc[l]
-                    JULD[kprof] = subargodb['JULD'].iloc[l]
-                    DATA_MODE[kprof] = subargodb['DATA_MODE'].iloc[l]
-                    kprof += 1
-                else:
-                    subargodb['FLAG'].iloc[l] = 202
             else:
-                pass
+                ierr = 2
+            if ierr == 0:
+                CT[kprof, :] = Ti
+                SA[kprof, :] = Si
+                RHO[kprof, :] = Ri
+                BVF2[kprof, :] = BVF2i
+                TAG[kprof] = tag
+                LON[kprof] = subargodb.loc[tag, 'LONGITUDE']
+                LAT[kprof] = subargodb.loc[tag, 'LATITUDE']
+                JULD[kprof] = subargodb.loc[tag, 'JULD']
+                DATA_MODE[kprof] = subargodb.loc[tag, 'DATA_MODE']
+                kprof += 1
+            else:
+                subargodb.loc[tag, 'FLAG'] = 202
+        else:
+            pass
 
     #  argotools.propagate_flag_backward(subargodb, verbose=True)
     #  print('Flag propagate')
@@ -123,7 +122,6 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
     :rtype: float, float, float, float, float, float, float, int
     """
 
-    CT, SA, z = [], [], []
     klist, ierr = remove_bad_qc(temp, sal, pres, temp_qc, sal_qc, pres_qc)
     if ierr == 0:
         Tis = temp[klist]
@@ -139,7 +137,7 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
         BVF2i = g*(beta*dSidz-alpha*dTidz)
         # Nf = np.sqrt(N2)/gsw.f(lat)
     else:
-        Ti, Si, Ri, BVF2i = [], [], [], []
+        Ti, Si, Ri, BVF2i, CT, SA, z= [], [], [], [], [], [], []
     return Ti, Si, Ri, BVF2i, CT, SA, z, ierr
 
 
