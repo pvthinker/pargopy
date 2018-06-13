@@ -17,7 +17,7 @@ location = 'DATARMOR_TMP'
 
 if location == 'DATARMOR_TMP':
     # path_to_argo = '/home/oo26/coriolis/co05/co0508/dac'
-    path_to_argo = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
+    path_to_argo = '/home/ref-argo/gdac/dac'
 
     path_to_pargopy = '/home2/datahome/therry/pargopy/pargopy_v0/'
 

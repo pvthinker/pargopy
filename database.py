@@ -15,10 +15,10 @@ import glob
 import pandas as pd
 from netCDF4 import Dataset
 import numpy as np
-import time as time
 
 import param as param
 import general_tools as tools
+import tile as ti
 
 header_keys = ['DATA_MODE', 'LONGITUDE', 'LATITUDE', 'JULD', 'FLAG', 'STATUS']
 
@@ -79,6 +79,11 @@ def read_profile(dac, wmo, iprof=None,
 
     if type(dac) is int:
         dac = param.daclist[dac]
+    elif type(dac) is np.int64:
+        dac = param.daclist[dac]
+    else:
+        pass
+
 
     filename = param.get_argo_filename(dac, wmo)
 
@@ -396,6 +401,8 @@ def flag_argodb(argo_global, wmodic):
     argo_global.loc[tag_101, 'FLAG'] = 101
     argo_global.loc[tag_102, 'FLAG'] = 102
     argo_global.loc[tag_103, 'FLAG'] = 103
+    tag_status = tag_101 + tag_102 + tag_103
+    argo_global.loc[tag_status, 'STATUS'] = True           
                    
     return argo_global
 
@@ -440,7 +447,7 @@ def update_argo_global():
         - le TAG obtenu en manipulant le dac, wmo, iprof d'un profile est inconnu
           dans argo_global
 
-    :rtype: DataFrame
+    :rtype: None
     """
     wmodic = create_wmodic()
     argo_global = read_argo_global()
@@ -536,3 +543,33 @@ def update_argo_global():
     for i in nb_new_prof_list:
         z += i
     print('Quantity of new_prof : %i' % (z+len(new_tags_list)))
+
+
+def synchronize_argo_global_from_argo_tile():
+    """
+    Fonction utilisée pour mettre à jour synchroniser argo_global avec les 
+    nouvelles informations issues de l'interpolation (infos recueillies dans
+    les argo_tile)
+    La mise à jour a lieu si :
+        - l'attribut 'STATUS' d'argo_global était à False
+
+    :rtype: None
+    """
+
+    argo_global = read_argo_global()
+
+    for itile in range(300):
+        argo_tile = ti.read_argo_tile(itile)
+        subargo_tile = argo_tile[(argo_tile['FLAG'] != 101) & 
+                                 (argo_tile['FLAG'] != 102) & 
+                                 (argo_tile['FLAG'] != 103)]
+    
+        subargo_global = argo_global.loc[subargo_tile.index]
+        subargo_global = subargo_global[subargo_global['STATUS'] == False]
+    
+        argo_global.loc[subargo_global.index] = subargo_tile.loc[subargo_global.index]
+        print('argo_global synchronized with argo_%003i' % itile)
+
+    write_argo_global(argo_global)
+
+

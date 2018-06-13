@@ -29,7 +29,7 @@ def generate_tile(i):
     """
 
     wmodb = argotools.read_dic('wmodic', path_to_data)
-    argodb = argotools.read_dic('argo%003i' % i, path_to_filter)
+    argodb = argotools.read_dic('argodic%003i' % i, path_to_filter)
     zrefprofiles = interpolation.interpolate_profiles(argodb, wmodb)
     zrefprofiles['ZREF'] = zref
 
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     #  tiles = [131, 146, 151, 171, 190, 233, 234, 235, 244, 253, 254, 255, 264,
     #         265, 272, 273, 274, 275, 276, 284, 285, 295, 296]
     # for t in tiles:
-    main(189)
+    main(52)
     deco.call_results('interpolation_tools.py')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

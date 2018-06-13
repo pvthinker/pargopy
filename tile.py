@@ -205,9 +205,9 @@ def generate_zref_profiles(itile):
 
     argo_tile = read_argo_tile(itile)
     zref_profiles, interp_result = interp.interpolate_profiles(argo_tile)
-    zref_profiles['ZREF'] = param.zref
 
     write_zref_profiles(itile, zref_profiles)
+    interp_result.drop(interp_result.columns[[6, 7, 8]], axis=1, inplace=True)
     # Mise à jour et sauvegarde d'interp_result dans argo_tile
     synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result)
     # try to reduce memory leakage when processessing all the tiles
@@ -275,7 +275,7 @@ def synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
 
-    itile = 52
+    itile = 166
     generate_zref_profiles(itile)
 #==============================================================================
 #     for i in range(300):
