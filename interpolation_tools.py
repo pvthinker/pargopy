@@ -89,9 +89,9 @@ def interpolate_profiles(subargodb):
     BVF2 = BVF2.dropna(how='all')
     
     res = {'CT': CT,
-       'SA': SA,
-       'RHO': RHO,
-       'BVF2': BVF2}
+           'SA': SA,
+           'RHO': RHO,
+           'BVF2': BVF2}
     subargodb['STATUS'] = True
     print('Interpolation ended')
     return res, subargodb

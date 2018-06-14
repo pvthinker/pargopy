@@ -64,7 +64,7 @@ def write_stat_file(itile, typestat, reso, timeflag, date, mode, stats_mode):
     filename = generate_filename(itile, typestat, reso, timeflag, date, mode)
     res = {}
 
-    res = compute_at_zref(itile, reso, mode, date, stats_mode)
+    res, nanidx = compute_at_zref(itile, reso, mode, date, stats_mode)
 
     res['zref'] = zref
     ncform.write_var(filename, var_choice[typestat], res)
@@ -143,6 +143,7 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
         tile = date_mode_filter(mode, date, itile)
     CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
     nanidx = np.where(np.isnan(CT) | np.isnan(SA))
+    print(nanidx)
     lat, lon = tile['LATITUDE'], tile['LONGITUDE']
     grid_lat, grid_lon = grid_coordinate(itile, reso_deg)
     lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
@@ -269,12 +270,7 @@ def compute_at_zref(itile, reso_deg, mode, date, block_choice, tile_dict=None):
 
     variables['lat'] = lat_deg
     variables['lon'] = lon_deg
-    print(variables['CTstd'].min())
-    print(variables['CTstd'].max())
-    print(variables['SAstd'].min())
-    print(variables['SAstd'].max())
-
-    return variables
+    return variables, nanidx, weight
 
 def retrieve_tile_from_position(lon0, lat0):
     """Return the tile index in which (lon0, lat0) sits
@@ -439,6 +435,6 @@ def main(itile, typestat, reso, timeflag, date, mode):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     tmps1 = time.time()
-    main(52, ['zstd'], 0.5, 'annual', ['2017', '12', '31'], 'D')
+    main(52, ['zmean'], 0.5, 'annual', ['2017', '12', '31'], 'D')
     tmps2 = time.time() - tmps1
     print("Temps d'execution = %f" % tmps2)

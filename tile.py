@@ -11,6 +11,7 @@ Module contenant la série d'outils utilisé pour le découpage de l'atlas en da
 
 """
 
+import os
 import numpy as np
 import pandas as pd
 import pickle as pickle
@@ -202,16 +203,34 @@ def generate_zref_profiles(itile):
     the result in the 'tile%003i.pkl' file
 
     """
-
+    filename = '%s/zref_profiles_%003i.pkl' % (param.get_path('zref_profiles'), itile)
+    keys = ['CT', 'SA', 'RHO', 'BVF2']
     argo_tile = read_argo_tile(itile)
     zref_profiles, interp_result = interp.interpolate_profiles(argo_tile)
+    if os.path.isfile(filename):
+        zref_prof_to_update = read_zref_profiles(itile)
+    else:
+        CT = pd.DataFrame(columns = param.zref)
+        SA = pd.DataFrame(columns = param.zref)
+        RHO = pd.DataFrame(columns = param.zref)
+        BVF2 = pd.DataFrame(columns = param.zref)
+        zref_prof_to_update = {'CT' : CT, 'SA' : SA, 'RHO' : RHO, 'BVF2' :BVF2}
+    for i in zref_profiles['CT'].index:
+        if i in zref_prof_to_update['CT'].index:
+            for k in keys:
+                zref_prof_to_update[k].loc[i] = zref_profiles[k].loc[i]
+    
+    idx = zref_profiles['CT'].index.difference(zref_prof_to_update['CT'].index)
+    
+    for k in keys:
+        zref_prof_to_update[k] = zref_prof_to_update[k].append(zref_profiles[k].loc[idx])
 
-    write_zref_profiles(itile, zref_profiles)
+    write_zref_profiles(itile, zref_prof_to_update)
     interp_result.drop(interp_result.columns[[6, 7, 8]], axis=1, inplace=True)
     # Mise à jour et sauvegarde d'interp_result dans argo_tile
     synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result)
     # try to reduce memory leakage when processessing all the tiles
-    del(zref_profiles)
+    del(zref_profiles, zref_prof_to_update)
 
 
 def synchronize_argo_tile_from_global(itile, argo_tile):
@@ -275,7 +294,7 @@ def synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
 
-    itile = 166
+    itile = 125
     generate_zref_profiles(itile)
 #==============================================================================
 #     for i in range(300):
