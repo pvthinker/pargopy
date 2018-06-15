@@ -1,0 +1,39 @@
+#!/bin/bash
+#PBS -q mpi_2
+#PBS -l mem=25g
+#PBS -l walltime=06:00:00
+#PBS -N tiles
+##PBS -j oe
+##PBS -V 
+##PBS -r y
+
+# your $HOME/.bashrc should have
+# source /usr/share/Modules/3.2.10/init/bash
+# module load anaconda-py2.7
+
+# we add 'mpt' and 'vacumm' to have MPI
+module load mpt
+module load vacumm
+
+module list
+
+source activate conda_env
+
+
+cd /home2/datahome/therry/pargopy/
+pwd
+
+export mpiproc=`cat $PBS_NODEFILE  | wc -l`
+
+echo ""
+echo "job running with  $mpiproc mpi process "
+
+echo ""
+echo "Launch MPI on:   " `date`
+
+mpirun -np 56 python /home2/datahome/therry/pargopy/atlas_generator.py > /home2/datawork/therry/pargopy_output/pbs_reports/output_atlas
+
+echo ""
+echo "Finish MPI on:   " `date`
+echo ""
+

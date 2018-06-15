@@ -274,6 +274,13 @@ def grid_coordinate(itile, reso):
 
     return(grid_lat, grid_lon)
 
+def main(itile):
+    """
+    Main function of stats.py
+    """
+    create_stat_file(itile, param.atlas_infos)
+    write_stat_file(itile, param.atlas_infos)
+
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':

@@ -290,7 +290,13 @@ def synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result):
     write_argo_tile(itile, argo_tile)
     print('Tile %003i synchronized after interpolation' % itile)
 
-
+def main(itile):
+    """
+    Main function of tile.py
+    """
+    argo_tile = read_argo_tile(itile)
+    synchronize_argo_tile_from_global(itile, argo_tile)
+    generate_zref_profiles(itile)
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
 

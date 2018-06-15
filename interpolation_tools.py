@@ -84,8 +84,8 @@ def interpolate_profiles(subargodb):
             pass
         
     CT = CT.dropna(how='all')
-    SA = CT.dropna(how='all')
-    RHO = CT.dropna(how='all')
+    SA = SA.dropna(how='all')
+    RHO = RHO.dropna(how='all')
     BVF2 = BVF2.dropna(how='all')
     
     res = {'CT': CT,
