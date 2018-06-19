@@ -31,7 +31,7 @@ echo "job running with  $mpiproc mpi process "
 echo ""
 echo "Launch MPI on:   " `date`
 
-mpirun -np 56 python /home2/datahome/therry/pargopy/argo_updater.py > /home2/datawork/therry/pargopy_output/pbs_reports/output_argo_updater
+mpirun -np 56 python /home2/datahome/therry/pargopy/argo_updater.py > /home2/datawork/therry/pargopy_output/pbs_work/output_argo_updater
 
 echo ""
 echo "Finish MPI on:   " `date`

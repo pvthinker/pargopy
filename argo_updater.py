@@ -43,7 +43,7 @@ def ordering_tasks(tasks):
     :rtype: list of int
     """
     def tilefilename(itile):
-        return '%s/tile%03i.pkl' % (param.get_path('tile'), itile)
+        return '%s/argo_%003i.pkl' % (param.get_path('parallel'), itile)
 
     workload = [path.getsize(tilefilename(t)) for t in tasks]
     idx = np.argsort(workload)
@@ -98,16 +98,14 @@ def master_work_nonblocking(nslaves):
     :rtype: None
     """
     tasks = range(300)
+    #  tasks = [52, 0, 19, 280, 299, 97, 125, 166, 153, 199, 142, 16, 53, 129]
     nbtasks = len(tasks)
     # sorting the tasks according to their size
     # improves the load balance among slaves (by a lot)
     # for instance, it prevents cases where the last
     # task is a very long one, which would ruin their
     # global performance
-    tasks = ordering_tasks(tasks)
-
-    # Update argo_global with newest version of Argo
-    db.update_argo_global()
+    # tasks = ordering_tasks(tasks)
 
     print('List of tasks to be done:', tasks)
 
@@ -143,9 +141,6 @@ def master_work_nonblocking(nslaves):
         nb = sum([tasks[k] for k in range(nbtasks) if record[k] == i])
         print('    - slave %2i treated %3i data' % (i, nb))
     print('-'*40)
-
-    # Synchronize argo_global with argo_tiles after interpolation
-    db.synchronize_argo_global_from_argo_tile()
 
 
 def slave_work_nonblocking(islave):
@@ -195,6 +190,9 @@ def slave_work_nonblocking(islave):
 
 if __name__ == '__main__':
 
+    # Update argo_global with newest version of Argo
+    #  db.update_argo_global()
+    
     if myrank == 0:
         print('Hello I\'m the master, I\'ve %i slaves under my control'
               % nslaves)
@@ -206,3 +204,7 @@ if __name__ == '__main__':
         comm.Barrier()
 
         slave_work_nonblocking(myrank)
+    
+    
+    # Synchronize argo_global with argo_tiles after interpolation
+    #  db.synchronize_argo_global_from_argo_tile()

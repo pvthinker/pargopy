@@ -21,61 +21,103 @@ un domaine restreint :
 
 
 """
+import os
+from netCDF4 import Dataset
+import numpy as np
 
 import param as param
-import tile as tile
+import tiles as ti
+import stats as stats
+import netCDF_form as ncform
+import general_tools as tools
 
-# Interpolation
+atlas_infos = param.get_atlas_infos()
+tiles = ti.tile_definition()
 
-def interpolation_on_tiles(itile):
-    """
-    :param itile: Numéro de la dalle sur laquelle on réalise l'interpolation
+def gridindex2lonlat(ix, iy):
     
-    Interpolation des profiles ARGO appartenant à la dalle (itile) sur les niveaux
-    de référence zref.
-    
-    Les résultats de l'interpolation sont sauvés dans un fichier pickle.    
-    
-    :rtype: DataFrame
-    """
-    return interp_profiles
+    lonmin_glo = -180.
+    latmin_glo = -80.
 
-def compute_stats_at_zref(atlas_infos, itile=None, coord=None):
-    """
-    :param atlas_infos: Dictionnaire contenant les champs suivants : (mode, date, reso, timeflag, typestat)
-                      permettant de connaitre les informations sur les statistiques à calculer
-    :param itile: Numéro de la dalle sur laquelle on calcule les statistiques
-    :param coord: Dictionnaire contenant les champs suivants : ((lon, lat), deltalon, deltalat)
-                  définissant la zone géographique sur laquelle on souhaite calculer les statistiques
-    
-    Calcul des statistiques sur un domaine défini. Le type de statistique calculé
-    dépend du dictionnaire atlas_info passé en argument qui délivre toute l'information
-    à la génération de celles-ci.
-    Si itile et coord ne sont pas renseignés, la fonction retournera un message
-    d'avertissement et produira un résultat sur une dalle géographique prédéfinie.
-    La valeur de retour de cette fonction est un dictionnaire contenant les 
-    variables statistiques calculées.
-    
-    :rtype: dict
-    """
-    stats = {}
-    if type(itile) == int and 0 <= itile < 300:
-        grid_lat, grid_lon = tile.grid_coordinate(atlas_infos['RESO'], itile = itile)
+    lon = lonmin_glo + ix*atlas_infos['RESO']
+    lat = latmin_glo + iy*atlas_infos['RESO']
+    return lon, lat
 
-    elif len(coord) == 3 and len(coord[0]) == 2:
-        # on définit les bornes de notre domaine d'étude
-        # avec deux latitudes et longitudes (min et max)
-        lat = [coord[0][1], (coord[0][1] + coord[2])]
-        lon = [coord[0][0], (coord[0][0] + coord[1])]
-        points = [lat, lon]
-        grid_lat, grid_lon = tile.grid_coordinate(atlas_infos['RESO'], points = points)
-    else:
-        if itile == None and coord == None:
-            itile = 269
-            print('No param given (itile or coord)')
-            print('Default choice for the evaluation : itile = %i' % itile)
-            grid_lat, grid_lon = tile.grid_coordinate(atlas_infos['RESO'], itile)
-        else:
-            raise TypeError('Bad definition of itile or coord, please refer to the docstring to know how to define them')
+def get_glo_grid():
+    lonsize = []
+    longlo = []
+    latsize = []
+    latglo = []
+    for i in range(tiles['NLON']):
+        itile = i
+        lat, lon = stats.grid_coordinate(itile, atlas_infos['RESO'])
+        lonsize.append(len(lon))
+        longlo += list(lon)
 
-    return stats
+    for j in range(tiles['NLAT']):
+        itile = j*tiles['NLON']
+        lat, lon = stats.grid_coordinate(itile, atlas_infos['RESO'])
+        latsize.append(len(lat))
+        latglo += list(lat)
+
+    lonsize = np.asarray(lonsize)
+    longlo = np.asarray(longlo)
+    latsize = np.asarray(latsize)
+    latglo = np.asarray(latglo)
+    return lonsize, latsize, longlo, latglo
+
+
+def glue_tiles():
+    """ Glue the stats tiles together into a global 3D atlas"""
+
+
+    lonsize, latsize, lon, lat = get_glo_grid()
+
+    zref = param.zref
+    nz = len(zref)
+
+    # get the list of variables of this atlas
+    listvar = stats.var_choice[atlas_infos['TYPESTAT']]
+
+    print('create atlas for variables: '+', '.join(listvar))
+
+    ncfile = param.get_atlas_filename()
+    ncform.create_dim(ncfile, zref, len(lat), len(lon), atlas_infos['MODE'], atlas_infos['DATE'])
+    ncform.create_var(ncfile, listvar)
+    ncform.create_var(ncfile, ['zref', 'lon', 'lat'])
+
+    lon2d, lat2d = np.meshgrid(lon, lat)
+
+    nc = Dataset(ncfile, 'r+')
+    nc.variables['zref'][:] = zref
+    nc.variables['lon'][:, :] = lon2d
+    nc.variables['lat'][:, :] = lat2d
+    
+    j0 = 0
+    for j in range(tiles['NLAT']):
+        i0 = 0
+        for i in range(tiles['NLON']):
+            itile = tools.ij2tile(i, j)
+            i1 = i0+lonsize[i]
+            j1 = j0+latsize[j]
+            if itile % 30 == 0:
+                print('glue tile %3i: lon=%7.2f - lat=%7.2f' % (itile, lon[i0], lat[j0]))
+            
+            fname = stats.generate_filename(itile, atlas_infos['TYPESTAT'],
+                                            atlas_infos['RESO'], atlas_infos['TIMEFLAG'], 
+                                            atlas_infos['DATE'], atlas_infos['MODE'])
+            if os.path.isfile(fname):
+                with Dataset(fname) as ncf:
+                    for v in listvar:
+                        z3d = ncf.variables[v][:, :, :]
+                        for k in range(nz):
+                            nc.variables[v][k, j0:j1, i0:i1] = z3d[k, :, :]
+            else:
+                for v in listvar:
+                    for k in range(nz):
+                        nc.variables[v][k, j0:j1, i0:i1] = 0.
+
+            i0 = i1
+        j0 = j1
+    nc.close()
+    print('Atlas %s has been generated successfully' % ncfile)

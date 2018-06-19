@@ -141,7 +141,7 @@ def master_work_nonblocking(nslaves):
     print('-'*40)
 
     # Build the atlas with all the stats calculated
-    at.glue_tiles(param.get_atlas_infos)
+    #  at.glue_tiles(param.get_atlas_infos)
 
 
 def slave_work_nonblocking(islave):
