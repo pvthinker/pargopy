@@ -15,6 +15,7 @@ import numpy as np
 import os.path as path
 
 import param as param
+import database as db
 import tile as ti
 
 comm = MPI.COMM_WORLD
@@ -96,8 +97,8 @@ def master_work_nonblocking(nslaves):
     """
 
     fid = open('master.txt','w')
-    tasks = range(300)
-    tasks = np.arange(30,300)#np.arange(28)
+    #  tasks = range(300)
+    tasks = np.arange(0,300)#np.arange(28)
     #  tasks = [52, 0, 19, 280, 299, 97, 125, 166, 153, 199, 142, 16, 53, 129]
     nbtasks = len(tasks)
     # sorting the tasks according to their size
@@ -133,14 +134,14 @@ def master_work_nonblocking(nslaves):
         previous = np.where(record==(islave+1))[0]
         if len(previous)>1:
             oldtask = tasks[previous[-2]]
-            #db.synchronize_argo_global_from_argo_tile(itiles=oldtask)
+            #  db.synchronize_argo_global_from_argo_tile(itiles=oldtask)
             synchronized[oldtask] = True
 
     for t in tasks:
         if synchronized[t]:
             pass
         else:
-            #db.synchronize_argo_global_from_argo_tile(itiles=t)
+            #  db.synchronize_argo_global_from_argo_tile(itiles=t)
             synchronized[t] = True
 
     # all tasks have been done

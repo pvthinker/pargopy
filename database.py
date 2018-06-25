@@ -153,7 +153,7 @@ def read_profile(dac, wmo, iprof=None,
                             output[key] = np.zeros((output['N_PROF'],
                                                     output['N_LEVELS']),
                                                    dtype=str)
-        output = tools.bytes2str(tools.unmask(output))
+        #  output = tools.bytes2str(tools.unmask(output))
     return output
 
 

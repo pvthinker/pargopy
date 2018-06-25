@@ -35,7 +35,7 @@ import numpy as np
 #  location = 'roullet_lops'
 location = 'DATARMOR_TMP'
 #  location = 'DATARMOR_FINAL'
-location = 'DATARMOR_GR'
+#  location = 'DATARMOR_GR'
 
 
 def get_atlas_infos():

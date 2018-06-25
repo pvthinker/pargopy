@@ -315,7 +315,7 @@ def main(itile):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
 
-    itiles = range(29,52)
+    itiles = [166]
     for itile in itiles:
         main(itile)
         #  generate_zref_profiles(itile)
