@@ -35,6 +35,8 @@ import numpy as np
 #  location = 'roullet_lops'
 location = 'DATARMOR_TMP'
 #  location = 'DATARMOR_FINAL'
+location = 'DATARMOR_GR'
+
 
 def get_atlas_infos():
     """
@@ -89,29 +91,36 @@ def get_path(wanted_path, reso = 0):
 
     if location == 'DATARMOR_TMP':
         workdir = '/home2/datawork/therry'
+        gdac = '/home/ref-argo/gdac/dac'
+        home = '/home2/datahome/therry/pargopy'
+
     elif location == 'DATARMOR_FINAL':
-        workdir = '/home2/datawork/therry/final/'
+        workdir = '/home2/datawork/therry/final'
+        gdac = '/home/ref-argo/gdac/dac'
+        home = '/home2/datahome/therry/pargopy'
+
+    elif location == 'DATARMOR_GR':
+        workdir = '/home1/datawork/groullet'
+        # this one has been removed
+        gdac = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
+        gdac = '/home/ref-argo/gdac/dac'
+        gdac = '/home1/datawork/groullet/gdac'
+        home = '/home1/datahome/groullet/dev/pargopy'
+
     else:
         raise ValueError('This location is not referenced : %s' % location)
 
     paths['pargopy_output'] = '%s/pargopy_output' % workdir
-
-    #  paths['argo'] = '/datawork/fsi2/coriolis-s/public/co05/co0508/gdac/dac'
-
-    paths['argo'] = '/home/ref-argo/gdac/dac'
-
-    paths['pargopy'] = '/home2/datahome/therry/pargopy/'
+    paths['argo'] = gdac
+    paths['pargopy'] = home
 
     paths['database'] = '%s/database' % paths['pargopy_output']
-
     paths['parallel'] = '%s/parallel' % paths['database']
-
-    paths['stats'] = '%s/stats_work' % paths['pargopy_output']
 
     paths['zref_profiles'] = '%s/zref_profiles' % paths['pargopy_output']
 
+    paths['stats'] = '%s/stats_work' % paths['pargopy_output']
     paths['atlas'] = '%s/atlas' % paths['pargopy_output']
-
     paths['reso'] = '%s/reso_%.2f' % (paths['atlas'], reso)
 
     if wanted_path in paths:

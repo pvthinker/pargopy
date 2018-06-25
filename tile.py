@@ -180,8 +180,10 @@ def write_zref_profiles(itile, zref_profiles):
 
     :rtype: None
     """
-    with open('%s/zref_profiles_%003i.pkl' % (param.get_path('zref_profiles'), itile), 'w') as f:
-        pickle.dump(zref_profiles, f)
+    filename = '%s/zref_profiles_%003i.pkl' % (param.get_path('zref_profiles'), itile)
+    pd.to_pickle(zref_profiles, filename)
+    #with open(filename, 'w') as f:
+    #    pickle.dump(zref_profiles, f)
 
 
 def read_zref_profiles(itile):
@@ -193,8 +195,12 @@ def read_zref_profiles(itile):
 
     :rtype: None
     """
-    with open('%s/zref_profiles_%003i.pkl' % (param.get_path('zref_profiles'), itile), 'r') as f:
-        dic = pickle.load(f)
+    filename = '%s/zref_profiles_%003i.pkl' % (param.get_path('zref_profiles'), itile)
+    print('Read zref profile: %s' % filename)
+    dic = pd.read_pickle(filename)
+
+    #with open(filename, 'r') as f:
+    #    dic = pickle.load(f)
     return dic
 
 
@@ -233,6 +239,7 @@ def generate_zref_profiles(itile):
         synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result)
         # try to reduce memory leakage when processessing all the tiles
     
+    #return zref_prof_to_update
     write_zref_profiles(itile, zref_prof_to_update)
 
 

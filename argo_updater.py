@@ -18,8 +18,6 @@ import database as db
 import param as param
 import tile as ti
 
-tmax = 15  # max size of each task
-
 comm = MPI.COMM_WORLD
 
 myrank = comm.Get_rank()
@@ -47,8 +45,8 @@ def ordering_tasks(tasks):
 
     workload = [path.getsize(tilefilename(t)) for t in tasks]
     idx = np.argsort(workload)
-    print(type(idx[0]))
-    return tasks[int(idx)]
+
+    return tasks[np.asarray(idx,dtype=int)]
 
 
 def getavailableslave(slavestate):
@@ -97,7 +95,9 @@ def master_work_nonblocking(nslaves):
     
     :rtype: None
     """
+    fid = open('master.txt','w')
     tasks = range(300)
+    tasks = np.arange(30,300)#np.arange(28)
     #  tasks = [52, 0, 19, 280, 299, 97, 125, 166, 153, 199, 142, 16, 53, 129]
     nbtasks = len(tasks)
     # sorting the tasks according to their size
@@ -105,24 +105,43 @@ def master_work_nonblocking(nslaves):
     # for instance, it prevents cases where the last
     # task is a very long one, which would ruin their
     # global performance
-    # tasks = ordering_tasks(tasks)
 
+    #tasks = ordering_tasks(tasks)
+    
     print('List of tasks to be done:', tasks)
-
+    fid.write('after sorting')
+    fid.flush()
     itask = 0
     slavestate = [1 for k in range(nslaves)]
 
     record = np.zeros((nbtasks,), dtype=int)
+    synchronized = {}
+    for t in tasks:
+        synchronized[t] = False
 
     while itask < nbtasks:
         islave = getavailableslave(slavestate)
         record[itask] = islave+1
-        print('send to %i' % (islave+1))
+        print('master: send to %i' % (islave+1))
+        fid.write('islave = %i' % islave)
+        fid.flush()
         comm.isend((itask, tasks[itask]), dest=islave+1, tag=islave+1)
         # print('answer[%i] = ' % islave, answer[islave])
-        reqr.append(comm.Irecv(answer[islave], source=islave+1, tag=islave+1))
+        reqr.append(comm.Irecv(answer[islave], source=islave+1, tag=islave+1))        
         slavestate[islave] = 0
         itask += 1
+        previous = np.where(record==(islave+1))[0]
+        if len(previous)>1:
+            oldtask = tasks[previous[-2]]
+            #db.synchronize_argo_global_from_argo_tile(itiles=oldtask)
+            synchronized[oldtask] = True
+
+    for t in tasks:
+        if synchronized[t]:
+            pass
+        else:
+            #db.synchronize_argo_global_from_argo_tile(itiles=t)
+            synchronized[t] = True
 
     # all tasks have been done
     # tell the slaves to stop
@@ -196,12 +215,12 @@ if __name__ == '__main__':
     if myrank == 0:
         print('Hello I\'m the master, I\'ve %i slaves under my control'
               % nslaves)
-        comm.Barrier()
+        #comm.Barrier()
         master_work_nonblocking(nslaves)
 
     else:
         print('#%2i* starts' % myrank)
-        comm.Barrier()
+        #comm.Barrier()
 
         slave_work_nonblocking(myrank)
     

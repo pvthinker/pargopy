@@ -15,6 +15,7 @@ ARGO :
 import numpy as np
 import pandas as pd
 import gsw
+from numba import jit
 
 import general_tools as tools
 import database as db
@@ -31,6 +32,9 @@ def interpolate_profiles(subargodb):
     subargodb['IPROF'] = all_tags_infos['IPROF']
     
     subargo_to_interp = subargodb[(subargodb['FLAG'] == 0) & (subargodb['STATUS'] == False)]
+    nprof_todo = len(subargo_to_interp)
+    print('interpolation: #prof: %i, #flag=0/status=False: %i' 
+          % (len(subargodb), nprof_todo))
     
     CT = pd.DataFrame(index = subargo_to_interp.index, columns = param.zref)
     SA = pd.DataFrame(index = subargo_to_interp.index, columns = param.zref)
@@ -38,13 +42,15 @@ def interpolate_profiles(subargodb):
     BVF2 = pd.DataFrame(index = subargo_to_interp.index, columns = param.zref)
     
     set_subargodb = subargo_to_interp.drop_duplicates('WMO')
-    
+
+    counter = 0
     for tag in set_subargodb.index:
         wmo = set_subargodb.loc[tag, 'WMO']
         dac = set_subargodb.loc[tag, 'IDAC']
         part_subargodb = subargo_to_interp[subargo_to_interp['WMO'] == wmo]
         data = db.read_profile(dac, wmo, header=True, data=True, dataqc=True)
         for iprof in part_subargodb['IPROF']:
+            print('%i/%i' % (counter, nprof_todo))
             tag_id = part_subargodb.index[part_subargodb['IPROF'] == iprof]
             temp = data['TEMP'][iprof, :]
             psal = data['PSAL'][iprof, :]
@@ -80,13 +86,14 @@ def interpolate_profiles(subargodb):
                 BVF2.loc[tag_id, :] = BVF2i
             else:
                 subargodb.loc[tag_id, 'FLAG'] = 202
+            counter += 1
         else:
             pass
         
-    CT = CT.dropna(how='all')
-    SA = SA.dropna(how='all')
-    RHO = RHO.dropna(how='all')
-    BVF2 = BVF2.dropna(how='all')
+    # CT = CT.dropna(how='all')
+    # SA = SA.dropna(how='all')
+    # RHO = RHO.dropna(how='all')
+    # BVF2 = BVF2.dropna(how='all')
     
     res = {'CT': CT,
            'SA': SA,
@@ -116,7 +123,7 @@ def raw_to_interpolate(temp, sal, pres, temp_qc, sal_qc, pres_qc, lon, lat, zref
         CT, SA, z = insitu_to_absolute(Tis, SP, p, lon, lat, zref)
         Ti, Si, dTidz, dSidz = interp_at_zref(CT, SA, z, zref)
         pi = gsw.p_from_z(-zref, lat)
-        Ri = gsw.rho(Si, Ti, pi)
+        #Ri = gsw.rho(Si, Ti, pi)
         Ri, alpha, beta = gsw.rho_alpha_beta(Si, Ti, pi)
         g = gsw.grav(lat, pi)
         BVF2i = g*(beta*dSidz-alpha*dTidz)
@@ -248,6 +255,7 @@ def interp_at_zref(CT, SA, z, zref):
     return CTi, SAi, dCTdzi, dSAdzi
 
 
+@jit
 def select_depth(zref, z):
     """Return the number of data points we have between successive zref.
 
@@ -295,6 +303,7 @@ def select_depth(zref, z):
     return nbperintervale, kperint
 
 
+@jit
 def lagrangepoly(x0, xi):
     """Weights for polynomial interpolation at x0 given a list of xi
     return both the weights for function (cs) and its first derivative
@@ -337,6 +346,7 @@ def lagrangepoly(x0, xi):
     return cs, ds
 
 
+@jit
 def try_to_remove_duplicate_pressure(p):
     """
     :param p: list of pressures
@@ -349,6 +359,7 @@ def try_to_remove_duplicate_pressure(p):
     return idx
 
 
+@jit
 def check_pressure(p):
     """
     :param p: list of pressures
