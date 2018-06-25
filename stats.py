@@ -213,12 +213,7 @@ def compute_at_zref(itile, reso_deg, mode, date, typestat, tile_dict=None):
                             variables['CTstd'][:, j, i] = average(dCT**2)
                             variables['SAstd'][:, j, i] = average(dSA**2)
                             variables['BVF2std'][:, j, i] = average(dbvf2**2)
-                            variables['Ristd'][:, j, i] = average(drho**2)
-                               
-                            coef = 1./(variables['NBstd']-1)
-                            coef[variables['NBstd'] < 2] = np.nan
-
-                                
+                            variables['Ristd'][:, j, i] = average(drho**2)    
 
                         if typestat == 'zdz':
             
@@ -227,7 +222,10 @@ def compute_at_zref(itile, reso_deg, mode, date, typestat, tile_dict=None):
                             variables['DZskew'][:, j, i] = average(dz**3)
                             variables['EAPE'][:, j, i] = average(dz*drho)
                                 
-                                
+     
+    coef = 1./(variables['NBstd']-1)
+    coef[variables['NBstd'] < 2] = np.nan
+                           
     if typestat == 'zstd':
         variables['CTstd'] = np.sqrt(coef*variables['CTstd'])
         variables['SAstd'] = np.sqrt(coef*variables['SAstd'])

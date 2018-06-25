@@ -97,8 +97,8 @@ def master_work_nonblocking(nslaves):
     
     :rtype: None
     """
-    tasks = range(300)
-    #  tasks = [52, 0, 19, 280, 299, 97, 125, 166, 153, 199, 142, 16, 53, 129]
+    # tasks = range(300)
+    tasks = [100, 101]
     nbtasks = len(tasks)
     # sorting the tasks according to their size
     # improves the load balance among slaves (by a lot)
@@ -192,7 +192,6 @@ if __name__ == '__main__':
 
     # Update argo_global with newest version of Argo
     #  db.update_argo_global()
-    
     if myrank == 0:
         print('Hello I\'m the master, I\'ve %i slaves under my control'
               % nslaves)

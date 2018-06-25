@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -q mpi_2
+#PBS -q mpi_1
 #PBS -l mem=25g
 #PBS -l walltime=06:00:00
 #PBS -N tiles
@@ -31,7 +31,7 @@ echo "job running with  $mpiproc mpi process "
 echo ""
 echo "Launch MPI on:   " `date`
 
-mpirun -np 56 python /home2/datahome/therry/pargopy/argo_updater.py > /home2/datawork/therry/pargopy_output/pbs_work/output_argo_updater
+mpirun -np 3 python /home2/datahome/therry/pargopy/argo_updater.py > /home2/datawork/therry/pargopy_output/pbs_work/output_argo_updater
 
 echo ""
 echo "Finish MPI on:   " `date`
