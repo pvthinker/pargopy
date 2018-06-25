@@ -33,8 +33,8 @@ def synchronize_headers():
     header_global = pd.DataFrame(columns=header_keys+['TAG'])
     header_global = header_global.set_index('TAG')
 
-    for itile in range(ntiles):
-        header_tile = tile.read_header(itile)
+    for itile in range(300):
+        header_tile = ti.read_header(itile)
         header_global = header_global.merge(header_tile,
                                             left_index=True, right_index=True,
                                             how='outer', on=header_keys)
@@ -103,7 +103,12 @@ def read_profile(dac, wmo, iprof=None,
             # DATE_UPDATE is an array of 14 characters in the *_prof.nc
             # we transform it into an int
             # YYYYMMDDhhmmss
-            output['DATE_UPDATE'] = ''.join(f.variables['DATE_UPDATE'][:])
+            print(filename)
+            dateupdate = f.variables['DATE_UPDATE'][:]
+            if type(dateupdate) is np.ma.core.MaskedArray:
+                dateupdate=[c.decode('utf-8') for c in dateupdate.data]
+            output['DATE_UPDATE'] = ''.join(dateupdate)
+
             if shortheader:
                 pass
             else:
@@ -148,6 +153,7 @@ def read_profile(dac, wmo, iprof=None,
                             output[key] = np.zeros((output['N_PROF'],
                                                     output['N_LEVELS']),
                                                    dtype=str)
+        output = tools.bytes2str(tools.unmask(output))
     return output
 
 
@@ -545,7 +551,7 @@ def update_argo_global():
     print('Quantity of new_prof : %i' % (z+len(new_tags_list)))
 
 
-def synchronize_argo_global_from_argo_tile():
+def synchronize_argo_global_from_argo_tile(itiles=None):
     """
     Fonction utilisée pour mettre à jour synchroniser argo_global avec les 
     nouvelles informations issues de l'interpolation (infos recueillies dans
@@ -556,9 +562,15 @@ def synchronize_argo_global_from_argo_tile():
     :rtype: None
     """
 
-    argo_global = read_argo_global()
+    if itiles is None:
+        itiles = range(300)
+    else:
+        itiles = [itiles]
 
-    for itile in range(300):
+    argo_global = read_argo_global()
+    keys=argo_global.keys()
+
+    for itile in itiles:
         argo_tile = ti.read_argo_tile(itile)
         subargo_tile = argo_tile[(argo_tile['FLAG'] != 101) & 
                                  (argo_tile['FLAG'] != 102) & 
@@ -566,7 +578,11 @@ def synchronize_argo_global_from_argo_tile():
     
         subargo_global = argo_global.loc[subargo_tile.index]
         subargo_global = subargo_global[subargo_global['STATUS'] == False]
-    
+
+        # reorder subargo_tile keys to match the order of argo_global
+        # it seems to be a critical step
+        subargo_tile = subargo_tile[keys]
+
         argo_global.loc[subargo_global.index] = subargo_tile.loc[subargo_global.index]
         print('argo_global synchronized with argo_%003i' % itile)
 

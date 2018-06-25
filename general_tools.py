@@ -18,6 +18,29 @@ import numpy as np
 import param as param
 
 
+def unmask(data):
+    """ transform masked array into regular numpy array """
+    data_out = {}
+    for k in data.keys():
+        if type(data[k]) is np.ma.core.MaskedArray:
+            data_out[k] = data[k].data
+        else:
+            data_out[k] = data[k]
+    return data_out
+
+
+def bytes2str(data):
+    """ byte strings into strings"""
+    data_out = {}
+    for k in data.keys():
+        data_out[k] = data[k]
+        if type(data[k]) is np.ndarray:
+            firstelem = data_out[k].ravel()[0]
+            if type(firstelem) is np.bytes_:
+                data_out[k] = np.asarray(data[k].data, dtype=str)
+    return data_out
+
+
 def get_tag(kdac, wmo, kprof):
     """Compute the tag number of a profile
 
