@@ -221,18 +221,18 @@ def compute_at_zref(itile, reso_deg, mode, date, typestat, tile_dict=None):
                             variables['DZstd'][:, j, i] = average(dz**2)
                             variables['DZskew'][:, j, i] = average(dz**3)
                             variables['EAPE'][:, j, i] = average(dz*drho)
-                                
-     
-    coef = 1./(variables['NBstd']-1)
-    coef[variables['NBstd'] < 2] = np.nan
                            
     if typestat == 'zstd':
+        coef = 1./(variables['NBstd']-1)
+        coef[variables['NBstd'] < 2] = np.nan
         variables['CTstd'] = np.sqrt(coef*variables['CTstd'])
         variables['SAstd'] = np.sqrt(coef*variables['SAstd'])
         variables['Ristd'] = np.sqrt(coef*variables['Ristd'])
         variables['BVF2std'] = np.sqrt(coef*variables['BVF2std'])
 
     elif typestat == 'zdz':
+        coef = 1./(variables['NBstd']-1)
+        coef[variables['NBstd'] < 2] = np.nan
         variables['DZmean'] *= coef
         variables['DZstd'] = np.sqrt(coef*variables['DZstd'])
         variables['DZskew'] *= coef/variables['DZstd']**3
@@ -283,5 +283,6 @@ def main(itile):
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     atlas_infos = param.get_atlas_infos()
-    create_stat_file(125, atlas_infos)
-    write_stat_file(125, atlas_infos)
+    for itile in range(27):
+        create_stat_file(itile, atlas_infos)
+        write_stat_file(itile, atlas_infos)

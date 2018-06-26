@@ -98,7 +98,8 @@ def master_work_nonblocking(nslaves):
 
     fid = open('master.txt','w')
     #  tasks = range(300)
-    tasks = np.arange(0,300)#np.arange(28)
+    #  tasks = np.arange(167,222)#np.arange(28)
+    tasks = [237, 238, 258]
     #  tasks = [52, 0, 19, 280, 299, 97, 125, 166, 153, 199, 142, 16, 53, 129]
     nbtasks = len(tasks)
     # sorting the tasks according to their size

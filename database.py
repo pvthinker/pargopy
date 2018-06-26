@@ -539,6 +539,9 @@ def update_argo_global():
     argo_global_update = pd.concat(
             [new_wmos_argo, modified_prof_argo, new_prof_argo, unchanged_prof_argo])
     argo_global_update = flag_argodb(argo_global_update, wmodic)
+
+    # On flag à faux les profils dont la latitude et la longitude sont à plus de 9000
+    argo_global_update['FLAG'][(argo_global_update['FLAG'] == 0) & (argo_global_update['LATITUDE'] > 9000)] = 104
     write_argo_global(argo_global_update)
     print('Quantity of modified tag : %i' % len(modified_tag_list))
     print('Quantity of unchanged profiles in wmos with new prof : %i' %
