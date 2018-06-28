@@ -17,6 +17,7 @@ import os.path as path
 import param as param
 import database as db
 import tile as ti
+import dev_zref as dev
 
 comm = MPI.COMM_WORLD
 
@@ -99,7 +100,7 @@ def master_work_nonblocking(nslaves):
     fid = open('master.txt','w')
     #  tasks = range(300)
     #  tasks = np.arange(167,222)#np.arange(28)
-    tasks = [217, 238]
+    tasks = np.arange(nslaves)
     #  tasks = [52, 0, 19, 280, 299, 97, 125, 166, 153, 199, 142, 16, 53, 129]
     nbtasks = len(tasks)
     # sorting the tasks according to their size
@@ -192,7 +193,8 @@ def slave_work_nonblocking(islave):
                   % (islave, itask, itile))
 
             # do the work, replace 'sleep' with a real work!
-            ti.main(itile)
+            itile = 238
+            dev.main(itile, islave-1)
 
             # tell the master that we are done and that he
             # can send another task

@@ -182,8 +182,6 @@ def write_zref_profiles(itile, zref_profiles):
     """
     filename = '%s/zref_profiles_%003i.pkl' % (param.get_path('zref_profiles'), itile)
     pd.to_pickle(zref_profiles, filename)
-    #with open(filename, 'w') as f:
-    #    pickle.dump(zref_profiles, f)
 
 
 def read_zref_profiles(itile):
@@ -199,8 +197,6 @@ def read_zref_profiles(itile):
     print('Read zref profile: %s' % filename)
     dic = pd.read_pickle(filename)
 
-    #with open(filename, 'r') as f:
-    #    dic = pickle.load(f)
     return dic
 
 
@@ -215,9 +211,7 @@ def generate_zref_profiles(itile):
     if len(argo_tile.index) == 0:
         zref_prof_to_update = []
     else:
-        print('Before interpolation')
         zref_profiles, interp_result = interp.interpolate_profiles(argo_tile)
-        print('After interpolation')
         
         if os.path.isfile(filename):
             zref_prof_to_update = read_zref_profiles(itile)
@@ -265,9 +259,7 @@ def synchronize_argo_tile_from_global(itile, argo_tile):
     lon_min = limits['LON_LIM'][0] - limits['MARGINLON']
     lon_max = limits['LON_LIM'][1] + limits['MARGINLON']
 
-    print('Before argo_global reading')
     argo_global = db.read_argo_global()
-    print('After argo_global reading')
     # Mettre à jour les argo_%3i avec argo_global
     part_of_argo = argo_global[(lat_min <= argo_global['LATITUDE']) &
                                (argo_global['LATITUDE'] <= lat_max) & 

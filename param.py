@@ -116,8 +116,10 @@ def get_path(wanted_path, reso = 0):
 
     paths['database'] = '%s/database' % paths['pargopy_output']
     paths['parallel'] = '%s/parallel' % paths['database']
+    paths['task'] = '%s/task' % paths['parallel']
 
     paths['zref_profiles'] = '%s/zref_profiles' % paths['pargopy_output']
+    paths['zref_task'] = '%s/task' % paths['zref_profiles']
 
     paths['stats'] = '%s/stats_work' % paths['pargopy_output']
     paths['atlas'] = '%s/atlas' % paths['pargopy_output']

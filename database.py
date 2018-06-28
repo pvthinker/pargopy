@@ -381,7 +381,7 @@ def flag_argodb(argo_global, wmodic):
     :rtype: dic
     """
 
-    tag = argo_global.index[argo_global['FLAG'] == 0]
+    tag = argo_global.index[(argo_global['FLAG'] == 0) & (argo_global['STATUS'] == False)]
         
 
     infos = tools.retrieve_infos_from_tag(tag)
