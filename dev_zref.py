@@ -127,8 +127,33 @@ def generate_zref_task(task, itask, itile):
     
     for k in keys:
             zref_prof_to_update[k] = zref_prof_to_update[k].append(zref_profiles[k])
+    
+    argo_task = read_argo_task(itile, itask)
+    synchronize_argo_task_from_interpolation(itile, argo_task, interp_result, itask)
+    
     write_zref_task(itile, zref_prof_to_update, itask)
     print('zref_task_%003i_%003i generated' % (itile, itask))
+
+
+def synchronize_argo_task_from_interpolation(itile, argo_task, interp_result, itask):
+    """
+    :param itile: Numéro de la tile que l'on souhaite générer
+    :param argo_tile: Version antérieure de l'argo_%3i à synchroniser avec la nouvelle
+    :param interp_result: Version mise à jour d'argo_tile avec compte rendu interpolation
+    Fonction utilisée pour mettre à jour les argo_%3i avec les nouveaux profiles de la base Argo,
+    mais également pour le retour d'information après l'interpolation des profiles
+
+    :rtype: DataFrame
+    """
+
+    for tag in argo_task.index:
+        if argo_task.loc[tag, 'FLAG'] != interp_result.loc[tag, 'FLAG']:
+            print('Flag of tag %i changed from %i to %i' % (tag, argo_task.loc[tag, 'FLAG'], interp_result.loc[tag, 'FLAG']))
+            argo_task.loc[tag] = interp_result.loc[tag]
+    
+    argo_task['STATUS'] = True
+    write_argo_task(itile, argo_task, itask)
+    print('Task %003i synchronized after interpolation' % itask)
 
 
 def main(itile, itask):

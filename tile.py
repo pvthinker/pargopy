@@ -294,6 +294,7 @@ def synchronize_argo_tile_from_interpolation(itile, argo_tile, interp_result):
             print('Flag of tag %i changed from %i to %i' % (tag, argo_tile.loc[tag, 'FLAG'], interp_result.loc[tag, 'FLAG']))
             argo_tile.loc[tag] = interp_result.loc[tag]
     
+    argo_tile['STATUS'] = True
     write_argo_tile(itile, argo_tile)
     print('Tile %003i synchronized after interpolation' % itile)
 
