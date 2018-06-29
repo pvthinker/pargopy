@@ -22,7 +22,7 @@ def plot_figures():
     pass
 
 
-itile = 32
+itile = 43
 
 tile = ti.read_argo_tile(itile)
 zref_profile = ti.read_zref_profiles(itile)

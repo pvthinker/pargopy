@@ -26,7 +26,7 @@ from netCDF4 import Dataset
 import numpy as np
 
 import param as param
-import tiles as ti
+import tile as ti
 import stats as stats
 import netCDF_form as ncform
 import general_tools as tools
@@ -82,7 +82,7 @@ def glue_tiles():
     print('create atlas for variables: '+', '.join(listvar))
 
     ncfile = param.get_atlas_filename()
-    ncform.create_dim(ncfile, zref, len(lat), len(lon), atlas_infos['MODE'], atlas_infos['DATE'])
+    ncform.create_dim(ncfile, zref, len(lat), len(lon), atlas_infos)
     ncform.create_var(ncfile, listvar)
     ncform.create_var(ncfile, ['zref', 'lon', 'lat'])
 
@@ -103,9 +103,7 @@ def glue_tiles():
             if itile % 30 == 0:
                 print('glue tile %3i: lon=%7.2f - lat=%7.2f' % (itile, lon[i0], lat[j0]))
             
-            fname = stats.generate_filename(itile, atlas_infos['TYPESTAT'],
-                                            atlas_infos['RESO'], atlas_infos['TIMEFLAG'], 
-                                            atlas_infos['DATE'], atlas_infos['MODE'])
+            fname = stats.generate_filename(itile)
             if os.path.isfile(fname):
                 with Dataset(fname) as ncf:
                     for v in listvar:
@@ -121,3 +119,9 @@ def glue_tiles():
         j0 = j1
     nc.close()
     print('Atlas %s has been generated successfully' % ncfile)
+
+
+#  ----------------------------------------------------------------------------
+if __name__ == '__main__':
+
+    glue_tiles()

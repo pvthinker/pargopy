@@ -86,11 +86,23 @@ def date_mode_filter(mode, date, itile):
         sub_argo_tile = argo_tile[(argo_tile['DATA_MODE'] == m) & (argo_tile['JULD'] < julday) & (argo_tile['FLAG'] == 0)]
         idx += list(sub_argo_tile.index)
     
-    
-    for k in key_extraction:
-        tile_extract[k] = zref_profiles[k].loc[idx]
-
+    if len(idx) != 0:
+        for k in key_extraction:
+            tile_extract[k] = zref_profiles[k].loc[idx]
+    else:
+        for k in key_extraction:
+            tile_extract[k] = []
     return tile_extract
+
+
+def generate_filename(itile):
+    """
+    Generates the filename of the netCDF stat file
+    
+    :rtype: str
+    """
+    filename = '%s/stats_%003i.nc' % (param.get_path('stats'), itile)
+    return filename
 
 
 def compute_at_zref(itile, reso_deg, mode, date, typestat, tile_dict=None):
@@ -105,141 +117,155 @@ def compute_at_zref(itile, reso_deg, mode, date, typestat, tile_dict=None):
     else:
         tile = date_mode_filter(mode, date, itile)
     
+    if len(tile['CT']) == 0:
+        variables = {}
+        nz = len(param.zref)
+        grid_lat, grid_lon = grid_coordinate(itile, reso_deg)
+        lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
+        nlat, nlon = np.shape(lon_deg)
+        if typestat =='zstd' or typestat == 'zdz':
+            for i, v in enumerate(var_choice[typestat]):
+                variables[v] = np.zeros((nz, nlat, nlon))
+        else:
+            for i, v in enumerate(var_choice['zmean']):
+                variables[v] = np.zeros((nz, nlat, nlon))
     
-    CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
-    # Trouver parade recherche d'indice NaN variables
-    #  nanidx = np.where(np.isnan(CT) | np.isnan(SA))
-    lat = argo_tile.loc[tile['CT'].index, 'LATITUDE']
-    lon = argo_tile.loc[tile['CT'].index, 'LONGITUDE']
+    else:
+    
+        CT, SA, RI, BVF2 = tile['CT'], tile['SA'], tile['RHO'], tile['BVF2']
+        # Trouver parade recherche d'indice NaN variables
+        #  nanidx = np.where(np.isnan(CT) | np.isnan(SA))
+        lat = argo_tile.loc[tile['CT'].index, 'LATITUDE']
+        lon = argo_tile.loc[tile['CT'].index, 'LONGITUDE']
+        
+        
+        nanidx = []
+        for z in range(len(param.zref)):
+            # On recherche les indices des lignes contenant des NaN classés par colonne
+            # Chaque sous liste correspond à une colonne de la DataFrame
+            nanidx.append(CT.index[CT.iloc[:, z].isnull()])
+    
+        grid_lat, grid_lon = grid_coordinate(itile, reso_deg)
+        lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
+    
+        lon_rad = np.deg2rad(lon_deg)
+        lat_rad = np.deg2rad(lat_deg)
+        reso_rad = np.deg2rad(reso_deg)
+    
+        nlat, nlon = np.shape(lon_deg)
+    
+        # RI is rho in situ
+    
+        nz = len(param.zref)
+        nbprof = len(CT)    
+    
+        variables = {}
+    
+        # gridded arrays of CT, SA et RI means
+        for i, v in enumerate(var_choice['zmean']):
+            variables[v] = np.zeros((nz, nlat, nlon))
+    
+        for k in range(nbprof):
+            #  print('%4i/%i' % (k, nbprof))
+            # todo: weigh in time using juld,
+            # e.g. only winter statistics
+            time_weight = 1.
+            xlon_rad = np.deg2rad(lon.iloc[k])
+            xlat_rad = np.deg2rad(lat.iloc[k])
+            weight = tools.compute_weight(lon_rad, lat_rad,
+                                          xlon_rad, xlat_rad,
+                                          reso_rad)
+            weight *= time_weight
+            for l in range(nz):
+                if np.isnan(CT.iloc[k, l]) or np.isnan(SA.iloc[k, l]):
+                    pass
+                else:
+                    variables['NBbar'][l, :, :] += weight
+                    variables['CTbar'][l, :, :] += weight*CT.iloc[k, l]
+                    variables['SAbar'][l, :, :] += weight*SA.iloc[k, l]
+                    variables['Ribar'][l, :, :] += weight*RI.iloc[k, l]
+                    variables['BVF2bar'][l, :, :] += weight*BVF2.iloc[k, l]
+    
+        # normalize with the number of profiles (fractional
+        # because NBbar is fractionnal)
+        coef = 1./variables['NBbar']
+        coef[variables['NBbar'] < 1] = np.NaN
+    
+        variables['CTbar'] *= coef
+        variables['SAbar'] *= coef
+        variables['Ribar'] *= coef
+        variables['BVF2bar'] *= coef
     
     
-    nanidx = []
-    for z in range(len(param.zref)):
-        # On recherche les indices des lignes contenant des NaN classés par colonne
-        # Chaque sous liste correspond à une colonne de la DataFrame
-        nanidx.append(CT.index[CT.iloc[:, z].isnull()])
-
-    grid_lat, grid_lon = grid_coordinate(itile, reso_deg)
-    lon_deg, lat_deg = np.meshgrid(grid_lon, grid_lat)
-
-    lon_rad = np.deg2rad(lon_deg)
-    lat_rad = np.deg2rad(lat_deg)
-    reso_rad = np.deg2rad(reso_deg)
-
-    nlat, nlon = np.shape(lon_deg)
-
-    # RI is rho in situ
-
-    nz = len(param.zref)
-    nbprof = len(CT)    
-
-    variables = {}
-
-    # gridded arrays of CT, SA et RI means
-    for i, v in enumerate(var_choice['zmean']):
-        variables[v] = np.zeros((nz, nlat, nlon))
-
-    for k in range(nbprof):
-        #  print('%4i/%i' % (k, nbprof))
-        # todo: weigh in time using juld,
-        # e.g. only winter statistics
-        time_weight = 1.
-        xlon_rad = np.deg2rad(lon.iloc[k])
-        xlat_rad = np.deg2rad(lat.iloc[k])
-        weight = tools.compute_weight(lon_rad, lat_rad,
-                                      xlon_rad, xlat_rad,
-                                      reso_rad)
-        weight *= time_weight
-        for l in range(nz):
-            if np.isnan(CT.iloc[k, l]) or np.isnan(SA.iloc[k, l]):
+        if typestat =='zstd' or typestat == 'zdz':
+            xlon_rad = np.deg2rad(lon)
+            xlat_rad = np.deg2rad(lat)
+            for i, v in enumerate(var_choice[typestat]):
+                variables[v] = np.zeros((nz, nlat, nlon))
+            variables['NBstd'] = variables['NBbar']
+    
+            if len(lat) == 0:
                 pass
             else:
-                variables['NBbar'][l, :, :] += weight
-                variables['CTbar'][l, :, :] += weight*CT.iloc[k, l]
-                variables['SAbar'][l, :, :] += weight*SA.iloc[k, l]
-                variables['Ribar'][l, :, :] += weight*RI.iloc[k, l]
-                variables['BVF2bar'][l, :, :] += weight*BVF2.iloc[k, l]
-
-    # normalize with the number of profiles (fractional
-    # because NBbar is fractionnal)
-    coef = 1./variables['NBbar']
-    coef[variables['NBbar'] < 1] = np.NaN
-
-    variables['CTbar'] *= coef
-    variables['SAbar'] *= coef
-    variables['Ribar'] *= coef
-    variables['BVF2bar'] *= coef
-
-
-    if typestat =='zstd' or typestat == 'zdz':
-        xlon_rad = np.deg2rad(lon)
-        xlat_rad = np.deg2rad(lat)
-        for i, v in enumerate(var_choice[typestat]):
-            variables[v] = np.zeros((nz, nlat, nlon))
-        variables['NBstd'] = variables['NBbar']
-
-        if len(lat) == 0:
-            pass
-        else:
-            for j in range(nlat):
-                for i in range(nlon):
-                    if len(lat) < j+1:
-                        pass
-                    else:
-                        time_weight = 1.
-                        weight = tools.compute_weight(lon_rad[j, i], lat_rad[j, i],
-                                                      xlon_rad, xlat_rad,
-                                                      reso_rad)
-                        weight *= time_weight
-                        drho = RI - variables['Ribar'][:, j, i]
-                        dbvf2 = BVF2 - variables['BVF2bar'][:, j, i]
-                        dCT = CT - variables['CTbar'][:, j, i]
-                        interpolator = ip.interp1d(variables['Ribar'][:,j,i], param.zref, bounds_error=False)
-                        p = gsw.p_from_z(-param.zref, lat[j])
-                        g = gsw.grav(lat[j], p)
-                        cs = gsw.sound_speed(variables['SAbar'][:, j, i], variables['CTbar'][:, j, i], p)
-                        rho0 = variables['Ribar'][:, j, i].copy()
-                        zrho = interpolator(RI)
-                        dzstar = zrho-param.zref
-                        dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
-                        dSA = SA - variables['SAbar'][:, j, i]
-
-                        weight = weight[:, np.newaxis] + np.zeros_like(param.zref)
-                        weight[np.where(np.isnan(dz) | np.isnan(drho) | np.isnan(dCT) | np.isnan(dSA))] = 0.
-                        #  weight[nanidx] = 0.
-                        def average(field):
-                            return np.nansum(weight*field, axis=0)
-                        if typestat == 'zstd':
-                            variables['CTstd'][:, j, i] = average(dCT**2)
-                            variables['SAstd'][:, j, i] = average(dSA**2)
-                            variables['BVF2std'][:, j, i] = average(dbvf2**2)
-                            variables['Ristd'][:, j, i] = average(drho**2)    
-
-                        if typestat == 'zdz':
-            
-                            variables['DZmean'][:, j, i] = average(dz)
-                            variables['DZstd'][:, j, i] = average(dz**2)
-                            variables['DZskew'][:, j, i] = average(dz**3)
-                            variables['EAPE'][:, j, i] = average(dz*drho)
-                           
-    if typestat == 'zstd':
-        coef = 1./(variables['NBstd']-1)
-        coef[variables['NBstd'] < 2] = np.nan
-        variables['CTstd'] = np.sqrt(coef*variables['CTstd'])
-        variables['SAstd'] = np.sqrt(coef*variables['SAstd'])
-        variables['Ristd'] = np.sqrt(coef*variables['Ristd'])
-        variables['BVF2std'] = np.sqrt(coef*variables['BVF2std'])
-
-    elif typestat == 'zdz':
-        coef = 1./(variables['NBstd']-1)
-        coef[variables['NBstd'] < 2] = np.nan
-        variables['DZmean'] *= coef
-        variables['DZstd'] = np.sqrt(coef*variables['DZstd'])
-        variables['DZskew'] *= coef/variables['DZstd']**3
-        variables['EAPE'] *= 0.5*coef
-
-    variables['lat'] = lat_deg
-    variables['lon'] = lon_deg
+                for j in range(nlat):
+                    for i in range(nlon):
+                        if len(lat) < j+1:
+                            pass
+                        else:
+                            time_weight = 1.
+                            weight = tools.compute_weight(lon_rad[j, i], lat_rad[j, i],
+                                                          xlon_rad, xlat_rad,
+                                                          reso_rad)
+                            weight *= time_weight
+                            drho = RI - variables['Ribar'][:, j, i]
+                            dbvf2 = BVF2 - variables['BVF2bar'][:, j, i]
+                            dCT = CT - variables['CTbar'][:, j, i]
+                            interpolator = ip.interp1d(variables['Ribar'][:,j,i], param.zref, bounds_error=False)
+                            p = gsw.p_from_z(-param.zref, lat.iloc[j])
+                            g = gsw.grav(lat.iloc[j], p)
+                            cs = gsw.sound_speed(variables['SAbar'][:, j, i], variables['CTbar'][:, j, i], p)
+                            rho0 = variables['Ribar'][:, j, i].copy()
+                            zrho = interpolator(RI)
+                            dzstar = zrho-param.zref
+                            dz = dzstar/(1.+rho0*g*dzstar/(cs**2*drho))
+                            dSA = SA - variables['SAbar'][:, j, i]
+    
+                            weight = weight[:, np.newaxis] + np.zeros_like(param.zref)
+                            #  weight[np.where(np.isnan(dz) | np.isnan(drho) | np.isnan(dCT) | np.isnan(dSA))] = 0.
+                            weight[np.where(np.isnan(CT.iloc[k, l]) or np.isnan(SA.iloc[k, l]))] = 0
+                            def average(field):
+                                return np.nansum(weight*field, axis=0)
+                            if typestat == 'zstd':
+                                variables['CTstd'][:, j, i] = average(dCT**2)
+                                variables['SAstd'][:, j, i] = average(dSA**2)
+                                variables['BVF2std'][:, j, i] = average(dbvf2**2)
+                                variables['Ristd'][:, j, i] = average(drho**2)    
+    
+                            if typestat == 'zdz':
+                
+                                variables['DZmean'][:, j, i] = average(dz)
+                                variables['DZstd'][:, j, i] = average(dz**2)
+                                variables['DZskew'][:, j, i] = average(dz**3)
+                                variables['EAPE'][:, j, i] = average(dz*drho)
+                               
+        if typestat == 'zstd':
+            coef = 1./(variables['NBstd']-1)
+            coef[variables['NBstd'] < 2] = np.nan
+            variables['CTstd'] = np.sqrt(coef*variables['CTstd'])
+            variables['SAstd'] = np.sqrt(coef*variables['SAstd'])
+            variables['Ristd'] = np.sqrt(coef*variables['Ristd'])
+            variables['BVF2std'] = np.sqrt(coef*variables['BVF2std'])
+    
+        elif typestat == 'zdz':
+            coef = 1./(variables['NBstd']-1)
+            coef[variables['NBstd'] < 2] = np.nan
+            variables['DZmean'] *= coef
+            variables['DZstd'] = np.sqrt(coef*variables['DZstd'])
+            variables['DZskew'] *= coef/variables['DZstd']**3
+            variables['EAPE'] *= 0.5*coef
+    
+        variables['lat'] = lat_deg
+        variables['lon'] = lon_deg
 
     return variables
 
@@ -276,13 +302,13 @@ def main(itile):
     """
     Main function of stats.py
     """
-    create_stat_file(itile, param.atlas_infos)
-    write_stat_file(itile, param.atlas_infos)
+    create_stat_file(itile, param.get_atlas_infos())
+    write_stat_file(itile, param.get_atlas_infos())
 
 
 #  ----------------------------------------------------------------------------
 if __name__ == '__main__':
     atlas_infos = param.get_atlas_infos()
-    for itile in range(27):
-        create_stat_file(itile, atlas_infos)
-        write_stat_file(itile, atlas_infos)
+    itile = 257
+    create_stat_file(itile, atlas_infos)
+    write_stat_file(itile, atlas_infos)

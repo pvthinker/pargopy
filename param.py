@@ -52,7 +52,7 @@ def get_atlas_infos():
     :rtype: dict
     """
     atlas_infos = {}
-    atlas_infos['TYPESTAT'] = 'zmean'
+    atlas_infos['TYPESTAT'] = 'zstd'
     atlas_infos['RESO'] = 0.5
     atlas_infos['DATE'] = [2017, 12, 31]
     atlas_infos['MODE'] = 'D'
@@ -150,7 +150,7 @@ def get_atlas_filename():
 
     else: # one folder - long name for the atlas
         ncfile ='%s/%s_%g_%s_%s.nc' % (get_path('atlas'), atlas_infos['TYPESTAT'], 
-                                       atlas_infos['RESO'], atlas_infos['YEAR'], 
+                                       atlas_infos['RESO'], atlas_infos['DATE'][0], 
                                        atlas_infos['MODE'])
         print(ncfile)
 

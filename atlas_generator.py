@@ -15,7 +15,6 @@ import numpy as np
 import stats as stats
 import os.path as path
 import param as param
-import atlas_generation as at
 
 tmax = 15  # max size of each task
 
@@ -42,7 +41,7 @@ def ordering_tasks(tasks):
     :rtype: list of int
     """
     def tilefilename(itile):
-        return '%s/tile%03i.pkl' % (param.get_path('tile'), itile)
+        return '%s/tile%03i.pkl' % (param.get_path('zref_profiles'), itile)
 
     workload = [path.getsize(tilefilename(t)) for t in tasks]
     idx = np.argsort(workload)
@@ -103,7 +102,7 @@ def master_work_nonblocking(nslaves):
     # for instance, it prevents cases where the last
     # task is a very long one, which would ruin their
     # global performance
-    tasks = ordering_tasks(tasks)
+    #  tasks = ordering_tasks(tasks)
 
     print('List of tasks to be done:', tasks)
 
